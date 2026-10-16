@@ -394,6 +394,7 @@
       <div class="field">
         <label for="sch-place">장소</label>
         <input id="sch-place" type="text" maxlength="60" placeholder="예: 12층 회의실">
+        <a class="map-link sm" id="sch-place-map" target="_blank" rel="noopener" hidden>네이버 지도에서 확인 ›</a>
       </div>
       <label class="imp-check full" for="sch-imp">
         <input type="checkbox" id="sch-imp">
@@ -421,6 +422,7 @@
           <button type="button" class="imp-toggle" id="dt-imp" aria-pressed="false">중요 표시</button></span>
         <h2 id="dt-title"></h2>
         <p class="dt-meta" id="dt-meta"></p>
+        <a class="map-link" id="dt-place" target="_blank" rel="noopener" hidden></a>
       </div>
       <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>

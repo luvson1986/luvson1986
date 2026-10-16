@@ -966,6 +966,13 @@
   }
 
   /* 추가·수정 팝업 */
+  // 네이버 지도 검색 (폰에 네이버 지도 앱이 있으면 앱으로 열 수 있어요)
+  function naverMap(q) { return 'https://map.naver.com/p/search/' + encodeURIComponent(q); }
+  function syncPlaceLink() {
+    var v = $('sch-place').value.trim();
+    $('sch-place-map').hidden = !v;
+    if (v) $('sch-place-map').href = naverMap(v);
+  }
   function setTimeFields(on) {
     Array.prototype.forEach.call(document.querySelectorAll('.time-field'), function (f) { f.hidden = !on; });
   }
@@ -977,6 +984,7 @@
     $('sch-date').value = key;
     $('sch-place').value = item ? item.place || '' : '';
     $('sch-memo').value = item ? item.memo || '' : '';
+    syncPlaceLink();
     renderCats();
     $('sch-cat').value = item && cats.some(function (c) { return c.id === item.cat; }) ? item.cat : cats[0].id;
     $('sch-imp').checked = !!(item && item.important);
@@ -1005,7 +1013,9 @@
     $('dt-imp').setAttribute('aria-pressed', String(!!s.important));
     $('dt-title').classList.toggle('imp', !!s.important);
     $('dt-title').textContent = s.title;
-    $('dt-meta').textContent = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 (' + DAYS[d.getDay()] + ')' + (s.start ? ' ' + s.start + (s.end ? '–' + s.end : '') : ' · 시간 미정') + (s.place ? ' · ' + s.place : '');
+    $('dt-meta').textContent = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 (' + DAYS[d.getDay()] + ')' + (s.start ? ' ' + s.start + (s.end ? '–' + s.end : '') : ' · 시간 미정');
+    $('dt-place').hidden = !s.place;
+    if (s.place) { $('dt-place').href = naverMap(s.place); $('dt-place').innerHTML = '<span aria-hidden="true">📍</span>' + esc(s.place) + '<em>네이버 지도 ›</em>'; }
     $('dt-memo').value = s.memo || '';
     $('dt-saved').textContent = '입력하면 자동으로 저장돼요.';
     $('dt-delete').textContent = '삭제';
@@ -1117,6 +1127,7 @@
       toast(added.length + '개 일정을 추가했어요');
     });
 
+    $('sch-place').addEventListener('input', syncPlaceLink);
     $('sch-timed').addEventListener('change', function (e) {
       setTimeFields(e.target.checked);
       if (e.target.checked && !$('sch-start').value) {
@@ -1194,7 +1205,7 @@
     $('cal-ics').onclick = function (e) { e.preventDefault(); saveIcs(); };
     $('cal-copy').onclick = function () {
       var s = findItem(detail.key, detail.id);
-      copyText($('dt-title').textContent + '\n' + $('dt-meta').textContent + (s.memo ? '\n' + s.memo : ''), '일정을 복사했어요');
+      copyText($('dt-title').textContent + '\n' + $('dt-meta').textContent + (s.place ? '\n' + s.place : '') + (s.memo ? '\n' + s.memo : ''), '일정을 복사했어요');
     };
 
     renderSchedule();
