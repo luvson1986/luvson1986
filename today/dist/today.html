@@ -765,6 +765,9 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .cat-opt i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
 .cat-opt.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); font-weight: 700; }
 
+/* 카테고리 고르는 동안엔 닫기 버튼 숨김 (하나 고르면 자동으로 닫혀요) */
+#detail-dialog.picking .panel-head > .icon-btn { visibility: hidden; }
+
 </style>
 </head>
 <body>
@@ -2664,6 +2667,7 @@ window.TRAVEL_CITIES = [
     $('dt-cat').style.setProperty('--c', c.color);
     $('dt-cat').setAttribute('aria-expanded', 'false');
     $('dt-cat-pop').hidden = true;
+    $('detail-dialog').classList.remove('picking');
     $('dt-cat-pop').innerHTML = cats.map(function (x) {
       return '<button type="button" class="cat-opt' + (x.id === s.cat ? ' on' : '') + '" role="option" aria-selected="' + (x.id === s.cat) + '" data-cat="' + esc(x.id) + '" style="--c:' + x.color + '"><i></i>' + esc(x.name) + '</button>';
     }).join('');
@@ -2819,6 +2823,7 @@ window.TRAVEL_CITIES = [
       var pop = $('dt-cat-pop'), open = pop.hidden;
       pop.hidden = !open;
       $('dt-cat').setAttribute('aria-expanded', String(open));
+      $('detail-dialog').classList.toggle('picking', open);
     };
     $('dt-cat-pop').addEventListener('click', function (e) {
       var b = e.target.closest('[data-cat]'); if (!b) return;

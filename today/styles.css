@@ -744,3 +744,6 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 }
 .cat-opt i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
 .cat-opt.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); font-weight: 700; }
+
+/* 카테고리 고르는 동안엔 닫기 버튼 숨김 (하나 고르면 자동으로 닫혀요) */
+#detail-dialog.picking .panel-head > .icon-btn { visibility: hidden; }

@@ -1058,6 +1058,7 @@
     $('dt-cat').style.setProperty('--c', c.color);
     $('dt-cat').setAttribute('aria-expanded', 'false');
     $('dt-cat-pop').hidden = true;
+    $('detail-dialog').classList.remove('picking');
     $('dt-cat-pop').innerHTML = cats.map(function (x) {
       return '<button type="button" class="cat-opt' + (x.id === s.cat ? ' on' : '') + '" role="option" aria-selected="' + (x.id === s.cat) + '" data-cat="' + esc(x.id) + '" style="--c:' + x.color + '"><i></i>' + esc(x.name) + '</button>';
     }).join('');
@@ -1213,6 +1214,7 @@
       var pop = $('dt-cat-pop'), open = pop.hidden;
       pop.hidden = !open;
       $('dt-cat').setAttribute('aria-expanded', String(open));
+      $('detail-dialog').classList.toggle('picking', open);
     };
     $('dt-cat-pop').addEventListener('click', function (e) {
       var b = e.target.closest('[data-cat]'); if (!b) return;
