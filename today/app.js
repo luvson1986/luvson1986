@@ -1261,17 +1261,21 @@
         '<ul class="cl-items">' + g.items.map(function (it) {
           return '<li class="cl-item' + (it.done ? ' done' : '') + '" data-i="' + it.id + '">' +
             '<input type="checkbox" class="cl-check" id="ck-' + it.id + '"' + (it.done ? ' checked' : '') + ' aria-label="완료">' +
-            '<input class="cl-text" value="' + esc(it.text) + '" maxlength="80" aria-label="항목">' +
+            '<textarea class="cl-text" rows="1" maxlength="300" aria-label="항목">' + esc(it.text) + '</textarea>' +
             '<button type="button" class="icon-mini" data-act="del-item" aria-label="항목 삭제">✕</button></li>';
         }).join('') + '</ul>' +
-        '<form class="cl-new"><input class="cl-new-input" maxlength="80" placeholder="+ 항목 추가" aria-label="' + esc(g.title) + '에 항목 추가"></form>' +
+        '<form class="cl-new"><input class="cl-new-input" maxlength="300" placeholder="+ 항목 추가" aria-label="' + esc(g.title) + '에 항목 추가"></form>' +
       '</div>';
     }).join('');
+    fitAll();
     if (focusNewIn) {
       var inp = document.querySelector('.cl-group[data-g="' + focusNewIn + '"] .cl-new-input');
       if (inp) inp.focus();
     }
   }
+  // 체크리스트 항목은 글 길이만큼 줄이 늘어나요
+  function fitText(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+  function fitAll() { Array.prototype.forEach.call(document.querySelectorAll('.cl-text'), fitText); }
   function touch(g) { if (g.sample) { g.sample = false; } saveLists(); }
 
   function initChecklist() {
@@ -1291,6 +1295,8 @@
         touch(g); if (!v) renderLists();
       }
     });
+    root.addEventListener('input', function (e) { if (e.target.classList.contains('cl-text')) fitText(e.target); });
+    window.addEventListener('resize', fitAll);
     root.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.isComposing && (e.target.classList.contains('cl-title') || e.target.classList.contains('cl-text'))) { e.preventDefault(); e.target.blur(); }
     });

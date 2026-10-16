@@ -342,7 +342,7 @@ a { color: var(--accent); }
 .cl-items { list-style: none; margin: 0; padding: 0; display: grid; }
 .cl-item { display: grid; grid-template-columns: 22px 1fr 26px; gap: 8px; align-items: center; padding-block: 3px; }
 .cl-check { width: 18px; height: 18px; margin: 0 2px; accent-color: var(--good); cursor: pointer; }
-.cl-text { border: 0; background: none; padding: 4px 2px; border-radius: 6px; font-size: 14px; color: var(--ink); min-width: 0; width: 100%; }
+.cl-text { border: 0; background: none; padding: 4px 2px; border-radius: 6px; font: inherit; font-size: 14px; line-height: 1.45; color: var(--ink); min-width: 0; width: 100%; resize: none; overflow: hidden; display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
 .cl-text:focus { outline: 2px solid var(--accent); outline-offset: 0; background: var(--surface); }
 .cl-item.done .cl-text { color: var(--ink-3); text-decoration: line-through; }
 .icon-mini {
@@ -726,3 +726,7 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .cat-move { display: flex; gap: 4px; }
 .cat-move button { width: 32px; height: 34px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; cursor: pointer; color: var(--ink); font-size: 14px; }
 .cat-move button:disabled { opacity: 0.3; cursor: default; }
+
+.cl-item { align-items: start; }
+.cl-item .cl-check { margin-top: 5px; }
+.cl-item .icon-mini { margin-top: 2px; }
