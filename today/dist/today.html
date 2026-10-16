@@ -1158,9 +1158,7 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
       <div class="cal-grid">
         <a class="cal-btn" id="cal-google" target="_blank" rel="noopener"><b>Google 캘린더</b><span>웹·안드로이드</span></a>
         <a class="cal-btn" id="cal-apple" href="#"><b>iPhone 캘린더</b><span>.ics 파일로 추가</span></a>
-        <a class="cal-btn" id="cal-outlook-work" target="_blank" rel="noopener"><b>Outlook (회사)</b><span>Microsoft 365</span></a>
-        <a class="cal-btn" id="cal-outlook" target="_blank" rel="noopener"><b>Outlook.com</b><span>개인 계정</span></a>
-        <a class="cal-btn" id="cal-ics" href="#"><b>.ics 파일</b><span>네이버·카카오 등 가져오기</span></a>
+        <a class="cal-btn" id="cal-ics" href="#"><b>.ics 파일</b><span>네이버·삼성 캘린더 등</span></a>
         <button type="button" class="cal-btn" id="cal-copy"><b>텍스트 복사</b><span>메신저에 붙여넣기</span></button>
       </div>
     </div>
@@ -2613,8 +2611,6 @@ window.TRAVEL_CITIES = [
     $('dt-delete').dataset.armed = '';
     var links = calendarLinks(key, s);
     $('cal-google').href = links.google;
-    $('cal-outlook').href = links.outlook;
-    $('cal-outlook-work').href = links.outlookWork;
     openDialog($('detail-dialog'));
   }
 
@@ -2632,15 +2628,7 @@ window.TRAVEL_CITIES = [
       '&ctz=' + encodeURIComponent(tz) +
       (details ? '&details=' + encodeURIComponent(details) : '') +
       (s.place ? '&location=' + encodeURIComponent(s.place) : '');
-    var o = function (host) {
-      return 'https://' + host + '/calendar/0/deeplink/compose?path=%2Fcalendar%2Faction%2Fcompose&rru=addevent' +
-        '&subject=' + encodeURIComponent(s.title) +
-        (s.start ? '&startdt=' + encodeURIComponent(key + 'T' + s.start + ':00') + '&enddt=' + encodeURIComponent(key + 'T' + end + ':00')
-          : '&startdt=' + key + '&enddt=' + nextDayKey(key) + '&allday=true') +
-        (details ? '&body=' + encodeURIComponent(details) : '') +
-        (s.place ? '&location=' + encodeURIComponent(s.place) : '');
-    };
-    return { google: g, outlook: o('outlook.live.com'), outlookWork: o('outlook.office.com') };
+    return { google: g };
   }
   function icsText(key, s) {
     var tz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || 'Asia/Seoul';
@@ -2767,7 +2755,7 @@ window.TRAVEL_CITIES = [
         saveSchedules(); renderSchedule();
         $('dt-saved').textContent = '저장했어요.';
         var links = calendarLinks(detail.key, s);
-        $('cal-google').href = links.google; $('cal-outlook').href = links.outlook; $('cal-outlook-work').href = links.outlookWork;
+        $('cal-google').href = links.google;
       }, 400);
     });
     $('dt-imp').onclick = function () {

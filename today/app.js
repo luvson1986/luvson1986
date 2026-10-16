@@ -1031,8 +1031,6 @@
     $('dt-delete').dataset.armed = '';
     var links = calendarLinks(key, s);
     $('cal-google').href = links.google;
-    $('cal-outlook').href = links.outlook;
-    $('cal-outlook-work').href = links.outlookWork;
     openDialog($('detail-dialog'));
   }
 
@@ -1050,15 +1048,7 @@
       '&ctz=' + encodeURIComponent(tz) +
       (details ? '&details=' + encodeURIComponent(details) : '') +
       (s.place ? '&location=' + encodeURIComponent(s.place) : '');
-    var o = function (host) {
-      return 'https://' + host + '/calendar/0/deeplink/compose?path=%2Fcalendar%2Faction%2Fcompose&rru=addevent' +
-        '&subject=' + encodeURIComponent(s.title) +
-        (s.start ? '&startdt=' + encodeURIComponent(key + 'T' + s.start + ':00') + '&enddt=' + encodeURIComponent(key + 'T' + end + ':00')
-          : '&startdt=' + key + '&enddt=' + nextDayKey(key) + '&allday=true') +
-        (details ? '&body=' + encodeURIComponent(details) : '') +
-        (s.place ? '&location=' + encodeURIComponent(s.place) : '');
-    };
-    return { google: g, outlook: o('outlook.live.com'), outlookWork: o('outlook.office.com') };
+    return { google: g };
   }
   function icsText(key, s) {
     var tz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || 'Asia/Seoul';
@@ -1185,7 +1175,7 @@
         saveSchedules(); renderSchedule();
         $('dt-saved').textContent = '저장했어요.';
         var links = calendarLinks(detail.key, s);
-        $('cal-google').href = links.google; $('cal-outlook').href = links.outlook; $('cal-outlook-work').href = links.outlookWork;
+        $('cal-google').href = links.google;
       }, 400);
     });
     $('dt-imp').onclick = function () {
