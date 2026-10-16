@@ -887,7 +887,8 @@
 
     var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
     var card = function (s, state, timeLabel, rel) {
-      return '<li class="tl-item ' + state + (s.important ? ' imp' : '') + '" style="--c: ' + catOf(s.cat).color + '">' +
+      var openEnded = !s.end; // 시간 미정·종료 시간 없는 일정은 직접 완료 처리
+      return '<li class="tl-item ' + state + (s.important ? ' imp' : '') + (s.done ? ' done' : '') + (openEnded ? ' has-done' : '') + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="tl-time">' + timeLabel + '</span><span class="tl-dot"></span>' +
         '<button type="button" class="tl-card" data-id="' + s.id + '">' +
         '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
@@ -896,22 +897,26 @@
           return meta ? '<span class="tl-meta">' + meta.replace(/^ · /, '') + '</span>' : '';
         })() +
         (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
-        '</button></li>';
+        '</button>' +
+        (openEnded ? '<button type="button" class="tl-done" data-done="' + s.id + '" aria-pressed="' + !!s.done + '" aria-label="' + esc(s.title) + (s.done ? ' 완료 취소' : ' 완료') + '">' + (s.done ? '✓ 완료' : '완료') + '</button>' : '') +
+        '</li>';
     };
     var html = '';
     var nowPlaced = diff !== 0;
     list.forEach(function (s) {
-      var st = toMin(s.start), en = s.end ? toMin(s.end) : st + 30;
+      var st = toMin(s.start), en = s.end ? toMin(s.end) : null;
       if (!nowPlaced && nowMin < st) { html += nowRow(now); nowPlaced = true; }
-      var state = diff < 0 ? 'past' : diff > 0 ? '' : en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
+      // 종료 시간이 없으면 '완료'를 누를 때까지 진행 중
+      var state = s.done || diff < 0 ? 'past' : diff > 0 ? '' : en != null && en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
       var rel = '';
-      if (state === 'current') rel = ' · 진행 중';
+      if (s.done) rel = ' · 완료';
+      else if (state === 'current') rel = ' · 진행 중';
       else if (diff === 0 && !state) { var m = st - nowMin; rel = m < 60 ? ' · ' + m + '분 후' : ''; }
       html += card(s, state, s.start, rel);
       if (!nowPlaced && state === 'current') { html += nowRow(now); nowPlaced = true; }
     });
     if (!nowPlaced && list.length) html += nowRow(now);
-    html += untimed.map(function (s) { return card(s, diff < 0 ? 'past' : '', '미정'); }).join('');
+    html += untimed.map(function (s) { return card(s, diff < 0 || s.done ? 'past' : '', '미정'); }).join('');
     $('timeline').innerHTML = html;
     renderNowNext();
   }
@@ -953,10 +958,12 @@
   // 시간 있는 일정 우선, 비는 시간에는 시간 미정 일정을 쌓인 순서대로 보여줘요
   function renderNowNext() {
     var key = ymd(new Date()), now = new Date(), nm = now.getHours() * 60 + now.getMinutes();
-    var all = schedules[key] || [];
+    var all = (schedules[key] || []).filter(function (s) { return !s.done; }); // 완료한 일정은 빼요
     var list = all.filter(function (s) { return s.start; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
     var todo = all.filter(function (s) { return !s.start; });
-    var cur = list.find(function (s) { return toMin(s.start) <= nm && nm < toMin(endOf(s)); });
+    // 종료 시간 없는 일정은 시작 뒤 완료 전까지 진행 중 (가장 최근에 시작한 것)
+    var running = list.filter(function (s) { return toMin(s.start) <= nm && (s.end ? nm < toMin(s.end) : true); });
+    var cur = running[running.length - 1];
     var next = list.find(function (s) { return toMin(s.start) > nm; });
     var curTodo = null, nextTodo = null;
     if (!cur) curTodo = todo[0] || null;
@@ -965,13 +972,15 @@
       return '<button type="button" class="nn-item ' + kind + (s.important ? ' imp' : '') + '" data-id="' + s.id + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="nn-label">' + label + '</span>' +
         '<span class="nn-title">' + esc(s.title) + '</span>' +
-        '<span class="nn-meta">' + (s.start ? s.start + '–' + endOf(s) : '시간 미정') + (s.place ? ' · ' + esc(s.place) : '') + '</span>' +
+        '<span class="nn-meta">' + (s.start ? s.start + (s.end ? '–' + s.end : '') : '시간 미정') + (s.place ? ' · ' + esc(s.place) : '') + '</span>' +
         (bar != null ? '<span class="nn-bar"><i style="width:' + bar + '%"></i></span>' : '') + '</button>';
     };
     var idle = function (label, text) { return '<div class="nn-item idle"><span class="nn-label">' + label + '</span><span class="nn-title">' + text + '</span></div>'; };
     var html = '';
-    if (cur) {
-      var st = toMin(cur.start), en = toMin(endOf(cur));
+    if (cur && !cur.end) {
+      html += item(cur, 'current', '진행 중 · ' + (nm - toMin(cur.start)) + '분째');
+    } else if (cur) {
+      var st = toMin(cur.start), en = toMin(cur.end);
       html += item(cur, 'current', '진행 중 · ' + (en - nm) + '분 남음', Math.round((nm - st) / (en - st) * 100));
     } else if (curTodo) html += item(curTodo, 'current', '지금 할 일');
     else html += idle('지금', '비어 있는 시간이에요');
@@ -1141,6 +1150,13 @@
       $('schedule-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     $('timeline').addEventListener('click', function (e) {
+      var d = e.target.closest('[data-done]');
+      if (d) {
+        var it = findItem(ymd(viewDate), d.dataset.done); if (!it) return;
+        it.done = !it.done; saveSchedules(); renderSchedule();
+        toast(it.done ? '“' + it.title + '” 완료!' : '완료를 취소했어요');
+        return;
+      }
       var card = e.target.closest('.tl-card');
       if (card) openDetail(ymd(viewDate), card.dataset.id);
     });

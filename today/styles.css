@@ -769,3 +769,13 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .wk-loc-form { display: grid; gap: 6px; }
 .wk-loc-form input { padding: 9px 11px; border-radius: var(--r-s); border: 1px solid var(--line); background: var(--surface); }
 .wk-loc .city-results button { background: var(--surface); }
+
+/* 시간 미정·종료 시간 없는 일정의 완료 버튼 */
+.tl-item.has-done .tl-card { padding-right: 70px; }
+.tl-done {
+  position: absolute; right: 8px; top: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+  border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.tl-done:hover { border-color: var(--good); color: var(--good); }
+.tl-done[aria-pressed="true"] { background: var(--good); border-color: var(--good); color: #fff; }
+.tl-item.done .tl-title { text-decoration: line-through; }
