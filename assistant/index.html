@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>오늘의 비서</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#121a26">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- 홈 -->
+<main id="view-home" class="view">
+  <section class="hero" id="hero" aria-label="오늘의 날씨와 계절">
+    <canvas class="hero-canvas" id="hero-canvas" aria-hidden="true"></canvas>
+    <div class="hero-motif" id="hero-motif" aria-hidden="true"></div>
+    <div class="hero-inner wrap">
+      <div class="hero-top">
+        <div>
+          <p class="hero-date" id="today-label">10월 16일 금요일</p>
+          <h1 class="hero-greet" id="greeting">좋은 아침이에요</h1>
+        </div>
+        <button class="icon-btn" id="open-settings" type="button" aria-label="설정 열기">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Zm7.4-2.5a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6Z"/></svg>
+        </button>
+      </div>
+
+      <div class="weather-now" id="weather-now">
+        <div class="wx-main">
+          <span class="wx-icon" id="wx-icon" aria-hidden="true">☀️</span>
+          <span class="wx-temp" id="wx-temp">--°</span>
+        </div>
+        <div class="wx-meta">
+          <p class="wx-cond" id="wx-cond">날씨를 불러오는 중</p>
+          <p class="wx-sub" id="wx-sub"></p>
+          <p class="wx-place" id="wx-place"></p>
+        </div>
+      </div>
+
+      <div class="season" id="season">
+        <p class="eyebrow">지금 이 계절</p>
+        <h2 class="season-title" id="season-title"></h2>
+        <p class="season-desc" id="season-desc"></p>
+        <ul class="season-todo" id="season-todo"></ul>
+        <div class="season-chips" id="season-chips" role="tablist" aria-label="다른 계절 추천"></div>
+      </div>
+
+      <div class="hourly" id="hourly" aria-label="시간별 예보"></div>
+    </div>
+  </section>
+
+  <div class="wrap board">
+    <div class="col">
+      <!-- 옷차림 / 준비물 -->
+      <section class="panel" id="outfit-panel" aria-labelledby="outfit-h">
+        <header class="panel-head">
+          <h2 id="outfit-h">오늘 뭐 입지</h2>
+          <span class="pill" id="outfit-basis"></span>
+        </header>
+        <p class="outfit-lead" id="outfit-lead"></p>
+        <ul class="outfit-list" id="outfit-list"></ul>
+        <p class="note" id="outfit-office"></p>
+        <h3 class="sub-h">챙길 것</h3>
+        <ul class="bring" id="bring"></ul>
+      </section>
+
+      <!-- 일정 -->
+      <section class="panel" id="schedule-panel" aria-labelledby="sch-h">
+        <header class="panel-head">
+          <h2 id="sch-h">오늘 일정</h2>
+          <div class="day-nav">
+            <button type="button" class="ghost-btn" id="day-prev" aria-label="이전 날">‹</button>
+            <button type="button" class="ghost-btn day-label" id="day-today"></button>
+            <button type="button" class="ghost-btn" id="day-next" aria-label="다음 날">›</button>
+          </div>
+        </header>
+        <p class="sample-banner" id="sample-banner" hidden>예시 일정이에요. 첫 일정을 추가하면 사라져요. <button type="button" class="link-btn" id="clear-samples">예시 지우기</button></p>
+        <ol class="timeline" id="timeline"></ol>
+        <p class="empty" id="timeline-empty" hidden>등록된 일정이 없어요. 아래에서 추가해 보세요.</p>
+
+        <form class="sch-form" id="sch-form" novalidate>
+          <input type="hidden" id="sch-id">
+          <div class="field full">
+            <label for="sch-title">일정</label>
+            <input id="sch-title" type="text" maxlength="60" placeholder="예: 송금 플로우 디자인 리뷰" required>
+          </div>
+          <div class="field">
+            <label for="sch-start">시작</label>
+            <input id="sch-start" type="time" value="09:00" required>
+          </div>
+          <div class="field">
+            <label for="sch-end">종료</label>
+            <input id="sch-end" type="time" value="10:00">
+          </div>
+          <div class="field">
+            <label for="sch-cat">분류</label>
+            <select id="sch-cat">
+              <option value="meeting">회의</option>
+              <option value="focus">집중 업무</option>
+              <option value="personal">개인</option>
+              <option value="health">운동·건강</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="sch-place">장소·메모</label>
+            <input id="sch-place" type="text" maxlength="60" placeholder="예: 12층 회의실">
+          </div>
+          <p class="form-error full" id="sch-error" role="alert" hidden></p>
+          <div class="form-actions full">
+            <button type="button" class="ghost-btn" id="sch-cancel" hidden>취소</button>
+            <button type="submit" class="primary-btn" id="sch-submit">일정 추가</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="col">
+      <!-- 영어 -->
+      <section class="panel english" aria-labelledby="en-h">
+        <header class="panel-head">
+          <h2 id="en-h">오늘의 업무 영어</h2>
+          <span class="pill mono" id="en-count"></span>
+        </header>
+        <p class="en-when" id="en-when"></p>
+        <blockquote class="en-text" id="en-text" lang="en"></blockquote>
+        <p class="en-ko" id="en-ko"></p>
+        <div class="en-actions">
+          <button type="button" class="ghost-btn" id="en-prev">이전</button>
+          <button type="button" class="ghost-btn" id="en-speak">듣기</button>
+          <button type="button" class="ghost-btn" id="en-copy">복사</button>
+          <button type="button" class="ghost-btn" id="en-next">다음</button>
+        </div>
+      </section>
+
+      <!-- 뉴스 -->
+      <section class="panel" id="news-panel" aria-labelledby="news-h" hidden>
+        <header class="panel-head">
+          <h2 id="news-h">관심 뉴스</h2>
+          <a class="link-btn" id="news-more" href="#news" hidden>더보기 <span class="mono" id="news-total"></span></a>
+        </header>
+        <p class="note" id="news-note" hidden></p>
+        <ul class="news-list" id="news-top"></ul>
+      </section>
+    </div>
+  </div>
+</main>
+
+<!-- 뉴스 더보기 -->
+<main id="view-news" class="view" hidden>
+  <header class="sub-header">
+    <div class="wrap sub-header-inner">
+      <a class="icon-btn back" href="#home" aria-label="홈으로">‹</a>
+      <h1>관심 뉴스</h1>
+      <span class="pill mono" id="news-all-count"></span>
+    </div>
+  </header>
+  <div class="wrap news-page">
+    <div class="chips" id="news-filters" role="tablist" aria-label="관심사 필터"></div>
+    <ul class="news-list big" id="news-all"></ul>
+  </div>
+</main>
+
+<!-- 설정 -->
+<dialog class="sheet" id="settings">
+  <form method="dialog" class="sheet-body" id="settings-form">
+    <header class="panel-head">
+      <h2>내 설정</h2>
+      <button class="icon-btn plain" value="cancel" aria-label="닫기">✕</button>
+    </header>
+    <div class="field">
+      <label for="set-name">이름</label>
+      <input id="set-name" type="text" maxlength="20" placeholder="예: 지은">
+    </div>
+    <div class="field">
+      <label for="set-interest">관심사</label>
+      <div class="tag-input">
+        <ul class="tags" id="set-tags"></ul>
+        <input id="set-interest" type="text" maxlength="20" placeholder="입력 후 Enter (예: 디자인 시스템)">
+      </div>
+      <p class="hint">관심사마다 최근 7일 뉴스를 모아요.</p>
+    </div>
+    <div class="field">
+      <label for="set-city">날씨 지역</label>
+      <div class="city-row">
+        <input id="set-city" type="search" placeholder="도시 검색 (예: 판교, 부산)" autocomplete="off">
+        <button type="button" class="ghost-btn" id="set-locate">현재 위치</button>
+      </div>
+      <ul class="city-results" id="city-results"></ul>
+      <p class="hint" id="set-city-current"></p>
+    </div>
+    <div class="form-actions">
+      <button class="primary-btn" value="save" id="settings-save">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
