@@ -245,8 +245,8 @@ window.SEASONS = [
     var rem = to - t, fw = Math.max(to - pe, 1);
     return { phase: 'fading', label: '끝물', score: s.w * 0.5 * (rem / fw), days: -(t - pe) };
   };
-  window.rankSeasons = function (date) {
-    return window.SEASONS
+  window.rankSeasons = function (date, list) {
+    return (list || window.SEASONS)
       .map(function (s) { var p = window.seasonPhase(s, date); return p && { s: s, p: p }; })
       .filter(Boolean)
       .sort(function (a, b) { return b.p.score - a.p.score; });

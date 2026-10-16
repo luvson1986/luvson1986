@@ -47,44 +47,151 @@
   }
 
   /* ---------- 계절 ---------- */
-  var seasonList = [];
-  function renderSeason(idx) {
-    var item = seasonList[idx];
-    if (!item) return;
-    var s = item.s, ph = item.p;
+  // 직접 추가한 시즌의 배경 색 (위, 아래, 강조)
+  var SCENE_COLORS = {
+    petals: ['#c76b8f', '#ffe3ec', '#ffffff'], leaves: ['#7a2a14', '#f0a040', '#ffe2b0'], snow: ['#5b7593', '#c9d6e3', '#ffffff'],
+    sea: ['#0a5a8a', '#6fd3e8', '#e8fbff'], sun: ['#c98a1a', '#ffe08a', '#fff6d0'], lights: ['#14243a', '#3a5a7a', '#ffe08a'],
+    grass: ['#6a5a3a', '#e8d8a8', '#fff8e0'], rain: ['#3b4f8a', '#a8b8f0', '#e0e6ff'], fireflies: ['#0d1f1a', '#264a3a', '#e6ff8a']
+  };
+  var customSeasons = store.get('customSeasons', []);
+  var hiddenSeasons = store.get('hiddenSeasons', []);
+  var currentSeason = null;
+  var allSeasons = function () { return window.SEASONS.concat(customSeasons); };
+  var visibleSeasons = function () { return allSeasons().filter(function (s) { return hiddenSeasons.indexOf(s.id) < 0; }); };
+  var findSeason = function (id) { return allSeasons().find(function (s) { return s.id === id; }); };
+  var dots = function (w) { return '●●●'.slice(0, w); };
+  var fmtMd = function (md) { var p = md.split('-'); return +p[0] + '.' + +p[1]; };
+  function phaseText(ph) {
+    if (!ph) return '제철 아님';
+    return ph.phase === 'rising' && ph.days > 0 ? '절정까지 ' + ph.days + '일' : ph.label;
+  }
+  function mdDoy(md) { var p = md.split('-'); return Math.round((Date.UTC(2001, +p[0] - 1, +p[1]) - Date.UTC(2001, 0, 1)) / 864e5); }
+  function doyMd(n) { var d = new Date(Date.UTC(2001, 0, 1) + (((n % 365) + 365) % 365) * 864e5); return pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()); }
+  function daysUntil(md) {
+    var n = new Date(), t = Math.round((Date.UTC(2001, n.getMonth(), n.getDate()) - Date.UTC(2001, 0, 1)) / 864e5);
+    return (mdDoy(md) - t + 365) % 365;
+  }
+
+  function showSeason(s, ph) {
+    currentSeason = s;
     var root = document.documentElement;
     root.style.setProperty('--hero-a', s.scene.colors[0]);
     root.style.setProperty('--hero-b', s.scene.colors[1]);
     root.style.setProperty('--season', s.scene.accent);
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', s.scene.colors[0]);
-    $('season-title').textContent = (s.headlines && s.headlines[ph.phase]) || s.headline;
-    $('season-phase').textContent = ph.label + (ph.phase === 'rising' && ph.days > 0 ? ' · 절정까지 ' + ph.days + '일' : '');
-    $('season-phase').dataset.phase = ph.phase;
-    $('season-desc').textContent = s.desc;
-    $('season-todo').innerHTML = s.todo.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
-    $('hero-motif').innerHTML = s.scene.motif.map(function (m) { return '<span>' + m + '</span>'; }).join('');
-    Array.prototype.forEach.call($('season-chips').children, function (c, i) { c.setAttribute('aria-selected', String(i === idx)); });
+    $('season-name').textContent = s.name;
+    $('season-phase').textContent = phaseText(ph);
+    $('season-phase').dataset.phase = ph ? ph.phase : 'off';
+    $('season-kw').innerHTML = s.todo.slice(0, 3).map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('');
+    $('hero-motif').innerHTML = s.scene.motif.map(function (m) { return '<span>' + esc(m) + '</span>'; }).join('');
     scene.start(s.scene);
-    store.set('seasonPick', { date: ymd(new Date()), id: s.id });
   }
   function initSeason() {
-    seasonList = window.rankSeasons(new Date()).slice(0, 5);
-    if (!seasonList.length) seasonList = [{ s: window.SEASONS[0], p: { phase: 'peak', label: '절정', score: 1, days: 0 } }];
-    $('season-chips').innerHTML = seasonList.map(function (x, i) {
-      return '<button type="button" class="season-chip" role="tab" data-i="' + i + '">' + esc(x.s.name) + '</button>';
-    }).join('');
-    $('season-chips').addEventListener('click', function (e) {
-      var b = e.target.closest('.season-chip');
-      if (b) renderSeason(+b.dataset.i);
-    });
-    var pick = store.get('seasonPick', null);
-    var idx = 0;
-    if (pick && pick.date === ymd(new Date())) {
-      var found = seasonList.findIndex(function (x) { return x.s.id === pick.id; });
-      if (found >= 0) idx = found;
+    var today = new Date();
+    var ranked = window.rankSeasons(today, visibleSeasons());
+    var pick = store.get('seasonPick', null), s = null, ph = null;
+    if (pick && pick.date === ymd(today)) {
+      s = findSeason(pick.id) || null;
+      if (s && hiddenSeasons.indexOf(s.id) >= 0) s = null;
+      if (s) ph = window.seasonPhase(s, today);
     }
-    renderSeason(idx);
+    if (!s && ranked.length) { s = ranked[0].s; ph = ranked[0].p; }
+    if (!s) s = visibleSeasons()[0] || window.SEASONS[0];
+    showSeason(s, ph);
+  }
+
+  /* 시즌 목록 팝업: 보기 / 숨기기 / 직접 추가·삭제 */
+  function sdRow(s, ph, until, hidden) {
+    var sub = fmtMd(s.from) + '–' + fmtMd(s.to) + (until != null ? ' · ' + (until === 0 ? '오늘' : until + '일 후') + ' 시작' : '');
+    var chip = ph ? '<span class="ph ' + ph.phase + '">' + esc(phaseText(ph)) + '</span>' : '';
+    var act = hidden ? '<button type="button" class="ghost-btn sm" data-act="unhide">다시 보기</button>'
+      : s.custom ? '<button type="button" class="ghost-btn sm danger" data-act="delete">삭제</button>'
+      : '<button type="button" class="ghost-btn sm" data-act="hide">숨기기</button>';
+    return '<li class="sd-row' + (currentSeason && currentSeason.id === s.id ? ' on' : '') + '" data-id="' + esc(s.id) + '">' +
+      '<button type="button" class="sd-main" data-act="show"' + (hidden ? ' disabled' : '') + '>' +
+      '<span class="sd-emoji" style="--a:' + s.scene.colors[0] + ';--b:' + s.scene.colors[1] + '" aria-hidden="true">' + esc(s.scene.motif[0] || '✨') + '</span>' +
+      '<span class="sd-text"><b>' + esc(s.name) + (s.custom ? ' <span class="tl-tag">내가 추가</span>' : '') + '</b><span>' + sub + ' · <span class="w">' + dots(s.w) + '</span></span></span>' + chip +
+      '</button>' + act + '</li>';
+  }
+  function renderSeasonDialog() {
+    var today = new Date(), vis = visibleSeasons();
+    var ranked = window.rankSeasons(today, vis);
+    var active = ranked.map(function (x) { return x.s.id; });
+    $('sd-now').innerHTML = ranked.length ? ranked.map(function (x) { return sdRow(x.s, x.p); }).join('') : '<li class="hint">지금 시기에 해당하는 시즌이 없어요.</li>';
+    $('sd-later').innerHTML = vis.filter(function (s) { return active.indexOf(s.id) < 0; })
+      .map(function (s) { return { s: s, d: daysUntil(s.from) }; })
+      .sort(function (a, b) { return a.d - b.d; })
+      .map(function (x) { return sdRow(x.s, null, x.d); }).join('');
+    var hid = allSeasons().filter(function (s) { return hiddenSeasons.indexOf(s.id) >= 0; });
+    $('sd-hidden-wrap').hidden = !hid.length;
+    $('sd-hidden-count').textContent = hid.length;
+    $('sd-hidden').innerHTML = hid.map(function (s) { return sdRow(s, null, null, true); }).join('');
+  }
+  function initSeasonDialog() {
+    var dlg = $('season-dialog');
+    $('hero').addEventListener('click', function (e) {
+      if (e.target.closest('#open-settings')) return;
+      renderSeasonDialog();
+      $('sd-form').hidden = true;
+      openDialog(dlg);
+    });
+    dlg.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-act]');
+      if (!b) return;
+      var id = b.closest('.sd-row').dataset.id, s = findSeason(id), act = b.dataset.act;
+      if (act === 'show') {
+        showSeason(s, window.seasonPhase(s, new Date()));
+        store.set('seasonPick', { date: ymd(new Date()), id: id });
+        closeDialog(dlg);
+        return;
+      }
+      if (act === 'hide') { hiddenSeasons.push(id); toast(s.name + ' 시즌을 숨겼어요'); }
+      if (act === 'unhide') { hiddenSeasons = hiddenSeasons.filter(function (x) { return x !== id; }); toast(s.name + ' 시즌을 다시 보여줘요'); }
+      if (act === 'delete') {
+        customSeasons = customSeasons.filter(function (x) { return x.id !== id; });
+        hiddenSeasons = hiddenSeasons.filter(function (x) { return x !== id; });
+        store.set('customSeasons', customSeasons);
+        toast(s.name + ' 시즌을 삭제했어요');
+      }
+      store.set('hiddenSeasons', hiddenSeasons);
+      if (currentSeason && (act === 'hide' || act === 'delete') && currentSeason.id === id) initSeason();
+      renderSeasonDialog();
+    });
+    $('sd-add').onclick = function () {
+      var f = $('sd-form');
+      f.hidden = !f.hidden;
+      if (!f.hidden) {
+        f.reset();
+        var t = new Date(), later = new Date(t.getTime() + 30 * 864e5);
+        $('sf-from').value = ymd(t); $('sf-to').value = ymd(later);
+        $('sf-error').hidden = true;
+        $('sf-name').focus();
+      }
+    };
+    $('sf-cancel').onclick = function () { $('sd-form').hidden = true; };
+    $('sd-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = $('sf-name').value.trim(), from = $('sf-from').value, to = $('sf-to').value;
+      var err = $('sf-error');
+      if (!name || !from || !to) { err.textContent = '이름과 시작·끝 날짜를 입력해 주세요.'; err.hidden = false; return; }
+      var f = from.slice(5), t = to.slice(5);
+      var a = mdDoy(f), b = mdDoy(t); if (b < a) b += 365;
+      var pf = $('sf-pfrom').value ? $('sf-pfrom').value.slice(5) : doyMd(a + Math.round((b - a) / 3));
+      var pt = $('sf-pto').value ? $('sf-pto').value.slice(5) : doyMd(a + Math.round((b - a) * 2 / 3));
+      var type = $('sf-scene').value, col = SCENE_COLORS[type];
+      var kw = $('sf-kw').value.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+      var s = {
+        id: 'c' + Date.now().toString(36), custom: true, name: name, from: f, to: t, peak: [pf, pt], w: +$('sf-w').value,
+        headline: name, desc: '', todo: kw.length ? kw : [name],
+        scene: { type: type, colors: [col[0], col[1]], accent: col[2], motif: [$('sf-emoji').value.trim() || '✨'] }
+      };
+      customSeasons.push(s);
+      store.set('customSeasons', customSeasons);
+      $('sd-form').hidden = true;
+      renderSeasonDialog();
+      toast(name + ' 시즌을 추가했어요');
+    });
   }
 
   /* ---------- 계절 배경 장면 (canvas) ---------- */
@@ -116,7 +223,7 @@
       var p = { x: rnd(0, w), y: initial ? rnd(0, h) : -20, c: pal[(Math.random() * pal.length) | 0], a: rnd(0, Math.PI * 2), va: rnd(-0.03, 0.03), ph: rnd(0, 6.28) };
       switch (type) {
         case 'petals': p.s = rnd(5, 10); p.vy = rnd(0.4, 1.1); p.vx = rnd(0.2, 0.8); break;
-        case 'leaves': p.s = rnd(8, 15); p.vy = rnd(0.6, 1.4); p.vx = rnd(-0.3, 0.6); break;
+        case 'leaves': p.s = rnd(7, 13); p.vy = rnd(0.6, 1.4); p.vx = rnd(-0.3, 0.6); p.leaf = Math.random() < 0.6 ? '🍁' : '🍂'; break;
         case 'snow': p.s = rnd(1.5, 4); p.vy = rnd(0.3, 1.0); p.vx = rnd(-0.3, 0.3); break;
         case 'rain': p.s = rnd(10, 22); p.vy = rnd(6, 10); p.vx = -1.2; break;
         case 'sea': p.s = rnd(2, 6); p.y = initial ? rnd(0, h) : h + 10; p.vy = -rnd(0.3, 0.9); p.vx = 0; break;
@@ -129,18 +236,13 @@
     }
     function count() {
       var base = Math.max(24, Math.min(90, Math.round(w * h / 9000)));
-      return type === 'grass' ? Math.round(w / 7) : type === 'rain' ? base * 1.4 : type === 'lights' ? base * 0.5 : base;
+      return type === 'grass' ? Math.round(w / 7) : type === 'leaves' ? Math.round(base * 0.45) : type === 'rain' ? base * 1.4 : type === 'lights' ? base * 0.5 : base;
     }
     function drawLeaf(p) {
-      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.c; ctx.globalAlpha = 0.9;
-      ctx.beginPath();
-      for (var i = 0; i < 5; i++) {
-        var ang = (i / 5) * Math.PI * 2 - Math.PI / 2;
-        ctx.lineTo(Math.cos(ang) * p.s, Math.sin(ang) * p.s);
-        var ang2 = ang + Math.PI / 5;
-        ctx.lineTo(Math.cos(ang2) * p.s * 0.45, Math.sin(ang2) * p.s * 0.45);
-      }
-      ctx.closePath(); ctx.fill(); ctx.restore();
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.globalAlpha = 0.92;
+      ctx.font = Math.round(p.s * 2) + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(p.leaf, 0, 0); ctx.restore();
     }
     function draw(time) {
       var tt = (time - t0) / 1000;
@@ -296,8 +398,9 @@
     $('wx-icon').textContent = info[1];
     $('wx-temp').textContent = Math.round(c.temperature_2m) + '°';
     $('wx-cond').textContent = info[0] + ' · 체감 ' + Math.round(c.apparent_temperature) + '°';
-    $('wx-sub').textContent = '최고 ' + Math.round(d.temperature_2m_max[0]) + '° / 최저 ' + Math.round(d.temperature_2m_min[0]) + '° · 강수 ' + (d.precipitation_probability_max[0] || 0) + '% · 습도 ' + c.relative_humidity_2m + '%';
-    $('wx-place').textContent = w.sample ? '예시 날씨 · 날씨 서버에 연결하지 못했어요' : w.place;
+    $('wx-sub').textContent = Math.round(d.temperature_2m_max[0]) + '° / ' + Math.round(d.temperature_2m_min[0]) + '° · 비 ' + (d.precipitation_probability_max[0] || 0) + '%';
+    $('wx-place').textContent = w.sample ? '예시 날씨' : w.place;
+    $('wx-place').title = w.sample ? '날씨 서버에 연결하지 못해 예시를 보여줘요' : '';
     $('hourly').innerHTML = w.hours.map(function (hr, i) {
       return '<div class="hour' + (i === 0 ? ' now' : '') + '"><span class="h-time">' + (i === 0 ? '지금' : hr.hour + '시') + '</span>' +
         '<span class="h-ico" aria-hidden="true">' + wmo(hr.code)[1] + '</span>' +
@@ -307,64 +410,54 @@
     renderOutfit(w);
   }
 
-  /* ---------- 옷차림 / 준비물 ---------- */
+  /* ---------- 옷차림 / 준비물 (키워드) ---------- */
   var OUTFIT = [
-    { min: 28, items: ['민소매', '반팔', '린넨 셔츠', '반바지', '샌들'], office: '사무실 냉방이 세니 얇은 가디건을 자리에 두세요.' },
-    { min: 23, items: ['반팔', '얇은 셔츠', '면바지', '슬랙스'], office: '실내는 냉방 때문에 쌀쌀할 수 있어요. 얇은 겉옷 하나면 충분해요.' },
-    { min: 20, items: ['블라우스', '얇은 긴팔', '슬랙스', '면바지'], office: '비즈니스 캐주얼로 셔츠 한 장이 가장 무난한 날이에요.' },
-    { min: 17, items: ['얇은 니트', '가디건', '맨투맨', '청바지'], office: '니트에 슬랙스면 회의 자리에도 단정해 보여요.' },
-    { min: 12, items: ['자켓', '가디건', '셔츠 + 니트 조끼', '스타킹'], office: '블레이저 하나 걸치면 출퇴근과 미팅 모두 해결돼요.' },
-    { min: 9, items: ['트렌치코트', '야상', '니트', '기모 바지'], office: '실내 난방을 생각해 겉옷은 두껍게, 안은 얇게 겹쳐 입으세요.' },
-    { min: 5, items: ['울 코트', '가죽 자켓', '히트텍', '두꺼운 니트'], office: '사무실에서는 코트를 벗을 테니 이너는 니트 정도가 좋아요.' },
-    { min: -99, items: ['롱패딩', '두꺼운 코트', '목도리', '장갑', '기모 이너'], office: '실내외 온도차가 크니 패딩 안은 가볍게 입으세요.' }
+    { min: 28, items: ['민소매', '반팔', '린넨 셔츠', '반바지'] },
+    { min: 23, items: ['반팔', '얇은 셔츠', '면바지', '얇은 가디건'] },
+    { min: 20, items: ['블라우스', '얇은 긴팔', '슬랙스'] },
+    { min: 17, items: ['얇은 니트', '가디건', '맨투맨', '청바지'] },
+    { min: 12, items: ['자켓', '가디건', '니트 조끼', '스타킹'] },
+    { min: 9, items: ['트렌치코트', '니트', '기모 바지'] },
+    { min: 5, items: ['울 코트', '히트텍', '두꺼운 니트'] },
+    { min: -99, items: ['롱패딩', '목도리', '장갑', '기모 이너'] }
   ];
-
   function renderOutfit(w) {
     var d = w.daily;
-    var hi = d.apparent_temperature_max[0], lo = d.apparent_temperature_min[0];
-    var base = Math.round((hi + lo) / 2);
+    var base = Math.round((d.apparent_temperature_max[0] + d.apparent_temperature_min[0]) / 2);
     var band = OUTFIT.find(function (o) { return base >= o.min; });
-    $('outfit-basis').textContent = '체감 ' + Math.round(lo) + '° ~ ' + Math.round(hi) + '°';
-    var gap = d.temperature_2m_max[0] - d.temperature_2m_min[0];
-    var lead = '하루 평균 체감 <b>' + base + '°</b>에 맞춘 옷차림이에요.';
-    if (gap >= 10) lead += ' 일교차가 <b>' + Math.round(gap) + '°</b>나 돼서 아침저녁엔 한 단계 따뜻하게 입으세요.';
-    $('outfit-lead').innerHTML = lead;
-    $('outfit-list').innerHTML = band.items.map(function (i) { return '<li>' + esc(i) + '</li>'; }).join('');
-    $('outfit-office').textContent = band.office;
+    var gap = Math.round(d.temperature_2m_max[0] - d.temperature_2m_min[0]);
+    var chip = function (b) {
+      return '<li class="' + (b.lvl ? 'lvl-' + b.lvl : '') + '"' + (b.why ? ' title="' + esc(b.why) + '"' : '') + '>' +
+        (b.ico ? '<span aria-hidden="true">' + b.ico + '</span>' : '') + esc(b.t) + (b.v ? ' <b class="mono">' + esc(b.v) + '</b>' : '') + '</li>';
+    };
+    var wear = band.items.map(function (t) { return { t: t }; });
+    if (gap >= 10) wear.push({ t: '일교차', v: gap + '°', lvl: 'mid', why: '아침저녁엔 한 겹 더 입으세요' });
+    $('outfit-list').innerHTML = wear.map(chip).join('');
 
     var bring = [];
     var codes = w.hours.map(function (h) { return h.code; }).concat([d.weather_code[0]]);
     var pop = Math.max(d.precipitation_probability_max[0] || 0, Math.max.apply(null, w.hours.map(function (h) { return h.pop || 0; })));
     var snow = codes.some(isSnow) || (d.snowfall_sum && d.snowfall_sum[0] > 0);
-    var rain = codes.some(isRain);
     if (snow) {
-      bring.push({ ico: '🥾', t: '방수 부츠, 미끄럼 방지 신발', why: '눈 소식이 있어요. 출근길 빙판을 조심하세요.', lvl: 'high' });
-      bring.push({ ico: '☂️', t: '장우산', why: '눈이 많이 오면 우산이 있는 게 나아요.', lvl: 'mid' });
-    } else if (pop >= 60 || rain) {
-      bring.push({ ico: '☂️', t: '장우산', why: '강수 확률 ' + pop + '%. 비가 올 가능성이 높아요.', lvl: 'high' });
-      bring.push({ ico: '👟', t: '젖어도 되는 신발', why: '가죽 구두보다는 방수가 되는 신발이 좋아요.', lvl: 'mid' });
+      bring.push({ ico: '🥾', t: '미끄럼 방지 신발', lvl: 'high', why: '눈 소식이 있어요' });
+      bring.push({ ico: '☂️', t: '장우산', lvl: 'mid' });
+    } else if (pop >= 60 || codes.some(isRain)) {
+      bring.push({ ico: '☂️', t: '장우산', v: pop + '%', lvl: 'high' });
     } else if (pop >= 30) {
-      bring.push({ ico: '🌂', t: '접이식 우산', why: '강수 확률 ' + pop + '%. 가방에 하나 넣어 두세요.', lvl: 'mid' });
+      bring.push({ ico: '🌂', t: '접이식 우산', v: pop + '%', lvl: 'mid' });
     }
     var air = w.air;
-    if (air && (air.pm2_5 > 35 || air.pm10 > 80)) {
-      bring.push({ ico: '😷', t: 'KF94 마스크', why: '미세먼지 ' + Math.round(air.pm10) + '㎍/㎥ · 초미세먼지 ' + Math.round(air.pm2_5) + '㎍/㎥로 나쁨이에요.', lvl: 'high' });
-    } else if (air && (air.pm2_5 > 15 || air.pm10 > 30)) {
-      bring.push({ ico: '😷', t: '마스크(선택)', why: '초미세먼지 보통(' + Math.round(air.pm2_5) + '㎍/㎥). 민감하면 챙기세요.', lvl: '' });
-    }
+    if (air && (air.pm2_5 > 35 || air.pm10 > 80)) bring.push({ ico: '😷', t: 'KF94', v: '먼지 나쁨', lvl: 'high', why: '미세 ' + Math.round(air.pm10) + ' · 초미세 ' + Math.round(air.pm2_5) + '㎍/㎥' });
+    else if (air && (air.pm2_5 > 15 || air.pm10 > 30)) bring.push({ ico: '😷', t: '마스크', v: '먼지 보통', why: '초미세 ' + Math.round(air.pm2_5) + '㎍/㎥' });
     var uv = d.uv_index_max[0];
-    if (uv >= 6) bring.push({ ico: '🧴', t: '선크림, 선글라스', why: '자외선 지수 ' + uv.toFixed(1) + '로 높아요.', lvl: 'mid' });
-    else if (uv >= 3) bring.push({ ico: '🧴', t: '선크림', why: '자외선 지수 ' + uv.toFixed(1) + '. 점심 산책 전에 바르세요.', lvl: '' });
-    if (w.current.wind_speed_10m >= 8) bring.push({ ico: '🧥', t: '바람막이', why: '바람이 초속 ' + Math.round(w.current.wind_speed_10m) + 'm로 강해요.', lvl: 'mid' });
-    if (d.temperature_2m_max[0] >= 31) bring.push({ ico: '💧', t: '물, 손풍기', why: '낮 최고 ' + Math.round(d.temperature_2m_max[0]) + '°. 더위 조심하세요.', lvl: 'mid' });
-    if (d.temperature_2m_min[0] <= 0) bring.push({ ico: '🔥', t: '핫팩, 장갑', why: '아침 최저 ' + Math.round(d.temperature_2m_min[0]) + '°로 영하예요.', lvl: 'mid' });
-    if (d.temperature_2m_max[0] - d.temperature_2m_min[0] >= 10 && !bring.some(function (b) { return b.ico === '🧥'; })) {
-      bring.push({ ico: '🧥', t: '가벼운 겉옷', why: '퇴근길엔 ' + Math.round(d.temperature_2m_min[1] != null ? Math.min(d.temperature_2m_min[0], d.temperature_2m_min[1]) : d.temperature_2m_min[0]) + '°까지 내려가요.', lvl: '' });
-    }
-    if (!bring.length) bring.push({ ico: '👌', t: '특별히 챙길 건 없어요', why: '맑고 무난한 날이에요.', lvl: '' });
-    $('bring').innerHTML = bring.map(function (b) {
-      return '<li class="' + (b.lvl ? 'lvl-' + b.lvl : '') + '"><span class="b-ico" aria-hidden="true">' + b.ico + '</span><div><b>' + esc(b.t) + '</b><span class="b-why">' + esc(b.why) + '</span></div></li>';
-    }).join('');
+    if (uv >= 6) bring.push({ ico: '🕶️', t: '선크림·선글라스', v: 'UV ' + Math.round(uv), lvl: 'mid' });
+    else if (uv >= 3) bring.push({ ico: '🧴', t: '선크림', v: 'UV ' + Math.round(uv) });
+    if (w.current.wind_speed_10m >= 8) bring.push({ ico: '🧥', t: '바람막이', v: Math.round(w.current.wind_speed_10m) + 'm/s', lvl: 'mid' });
+    if (d.temperature_2m_max[0] >= 31) bring.push({ ico: '💧', t: '물·손풍기', v: Math.round(d.temperature_2m_max[0]) + '°', lvl: 'mid' });
+    if (d.temperature_2m_min[0] <= 0) bring.push({ ico: '🔥', t: '핫팩', v: Math.round(d.temperature_2m_min[0]) + '°', lvl: 'mid' });
+    if (gap >= 10 && !bring.some(function (b) { return b.ico === '🧥'; })) bring.push({ ico: '🧥', t: '겉옷', v: '퇴근길 ' + Math.round(d.temperature_2m_min[0]) + '°' });
+    if (!bring.length) bring.push({ ico: '👌', t: '특별히 없어요' });
+    $('bring').innerHTML = bring.map(chip).join('');
   }
 
   /* ---------- 업무 영어 ---------- */
@@ -467,9 +560,43 @@
     });
     if (!nowPlaced && list.length) html += nowRow(now);
     $('timeline').innerHTML = html;
+    renderNowNext();
   }
   function nowRow(now) {
     return '<li class="tl-now" aria-label="현재 시각"><span class="tl-time">' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + '</span><span class="now-dot"></span><span class="now-line"></span></li>';
+  }
+
+  /* 지금 · 다음 (홈 상단 요약) */
+  function relLabel(m) { return m < 60 ? m + '분 후' : Math.floor(m / 60) + '시간' + (m % 60 ? ' ' + (m % 60) + '분' : '') + ' 후'; }
+  function renderNowNext() {
+    var key = ymd(new Date()), now = new Date(), nm = now.getHours() * 60 + now.getMinutes();
+    var list = (schedules[key] || []).slice().sort(function (a, b) { return a.start.localeCompare(b.start); });
+    var cur = list.find(function (s) { return toMin(s.start) <= nm && nm < toMin(endOf(s)); });
+    var next = list.find(function (s) { return toMin(s.start) > nm; });
+    var item = function (s, kind, label, bar) {
+      return '<button type="button" class="nn-item ' + kind + '" data-id="' + s.id + '" style="--c: var(--cat-' + s.cat + ')">' +
+        '<span class="nn-label">' + label + '</span>' +
+        '<span class="nn-title">' + esc(s.title) + '</span>' +
+        '<span class="nn-meta">' + s.start + '–' + endOf(s) + (s.place ? ' · ' + esc(s.place) : '') + '</span>' +
+        (bar != null ? '<span class="nn-bar"><i style="width:' + bar + '%"></i></span>' : '') + '</button>';
+    };
+    var idle = function (label, text) { return '<div class="nn-item idle"><span class="nn-label">' + label + '</span><span class="nn-title">' + text + '</span></div>'; };
+    var html = '';
+    if (cur) {
+      var st = toMin(cur.start), en = toMin(endOf(cur));
+      html += item(cur, 'current', '진행 중 · ' + (en - nm) + '분 남음', Math.round((nm - st) / (en - st) * 100));
+    } else html += idle('지금', '비어 있는 시간이에요');
+    html += next ? item(next, 'next', '다음 · ' + relLabel(toMin(next.start) - nm)) : idle('다음', '오늘 남은 일정이 없어요');
+    $('nn').innerHTML = html;
+  }
+  function scrollToSchedule(id) {
+    viewDate = new Date();
+    renderSchedule();
+    $('schedule-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (id) {
+      var card = document.querySelector('.tl-card[data-id="' + id + '"]');
+      if (card) { card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); }
+    }
   }
 
   /* 추가·수정 팝업 */
@@ -586,6 +713,11 @@
     $('day-today').onclick = function () { viewDate = new Date(); renderSchedule(); };
     $('clear-samples').onclick = function () { clearSamples(); renderSchedule(); toast('예시 일정을 지웠어요'); };
     $('sch-add').onclick = function () { openForm(null); };
+    $('nn-all').onclick = function () { scrollToSchedule(); };
+    $('nn').addEventListener('click', function (e) {
+      var b = e.target.closest('.nn-item[data-id]');
+      scrollToSchedule(b && b.dataset.id);
+    });
 
     $('timeline').addEventListener('click', function (e) {
       var card = e.target.closest('.tl-card');
@@ -660,6 +792,101 @@
       if (!schedules[k].length) delete schedules[k];
     });
     saveSchedules();
+  }
+
+  /* ---------- 체크리스트 (묶음별) ---------- */
+  var uid = function () { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); };
+  var lists = store.get('checklists', null);
+  if (lists === null) {
+    var mk = function (texts, doneIdx) { return texts.map(function (t, i) { return { id: uid() + i, text: t, done: doneIdx.indexOf(i) >= 0 }; }); };
+    lists = [
+      { id: 'g1', title: '이번 달 꼭 할 일', sample: true, items: mk(['연말정산 서류 미리 챙기기', '디자인 시스템 버튼 컴포넌트 정리', '건강검진 예약'], [1]) },
+      { id: 'g2', title: '올해 목표', sample: true, items: mk(['영어로 디자인 리뷰 진행하기', '포트폴리오 업데이트', '책 12권 읽기', '하프 마라톤 완주', 'UX 리서치 강의 수료'], [2]) }
+    ];
+  }
+  var saveLists = function () { store.set('checklists', lists); };
+  var findGroup = function (id) { return lists.find(function (g) { return g.id === id; }); };
+
+  function renderLists(focusNewIn) {
+    $('cl-sample').hidden = !lists.some(function (g) { return g.sample; });
+    $('cl-empty').hidden = lists.length > 0;
+    $('cl-groups').innerHTML = lists.map(function (g) {
+      var done = g.items.filter(function (i) { return i.done; }).length, total = g.items.length;
+      return '<div class="cl-group" data-g="' + g.id + '">' +
+        '<div class="cl-head">' +
+          '<input class="cl-title" value="' + esc(g.title) + '" maxlength="30" aria-label="목록 제목">' +
+          '<span class="cl-count mono">' + done + '/' + total + '</span>' +
+          '<button type="button" class="icon-mini" data-act="del-group" aria-label="' + esc(g.title) + ' 목록 삭제">✕</button>' +
+        '</div>' +
+        '<span class="cl-bar"><i style="width:' + (total ? Math.round(done / total * 100) : 0) + '%"></i></span>' +
+        '<ul class="cl-items">' + g.items.map(function (it) {
+          return '<li class="cl-item' + (it.done ? ' done' : '') + '" data-i="' + it.id + '">' +
+            '<input type="checkbox" class="cl-check" id="ck-' + it.id + '"' + (it.done ? ' checked' : '') + ' aria-label="완료">' +
+            '<input class="cl-text" value="' + esc(it.text) + '" maxlength="80" aria-label="항목">' +
+            '<button type="button" class="icon-mini" data-act="del-item" aria-label="항목 삭제">✕</button></li>';
+        }).join('') + '</ul>' +
+        '<form class="cl-new"><input class="cl-new-input" maxlength="80" placeholder="+ 항목 추가" aria-label="' + esc(g.title) + '에 항목 추가"></form>' +
+      '</div>';
+    }).join('');
+    if (focusNewIn) {
+      var inp = document.querySelector('.cl-group[data-g="' + focusNewIn + '"] .cl-new-input');
+      if (inp) inp.focus();
+    }
+  }
+  function touch(g) { if (g.sample) { g.sample = false; } saveLists(); }
+
+  function initChecklist() {
+    var root = $('cl-groups');
+    root.addEventListener('change', function (e) {
+      var gEl = e.target.closest('.cl-group'); if (!gEl) return;
+      var g = findGroup(gEl.dataset.g), iEl = e.target.closest('.cl-item');
+      var it = iEl && g.items.find(function (x) { return x.id === iEl.dataset.i; });
+      if (e.target.classList.contains('cl-check') && it) {
+        it.done = e.target.checked; touch(g); renderLists();
+        if (it.done && g.items.every(function (x) { return x.done; })) toast('“' + g.title + '” 모두 완료했어요');
+      } else if (e.target.classList.contains('cl-title')) {
+        g.title = e.target.value.trim() || '제목 없음'; touch(g);
+      } else if (e.target.classList.contains('cl-text') && it) {
+        var v = e.target.value.trim();
+        if (v) it.text = v; else g.items = g.items.filter(function (x) { return x !== it; });
+        touch(g); if (!v) renderLists();
+      }
+    });
+    root.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.isComposing && (e.target.classList.contains('cl-title') || e.target.classList.contains('cl-text'))) { e.preventDefault(); e.target.blur(); }
+    });
+    root.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var gEl = e.target.closest('.cl-group'), g = findGroup(gEl.dataset.g);
+      var inp = e.target.querySelector('.cl-new-input'), v = inp.value.trim();
+      if (!v) return;
+      g.items.push({ id: uid(), text: v, done: false });
+      touch(g); renderLists(g.id);
+    });
+    root.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-act]'); if (!b) return;
+      var gEl = b.closest('.cl-group'), g = findGroup(gEl.dataset.g);
+      if (b.dataset.act === 'del-item') {
+        var id = b.closest('.cl-item').dataset.i;
+        g.items = g.items.filter(function (x) { return x.id !== id; });
+        touch(g); renderLists();
+      } else if (b.dataset.act === 'del-group') {
+        if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = '삭제?'; b.classList.add('armed'); return; }
+        lists = lists.filter(function (x) { return x !== g; });
+        saveLists(); renderLists(); toast('“' + g.title + '” 목록을 삭제했어요');
+      }
+    });
+    $('cl-add-group').onclick = function () {
+      var g = { id: uid(), title: '새 목록', items: [] };
+      lists.push(g); saveLists(); renderLists();
+      var t = document.querySelector('.cl-group[data-g="' + g.id + '"] .cl-title');
+      if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); t.focus(); t.select(); }
+    };
+    $('cl-clear-samples').onclick = function () {
+      lists = lists.filter(function (g) { return !g.sample; });
+      saveLists(); renderLists(); toast('예시 목록을 지웠어요');
+    };
+    renderLists();
   }
 
   /* ---------- 관심 소식: 뉴스 + 유튜브 + 인스타그램 ---------- */
@@ -951,6 +1178,7 @@
       draft.location = Object.assign({}, draft.location, { mode: 'auto' });
       renderTags();
     };
+    $('settings-form').addEventListener('submit', function (e) { e.preventDefault(); $('settings-save').click(); });
     $('settings-save').addEventListener('click', function (e) {
       e.preventDefault();
       var pending = $('set-interest').value.trim();
@@ -972,13 +1200,15 @@
   /* ---------- 시작 ---------- */
   renderGreeting();
   initSeason();
+  initSeasonDialog();
   initPhrase();
   initSchedule();
+  initChecklist();
   initSettings();
   loadWeather().then(renderWeather);
   initNews();
   window.addEventListener('hashchange', route);
   route();
 
-  setInterval(function () { renderGreeting(); if (ymd(viewDate) === ymd(new Date())) renderSchedule(); }, 60 * 1000);
+  setInterval(function () { renderGreeting(); if (ymd(viewDate) === ymd(new Date())) renderSchedule(); else renderNowNext(); }, 60 * 1000);
 })();
