@@ -826,8 +826,27 @@
   var toMin = function (hm) { if (!hm) return -1; var p = hm.split(':'); return +p[0] * 60 + +p[1]; };
   var parseYmd = function (k) { var p = k.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); };
 
-  function openDialog(d) { if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', ''); }
-  function closeDialog(d) { if (d.close) d.close(); else d.removeAttribute('open'); }
+  // 팝업이 열려 있는 동안 뒤 화면이 스크롤되지 않게 고정 (iOS는 body를 fixed로 묶어야 확실해요)
+  var lockY = 0;
+  function syncScrollLock() {
+    var anyOpen = !!document.querySelector('dialog[open]');
+    var locked = document.body.classList.contains('modal-open');
+    if (anyOpen && !locked) {
+      lockY = window.scrollY;
+      document.body.style.top = -lockY + 'px';
+      document.body.classList.add('modal-open');
+    } else if (!anyOpen && locked) {
+      document.body.classList.remove('modal-open');
+      document.body.style.top = '';
+      window.scrollTo(0, lockY);
+    }
+  }
+  function openDialog(d) { if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', ''); syncScrollLock(); }
+  function closeDialog(d) { if (d.close) d.close(); else d.removeAttribute('open'); syncScrollLock(); }
+  // Esc·폼 닫기 등 어떤 방식으로 닫혀도 고정 해제
+  Array.prototype.forEach.call(document.querySelectorAll('dialog'), function (d) {
+    d.addEventListener('close', function () { setTimeout(syncScrollLock, 0); });
+  });
   document.addEventListener('click', function (e) {
     var c = e.target.closest('[data-close]');
     if (c) closeDialog(c.closest('dialog'));

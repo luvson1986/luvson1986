@@ -565,7 +565,7 @@ body.on-news::before {
 .cal-btn span { font-size: 12px; color: var(--ink-3); }
 .form-actions.split { justify-content: space-between; }
 .ghost-btn.danger { color: var(--bad); }
-.sheet { max-height: calc(100% - 24px); overflow-y: auto; }
+.sheet { max-height: calc(100% - 24px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
 
 /* 설정 시트 */
 .sheet {
@@ -678,9 +678,9 @@ body.on-news::before {
 
 /* 백업 */
 .field-label { font-size: 12px; color: var(--ink-2); font-weight: 600; }
-.backup-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.backup-row { position: relative; display: flex; gap: 6px; flex-wrap: wrap; }
 .backup-row .ghost-btn { padding: 8px 12px; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sr-only { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; opacity: 0; pointer-events: none; }
 
 /* 홈 화면 앱으로 실행할 때: 상태바·홈 인디케이터 영역 확보 */
 @media (display-mode: standalone) {
@@ -707,6 +707,19 @@ body.on-news::before {
 a.kw-chip { text-decoration: none; }
 
 .imp-check b.plain { color: var(--ink); }
+
+/* 팝업 열림: 뒤 화면 고정 */
+body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
+
+/* 팝업 안 가로 넘침 방지 (iOS 날짜·시간 입력칸은 기본 폭이 커서 줄여요) */
+.sheet-body, .sheet-body > *, .form-grid > *, .field, .city-row, .cat-pick, .backup-row, .tag-input { min-width: 0; max-width: 100%; }
+input[type="date"], input[type="time"] {
+  -webkit-appearance: none; appearance: none; display: block; width: 100%; min-width: 0; max-width: 100%;
+  min-height: 42px; text-align: left; background: var(--surface); color: var(--ink);
+}
+input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; }
+.city-row input { min-width: 0; }
+.qa #qa-date { min-width: 0; }
 
 </style>
 </head>
@@ -2375,8 +2388,27 @@ window.TRAVEL_CITIES = [
   var toMin = function (hm) { if (!hm) return -1; var p = hm.split(':'); return +p[0] * 60 + +p[1]; };
   var parseYmd = function (k) { var p = k.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); };
 
-  function openDialog(d) { if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', ''); }
-  function closeDialog(d) { if (d.close) d.close(); else d.removeAttribute('open'); }
+  // 팝업이 열려 있는 동안 뒤 화면이 스크롤되지 않게 고정 (iOS는 body를 fixed로 묶어야 확실해요)
+  var lockY = 0;
+  function syncScrollLock() {
+    var anyOpen = !!document.querySelector('dialog[open]');
+    var locked = document.body.classList.contains('modal-open');
+    if (anyOpen && !locked) {
+      lockY = window.scrollY;
+      document.body.style.top = -lockY + 'px';
+      document.body.classList.add('modal-open');
+    } else if (!anyOpen && locked) {
+      document.body.classList.remove('modal-open');
+      document.body.style.top = '';
+      window.scrollTo(0, lockY);
+    }
+  }
+  function openDialog(d) { if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', ''); syncScrollLock(); }
+  function closeDialog(d) { if (d.close) d.close(); else d.removeAttribute('open'); syncScrollLock(); }
+  // Esc·폼 닫기 등 어떤 방식으로 닫혀도 고정 해제
+  Array.prototype.forEach.call(document.querySelectorAll('dialog'), function (d) {
+    d.addEventListener('close', function () { setTimeout(syncScrollLock, 0); });
+  });
   document.addEventListener('click', function (e) {
     var c = e.target.closest('[data-close]');
     if (c) closeDialog(c.closest('dialog'));
