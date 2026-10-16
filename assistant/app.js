@@ -1531,6 +1531,49 @@
     });
   }
 
+  /* ---------- 섹션 순서 ---------- */
+  var SECTIONS = [
+    { id: 'weather-panel', name: '날씨 · 옷차림' }, { id: 'check-panel', name: '체크리스트' },
+    { id: 'schedule-panel', name: '일정' }, { id: 'news-panel', name: '관심 소식' }, { id: 'english-panel', name: '업무 영어' }
+  ];
+  function sectionOrder() {
+    var saved = store.get('sectionOrder', []), ids = SECTIONS.map(function (x) { return x.id; });
+    var order = saved.filter(function (id) { return ids.indexOf(id) >= 0; });
+    ids.forEach(function (id) { if (order.indexOf(id) < 0) order.push(id); });
+    return order;
+  }
+  // 모바일은 --o 순서, 데스크톱은 두 열에 번갈아
+  function applySectionOrder() {
+    var cols = [document.querySelector('.col-a'), document.querySelector('.col-b')];
+    sectionOrder().forEach(function (id, i) {
+      var el = $(id);
+      el.style.setProperty('--o', i);
+      cols[i % 2].appendChild(el);
+    });
+  }
+  function renderOrderList() {
+    var order = sectionOrder();
+    $('order-list').innerHTML = order.map(function (id, i) {
+      var name = SECTIONS.find(function (x) { return x.id === id; }).name;
+      return '<li data-id="' + id + '"><span class="on-no">' + (i + 1) + '</span><span class="on-name">' + name + '</span>' +
+        '<button type="button" data-move="-1" aria-label="' + name + ' 위로"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+        '<button type="button" data-move="1" aria-label="' + name + ' 아래로"' + (i === order.length - 1 ? ' disabled' : '') + '>↓</button></li>';
+    }).join('');
+  }
+  function initSectionOrder() {
+    applySectionOrder();
+    renderOrderList();
+    $('order-list').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-move]'); if (!b || b.disabled) return;
+      var order = sectionOrder(), id = b.closest('li').dataset.id, i = order.indexOf(id), j = i + +b.dataset.move;
+      order.splice(i, 1); order.splice(j, 0, id);
+      store.set('sectionOrder', order);
+      applySectionOrder(); renderOrderList();
+      var again = document.querySelector('#order-list li[data-id="' + id + '"] [data-move="' + b.dataset.move + '"]');
+      (again && !again.disabled ? again : document.querySelector('#order-list li[data-id="' + id + '"] button:not([disabled])')).focus();
+    });
+  }
+
   /* ---------- 데이터 백업 / 복원 ---------- */
   function backupData() {
     var data = {};
@@ -1595,6 +1638,7 @@
   initSchedule();
   initChecklist();
   initSettings();
+  initSectionOrder();
   initBackup();
   loadWeather().then(renderWeather);
   initNews();

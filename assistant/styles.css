@@ -159,16 +159,15 @@ a { color: var(--accent); }
 .nn-bar i { display: block; height: 100%; background: #fff; }
 
 /* ---------- 보드 ----------
-   모바일: 한 열로 펼치고 order로 순서 지정 (지금·다음 → 날씨 → 체크리스트 → 일정 → 소식 → 영어)
-   데스크톱: 왼쪽(일정·체크리스트) / 오른쪽(날씨·소식·영어) */
+   섹션 순서는 설정에서 정해요 (JS가 --o 지정).
+   모바일: 한 열, --o 순서대로 / 데스크톱: 두 열에 번갈아 배치 */
 .board { display: grid; gap: 12px; padding-block: 14px 40px; }
 .col { display: contents; }
-#weather-panel { order: 2; } #check-panel { order: 3; }
-#schedule-panel { order: 4; } #news-panel { order: 5; } #english-panel { order: 6; }
+.board .panel { order: var(--o, 0); }
 @media (min-width: 880px) {
   .board { grid-template-columns: 1.1fr 1fr; gap: 18px; padding-block: 20px 56px; align-items: start; }
   .col { display: grid; gap: 18px; align-content: start; min-width: 0; }
-  #weather-panel, #check-panel, #schedule-panel, #news-panel, #english-panel { order: 0; }
+  .board .panel { order: 0; }
   .hero-inner {
     padding-block: 22px 24px; column-gap: 40px; align-items: start;
     grid-template-columns: 1fr minmax(300px, 380px);
@@ -669,3 +668,11 @@ body.on-news::before {
   .board { padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
   .sheet { max-height: calc(100% - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
 }
+
+/* 섹션 순서 */
+.order-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.order-list li { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border-radius: var(--r-s); background: var(--surface-2); }
+.order-list .on-no { font: 500 12px var(--f-mono); color: var(--ink-3); width: 14px; }
+.order-list .on-name { flex: 1; font-size: 14px; font-weight: 600; }
+.order-list button { width: 32px; height: 30px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; cursor: pointer; color: var(--ink); font-size: 14px; }
+.order-list button:disabled { opacity: 0.3; cursor: default; }
