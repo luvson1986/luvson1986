@@ -768,6 +768,12 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 /* 카테고리 고르는 동안엔 닫기 버튼 숨김 (하나 고르면 자동으로 닫혀요) */
 #detail-dialog.picking .panel-head > .icon-btn { visibility: hidden; }
 
+/* 체크리스트 묶음 순서 */
+.cl-move { display: flex; gap: 2px; }
+.cl-move button { width: 26px; height: 26px; border: 0; background: none; border-radius: 6px; cursor: pointer; color: var(--ink-3); font-size: 13px; }
+.cl-move button:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
+.cl-move button:disabled { opacity: 0.25; cursor: default; }
+
 </style>
 </head>
 <body>
@@ -2886,13 +2892,16 @@ window.TRAVEL_CITIES = [
   function renderLists(focusNewIn) {
     $('cl-sample').hidden = !lists.some(function (g) { return g.sample; });
     $('cl-empty').hidden = lists.length > 0;
-    $('cl-groups').innerHTML = lists.map(function (g) {
+    $('cl-groups').innerHTML = lists.map(function (g, gi) {
       var done = g.items.filter(function (i) { return i.done; }).length, total = g.items.length;
       return '<div class="cl-group' + (g.collapsed ? ' collapsed' : '') + '" data-g="' + g.id + '">' +
         '<div class="cl-head">' +
           '<button type="button" class="cl-fold" data-act="fold" aria-expanded="' + !g.collapsed + '" aria-label="' + esc(g.title) + (g.collapsed ? ' 펼치기' : ' 접기') + '"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg></button>' +
           '<input class="cl-title" value="' + esc(g.title) + '" maxlength="30" aria-label="목록 제목">' +
           '<span class="cl-count mono">' + done + '/' + total + '</span>' +
+          (lists.length > 1 ? '<span class="cl-move">' +
+            '<button type="button" data-act="move-up" aria-label="' + esc(g.title) + ' 위로"' + (gi === 0 ? ' disabled' : '') + '>↑</button>' +
+            '<button type="button" data-act="move-down" aria-label="' + esc(g.title) + ' 아래로"' + (gi === lists.length - 1 ? ' disabled' : '') + '>↓</button></span>' : '') +
           '<button type="button" class="icon-mini" data-act="del-group" aria-label="' + esc(g.title) + ' 목록 삭제">✕</button>' +
         '</div>' +
         '<span class="cl-bar"><i style="width:' + (total ? Math.round(done / total * 100) : 0) + '%"></i></span>' +
@@ -2935,6 +2944,9 @@ window.TRAVEL_CITIES = [
     });
     root.addEventListener('input', function (e) { if (e.target.classList.contains('cl-text')) fitText(e.target); });
     window.addEventListener('resize', fitAll);
+    // 웹 글꼴이 늦게 로드되면 줄 길이가 바뀌어서 한 번 더 맞춰요
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll);
+    window.addEventListener('load', fitAll);
     root.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.isComposing && (e.target.classList.contains('cl-title') || e.target.classList.contains('cl-text'))) { e.preventDefault(); e.target.blur(); }
     });
@@ -2949,6 +2961,15 @@ window.TRAVEL_CITIES = [
     root.addEventListener('click', function (e) {
       var b = e.target.closest('[data-act]'); if (!b) return;
       var gEl = b.closest('.cl-group'), g = findGroup(gEl.dataset.g);
+      if (b.dataset.act === 'move-up' || b.dataset.act === 'move-down') {
+        if (b.disabled) return;
+        var i = lists.indexOf(g), j = i + (b.dataset.act === 'move-up' ? -1 : 1);
+        lists.splice(i, 1); lists.splice(j, 0, g);
+        saveLists(); renderLists();
+        var again = document.querySelector('.cl-group[data-g="' + g.id + '"] [data-act="' + b.dataset.act + '"]');
+        if (again && !again.disabled) again.focus();
+        return;
+      }
       if (b.dataset.act === 'fold') {
         g.collapsed = !g.collapsed; saveLists(); renderLists();
         return;

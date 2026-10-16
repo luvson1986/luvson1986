@@ -747,3 +747,9 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 
 /* 카테고리 고르는 동안엔 닫기 버튼 숨김 (하나 고르면 자동으로 닫혀요) */
 #detail-dialog.picking .panel-head > .icon-btn { visibility: hidden; }
+
+/* 체크리스트 묶음 순서 */
+.cl-move { display: flex; gap: 2px; }
+.cl-move button { width: 26px; height: 26px; border: 0; background: none; border-radius: 6px; cursor: pointer; color: var(--ink-3); font-size: 13px; }
+.cl-move button:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
+.cl-move button:disabled { opacity: 0.25; cursor: default; }
