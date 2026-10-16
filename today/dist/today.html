@@ -2530,12 +2530,33 @@ window.TRAVEL_CITIES = [
       window.scrollTo(0, lockY);
     }
   }
+  var typing = function () { var a = document.activeElement; return a && a.matches && a.matches('input:not([type=checkbox]), textarea, select'); };
+  // 키보드가 닫힌 뒤 iOS가 남긴 화면 밀림만 되돌려요 (입력 중에는 건드리지 않음)
   function resetModalScroll() {
-    if (document.body.classList.contains('modal-open') && window.scrollY !== 0) window.scrollTo(0, 0);
+    if (document.body.classList.contains('modal-open') && !typing() && window.scrollY !== 0) window.scrollTo(0, 0);
   }
-  if (window.visualViewport) window.visualViewport.addEventListener('resize', function () { setTimeout(resetModalScroll, 50); });
-  document.addEventListener('focusout', function () { setTimeout(resetModalScroll, 50); });
-  window.addEventListener('scroll', function () { if (document.body.classList.contains('modal-open') && !document.activeElement.matches('input, textarea, select')) resetModalScroll(); });
+  // 키보드가 올라오면 열린 팝업을 키보드 위 보이는 영역 안에 맞추고, 입력칸이 보이게 스크롤
+  function fitDialogToKeyboard() {
+    var vv = window.visualViewport, d = document.querySelector('dialog[open]');
+    if (!vv || !d) return;
+    var kbOpen = vv.height < window.innerHeight - 80;
+    if (kbOpen) {
+      d.style.margin = '0 auto';
+      d.style.top = (vv.offsetTop + 8) + 'px';
+      d.style.bottom = 'auto';
+      d.style.maxHeight = (vv.height - 16) + 'px';
+      var a = document.activeElement;
+      if (a && d.contains(a)) setTimeout(function () { a.scrollIntoView({ block: 'center' }); }, 30);
+    } else {
+      d.style.margin = d.style.top = d.style.bottom = d.style.maxHeight = '';
+    }
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fitDialogToKeyboard);
+    window.visualViewport.addEventListener('scroll', fitDialogToKeyboard);
+  }
+  document.addEventListener('focusin', function () { setTimeout(fitDialogToKeyboard, 300); });
+  document.addEventListener('focusout', function () { setTimeout(function () { fitDialogToKeyboard(); resetModalScroll(); }, 120); });
   function openDialog(d) { if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', ''); syncScrollLock(); }
   function closeDialog(d) { if (d.close) d.close(); else d.removeAttribute('open'); syncScrollLock(); }
   // Esc·폼 닫기 등 어떤 방식으로 닫혀도 고정 해제
