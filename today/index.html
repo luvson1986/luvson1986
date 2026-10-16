@@ -252,6 +252,19 @@
       <h2 id="wk-h">일주일 날씨 <span class="pill" id="wk-place"></span></h2>
       <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
+    <div class="wk-loc">
+      <div class="wk-loc-row">
+        <span class="wk-loc-now" id="wk-loc-now"></span>
+        <button type="button" class="ghost-btn sm" id="wk-loc-edit">위치 변경</button>
+      </div>
+      <div class="wk-loc-form" id="wk-loc-form" hidden>
+        <div class="city-row">
+          <input id="wk-city" type="search" placeholder="도시 검색 (예: 판교, 부산, 도쿄)" autocomplete="off" aria-label="도시 검색">
+          <button type="button" class="ghost-btn" id="wk-locate">현재 위치</button>
+        </div>
+        <ul class="city-results" id="wk-city-results"></ul>
+      </div>
+    </div>
     <ul class="wk-list" id="wk-list"></ul>
   </div>
 </dialog>

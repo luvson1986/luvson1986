@@ -1616,6 +1616,52 @@
   }
 
   /* ---------- 설정 ---------- */
+  // 도시 검색 결과 목록 (설정·날씨 상세 공용)
+  function searchCity(q, list) {
+    return getJSON('https://geocoding-api.open-meteo.com/v1/search?count=5&language=ko&name=' + encodeURIComponent(q))
+      .then(function (r) {
+        var res = r.results || [];
+        list.innerHTML = res.length ? res.map(function (c) {
+          var label = c.name + (c.admin1 ? ', ' + c.admin1 : '') + (c.country ? ' · ' + c.country : '');
+          return '<li><button type="button" data-lat="' + c.latitude + '" data-lon="' + c.longitude + '" data-name="' + esc(c.name) + '" data-cc="' + esc(c.country_code || '') + '" data-country="' + esc(c.country || '') + '">' + esc(label) + '</button></li>';
+        }).join('') : '<li class="hint">검색 결과가 없어요. 다른 이름으로 찾아보세요.</li>';
+      })
+      .catch(function () { list.innerHTML = '<li class="hint">지역 검색 서버에 연결하지 못했어요.</li>'; });
+  }
+  // 날씨 상세(일주일 날씨)에서 바로 위치 바꾸기
+  function setWeatherLocation(loc) {
+    settings.location = loc;
+    store.set('settings', settings);
+    $('wk-loc-form').hidden = true; $('wk-city').value = ''; $('wk-city-results').innerHTML = '';
+    renderWkLoc();
+    $('wk-loc-now').textContent = '불러오는 중…';
+    loadWeather().then(renderWeather).then(renderWkLoc);
+    toast(loc.mode === 'auto' ? '현재 위치 날씨로 바꿨어요' : loc.name + ' 날씨로 바꿨어요');
+  }
+  function renderWkLoc() {
+    var l = settings.location;
+    $('wk-loc-now').textContent = '📍 ' + (l.mode === 'auto' ? '현재 위치 (자동)' : l.name);
+  }
+  function initWeatherLocation() {
+    renderWkLoc();
+    $('wk-loc-edit').onclick = function () {
+      var f = $('wk-loc-form'); f.hidden = !f.hidden;
+      if (!f.hidden) $('wk-city').focus();
+    };
+    var t;
+    $('wk-city').addEventListener('input', function (e) {
+      clearTimeout(t);
+      var q = e.target.value.trim();
+      if (q.length < 2) { $('wk-city-results').innerHTML = ''; return; }
+      t = setTimeout(function () { searchCity(q, $('wk-city-results')); }, 300);
+    });
+    $('wk-city-results').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      setWeatherLocation({ mode: 'city', name: b.dataset.name, lat: +b.dataset.lat, lon: +b.dataset.lon, cc: b.dataset.cc, country: b.dataset.country });
+    });
+    $('wk-locate').onclick = function () { setWeatherLocation(Object.assign({}, SEOUL, { mode: 'auto' })); };
+  }
+
   function initSettings() {
     var dlg = $('settings');
     var draft;
@@ -1652,15 +1698,7 @@
       var q = e.target.value.trim();
       if (q.length < 2) { $('city-results').innerHTML = ''; return; }
       ct = setTimeout(function () {
-        getJSON('https://geocoding-api.open-meteo.com/v1/search?count=5&language=ko&name=' + encodeURIComponent(q))
-          .then(function (r) {
-            var res = r.results || [];
-            $('city-results').innerHTML = res.length ? res.map(function (c) {
-              var label = c.name + (c.admin1 ? ', ' + c.admin1 : '') + (c.country ? ' · ' + c.country : '');
-              return '<li><button type="button" data-lat="' + c.latitude + '" data-lon="' + c.longitude + '" data-name="' + esc(c.name) + '" data-cc="' + esc(c.country_code || '') + '" data-country="' + esc(c.country || '') + '">' + esc(label) + '</button></li>';
-            }).join('') : '<li class="hint">검색 결과가 없어요. 다른 이름으로 찾아보세요.</li>';
-          })
-          .catch(function () { $('city-results').innerHTML = '<li class="hint">지역 검색 서버에 연결하지 못했어요.</li>'; });
+        searchCity(q, $('city-results'));
       }, 300);
     });
     $('city-results').addEventListener('click', function (e) {
@@ -1794,7 +1832,8 @@
   initSeason();
   initSeasonDialog();
   initRules();
-  $('wx-open').onclick = $('hourly').onclick = function () { openDialog($('week-dialog')); };
+  $('wx-open').onclick = $('hourly').onclick = function () { renderWkLoc(); $('wk-loc-form').hidden = true; openDialog($('week-dialog')); };
+  initWeatherLocation();
   initPhrase();
   initCats();
   initSchedule();

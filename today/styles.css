@@ -761,3 +761,11 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .map-link.google { background: color-mix(in srgb, #4285f4 12%, var(--surface)); }
 .map-link.google em { color: #1a73e8; }
 .map-link.sm.google { color: #1a73e8; }
+
+/* 날씨 상세: 위치 변경 */
+.wk-loc { display: grid; gap: 8px; padding: 10px 12px; border-radius: var(--r-s); background: var(--surface-2); }
+.wk-loc-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.wk-loc-now { font-size: 14px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wk-loc-form { display: grid; gap: 6px; }
+.wk-loc-form input { padding: 9px 11px; border-radius: var(--r-s); border: 1px solid var(--line); background: var(--surface); }
+.wk-loc .city-results button { background: var(--surface); }
