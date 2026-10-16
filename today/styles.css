@@ -721,3 +721,8 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .cal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cal-btn { padding: 10px; } .cal-btn b { font-size: 13.5px; }
 .cal-btn > span { display: none; } .cal-btn { text-align: center; justify-items: center; padding: 12px 6px; } .cal-btn b { white-space: nowrap; }
 @media (max-width: 360px) { .cal-btn b { font-size: 12px; } .cal-grid { gap: 6px; } }
+
+.cat-row { grid-template-columns: 40px minmax(0, 1fr) auto auto; }
+.cat-move { display: flex; gap: 4px; }
+.cat-move button { width: 32px; height: 34px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; cursor: pointer; color: var(--ink); font-size: 14px; }
+.cat-move button:disabled { opacity: 0.3; cursor: default; }

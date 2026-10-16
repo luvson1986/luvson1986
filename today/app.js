@@ -765,10 +765,14 @@
     $('cat-legend').innerHTML = cats.map(function (c) {
       return '<span class="cat-chip" style="--c:' + c.color + '"><i></i>' + esc(c.name) + '</span>';
     }).join('') + '<button type="button" class="link-btn sm" data-open-cats>편집</button>';
-    $('cat-list').innerHTML = cats.map(function (c) {
+    $('cat-list').innerHTML = cats.map(function (c, i) {
       return '<li class="cat-row" data-id="' + esc(c.id) + '">' +
         '<input type="color" class="cat-color" value="' + c.color + '" aria-label="' + esc(c.name) + ' 색">' +
         '<input class="cat-name" value="' + esc(c.name) + '" maxlength="12" aria-label="카테고리 이름">' +
+        '<span class="cat-move">' +
+          '<button type="button" data-cat-move="-1" aria-label="' + esc(c.name) + ' 위로"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+          '<button type="button" data-cat-move="1" aria-label="' + esc(c.name) + ' 아래로"' + (i === cats.length - 1 ? ' disabled' : '') + '>↓</button>' +
+        '</span>' +
         '<button type="button" class="icon-mini" data-del-cat aria-label="' + esc(c.name) + ' 삭제">✕</button></li>';
     }).join('');
     $('cat-new-color').value = CAT_PALETTE[cats.length % CAT_PALETTE.length];
@@ -784,6 +788,15 @@
       saveCats(); renderCats(); renderSchedule();
     });
     $('cat-list').addEventListener('click', function (e) {
+      var mv = e.target.closest('[data-cat-move]');
+      if (mv && !mv.disabled) {
+        var id0 = mv.closest('.cat-row').dataset.id, i0 = cats.findIndex(function (c) { return c.id === id0; }), j0 = i0 + +mv.dataset.catMove;
+        var moved = cats.splice(i0, 1)[0]; cats.splice(j0, 0, moved);
+        saveCats(); renderCats(); renderSchedule();
+        var again = document.querySelector('#cat-list .cat-row[data-id="' + id0 + '"] [data-cat-move="' + mv.dataset.catMove + '"]');
+        if (again && !again.disabled) again.focus();
+        return;
+      }
       var b = e.target.closest('[data-del-cat]'); if (!b) return;
       if (cats.length <= 1) { toast('카테고리는 하나 이상 있어야 해요'); return; }
       if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = '삭제?'; b.classList.add('armed'); return; }
