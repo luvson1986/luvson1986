@@ -665,6 +665,8 @@ body.on-news::before {
 /* 홈 화면 앱으로 실행할 때: 상태바·홈 인디케이터 영역 확보 */
 @media (display-mode: standalone) {
   .hero-inner { padding-top: calc(env(safe-area-inset-top, 0px) + 12px); }
+  /* 상태바 높이만큼 내려간 기온·시즌 줄과 같이 내려가도록 */
+  .hero-motif { top: calc(64px + env(safe-area-inset-top, 0px) - 4px); }
   .board { padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
   .sheet { max-height: calc(100% - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
 }
