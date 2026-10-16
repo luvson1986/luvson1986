@@ -418,8 +418,9 @@
   <div class="sheet-body">
     <header class="panel-head">
       <div class="dt-head">
-        <span class="dt-tags"><span class="tl-tag" id="dt-cat"></span>
+        <span class="dt-tags"><button type="button" class="tl-tag cat-btn" id="dt-cat" aria-haspopup="true" aria-expanded="false"></button>
           <button type="button" class="imp-toggle" id="dt-imp" aria-pressed="false">중요 표시</button></span>
+        <div class="cat-pop" id="dt-cat-pop" role="listbox" aria-label="카테고리 선택" hidden></div>
         <h2 id="dt-title"></h2>
         <p class="dt-meta" id="dt-meta"></p>
         <a class="map-link" id="dt-place" target="_blank" rel="noopener" hidden></a>

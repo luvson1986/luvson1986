@@ -1034,8 +1034,7 @@
     if (!s) return;
     detail = { key: key, id: id };
     var d = parseYmd(key);
-    $('dt-cat').textContent = catOf(s.cat).name;
-    $('dt-cat').style.setProperty('--c', catOf(s.cat).color);
+    renderDetailCat(s);
     $('dt-imp').setAttribute('aria-pressed', String(!!s.important));
     $('dt-title').classList.toggle('imp', !!s.important);
     $('dt-title').textContent = s.title;
@@ -1050,6 +1049,18 @@
     var links = calendarLinks(key, s);
     $('cal-google').href = links.google;
     openDialog($('detail-dialog'));
+  }
+
+  // 상세 창: 카테고리 칩을 누르면 바로 바꿀 수 있어요
+  function renderDetailCat(s) {
+    var c = catOf(s.cat);
+    $('dt-cat').innerHTML = esc(c.name) + ' <span aria-hidden="true">▾</span>';
+    $('dt-cat').style.setProperty('--c', c.color);
+    $('dt-cat').setAttribute('aria-expanded', 'false');
+    $('dt-cat-pop').hidden = true;
+    $('dt-cat-pop').innerHTML = cats.map(function (x) {
+      return '<button type="button" class="cat-opt' + (x.id === s.cat ? ' on' : '') + '" role="option" aria-selected="' + (x.id === s.cat) + '" data-cat="' + esc(x.id) + '" style="--c:' + x.color + '"><i></i>' + esc(x.name) + '</button>';
+    }).join('');
   }
 
   /* 캘린더 연동 */
@@ -1197,6 +1208,18 @@
         var links = calendarLinks(detail.key, s);
         $('cal-google').href = links.google;
       }, 400);
+    });
+    $('dt-cat').onclick = function () {
+      var pop = $('dt-cat-pop'), open = pop.hidden;
+      pop.hidden = !open;
+      $('dt-cat').setAttribute('aria-expanded', String(open));
+    };
+    $('dt-cat-pop').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-cat]'); if (!b) return;
+      var s = findItem(detail.key, detail.id); if (!s) return;
+      s.cat = b.dataset.cat; s.rev = (s.rev || 0) + 1;
+      saveSchedules(); renderSchedule(); renderDetailCat(s);
+      toast('카테고리를 ' + catOf(s.cat).name + '(으)로 바꿨어요');
     });
     $('dt-imp').onclick = function () {
       var s = findItem(detail.key, detail.id); if (!s) return;

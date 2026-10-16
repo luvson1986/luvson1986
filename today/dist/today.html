@@ -754,6 +754,17 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 #dt-memo, #sch-memo { overflow: hidden; resize: none; }
 textarea { font-family: var(--f-body); line-height: 1.5; }
 
+/* 상세 창 카테고리 바로 바꾸기 */
+.cat-btn { border: 0; cursor: pointer; font: inherit; font-size: 11.5px; font-weight: 700; padding: 3px 9px; }
+.cat-btn span { font-size: 9px; opacity: 0.7; }
+.cat-pop { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border-radius: var(--r-s); background: var(--surface-2); }
+.cat-opt {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 13px;
+}
+.cat-opt i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.cat-opt.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); font-weight: 700; }
+
 </style>
 </head>
 <body>
@@ -1155,8 +1166,9 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
   <div class="sheet-body">
     <header class="panel-head">
       <div class="dt-head">
-        <span class="dt-tags"><span class="tl-tag" id="dt-cat"></span>
+        <span class="dt-tags"><button type="button" class="tl-tag cat-btn" id="dt-cat" aria-haspopup="true" aria-expanded="false"></button>
           <button type="button" class="imp-toggle" id="dt-imp" aria-pressed="false">중요 표시</button></span>
+        <div class="cat-pop" id="dt-cat-pop" role="listbox" aria-label="카테고리 선택" hidden></div>
         <h2 id="dt-title"></h2>
         <p class="dt-meta" id="dt-meta"></p>
         <a class="map-link" id="dt-place" target="_blank" rel="noopener" hidden></a>
@@ -2628,8 +2640,7 @@ window.TRAVEL_CITIES = [
     if (!s) return;
     detail = { key: key, id: id };
     var d = parseYmd(key);
-    $('dt-cat').textContent = catOf(s.cat).name;
-    $('dt-cat').style.setProperty('--c', catOf(s.cat).color);
+    renderDetailCat(s);
     $('dt-imp').setAttribute('aria-pressed', String(!!s.important));
     $('dt-title').classList.toggle('imp', !!s.important);
     $('dt-title').textContent = s.title;
@@ -2644,6 +2655,18 @@ window.TRAVEL_CITIES = [
     var links = calendarLinks(key, s);
     $('cal-google').href = links.google;
     openDialog($('detail-dialog'));
+  }
+
+  // 상세 창: 카테고리 칩을 누르면 바로 바꿀 수 있어요
+  function renderDetailCat(s) {
+    var c = catOf(s.cat);
+    $('dt-cat').innerHTML = esc(c.name) + ' <span aria-hidden="true">▾</span>';
+    $('dt-cat').style.setProperty('--c', c.color);
+    $('dt-cat').setAttribute('aria-expanded', 'false');
+    $('dt-cat-pop').hidden = true;
+    $('dt-cat-pop').innerHTML = cats.map(function (x) {
+      return '<button type="button" class="cat-opt' + (x.id === s.cat ? ' on' : '') + '" role="option" aria-selected="' + (x.id === s.cat) + '" data-cat="' + esc(x.id) + '" style="--c:' + x.color + '"><i></i>' + esc(x.name) + '</button>';
+    }).join('');
   }
 
   /* 캘린더 연동 */
@@ -2791,6 +2814,18 @@ window.TRAVEL_CITIES = [
         var links = calendarLinks(detail.key, s);
         $('cal-google').href = links.google;
       }, 400);
+    });
+    $('dt-cat').onclick = function () {
+      var pop = $('dt-cat-pop'), open = pop.hidden;
+      pop.hidden = !open;
+      $('dt-cat').setAttribute('aria-expanded', String(open));
+    };
+    $('dt-cat-pop').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-cat]'); if (!b) return;
+      var s = findItem(detail.key, detail.id); if (!s) return;
+      s.cat = b.dataset.cat; s.rev = (s.rev || 0) + 1;
+      saveSchedules(); renderSchedule(); renderDetailCat(s);
+      toast('카테고리를 ' + catOf(s.cat).name + '(으)로 바꿨어요');
     });
     $('dt-imp').onclick = function () {
       var s = findItem(detail.key, detail.id); if (!s) return;
