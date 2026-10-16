@@ -1944,11 +1944,16 @@ window.TRAVEL = {
   function loadWeather() {
     return locate().then(function (loc) {
       var q = 'latitude=' + loc.lat + '&longitude=' + loc.lon;
-      var wx = getJSON('https://api.open-meteo.com/v1/forecast?' + q +
+      var url = 'https://api.open-meteo.com/v1/forecast?' + q +
         '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m' +
         '&hourly=temperature_2m,precipitation_probability,weather_code' +
         '&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,snowfall_sum,uv_index_max,sunrise,sunset' +
-        '&timezone=auto&forecast_days=8&wind_speed_unit=ms');
+        '&timezone=auto&forecast_days=8&wind_speed_unit=ms';
+      var base = getJSON(url);
+      // 한국 안이면 기상청(KMA) 고해상도 모델 값으로 덮어써요. 기상청 모델에 없는 값(강수확률·자외선 등)은 기본 값 유지
+      var inKorea = loc.lat > 32.5 && loc.lat < 39 && loc.lon > 124 && loc.lon < 132;
+      var wx = !inKorea ? base : Promise.all([base, getJSON(url + '&models=kma_seamless').catch(function () { return null; })])
+        .then(function (r) { return r[1] ? mergeModel(r[0], r[1]) : r[0]; });
       var air = getJSON('https://air-quality-api.open-meteo.com/v1/air-quality?' + q + '&current=pm10,pm2_5&timezone=auto')
         .then(function (r) { return r.current; }).catch(function () { return null; });
       return Promise.all([wx, air]).then(function (res) {
@@ -1962,9 +1967,23 @@ window.TRAVEL = {
         // 오늘 0~23시 기온 (출퇴근 시간 옷차림용)
         var day = d.current.time.slice(0, 10), today = [];
         d.hourly.time.forEach(function (t, i) { if (t.slice(0, 10) === day) today[+t.slice(11, 13)] = d.hourly.temperature_2m[i]; });
-        return { place: loc.name, cc: loc.cc || '', country: loc.country || '', current: d.current, daily: d.daily, hours: hours, today: today, air: res[1], sample: false };
+        return { source: d.source || 'open-meteo', place: loc.name, cc: loc.cc || '', country: loc.country || '', current: d.current, daily: d.daily, hours: hours, today: today, air: res[1], sample: false };
       }).catch(function () { return sampleWeather(loc); });
     }).catch(function () { return sampleWeather(null); });
+  }
+  function mergeModel(base, kma) {
+    ['current', 'hourly', 'daily'].forEach(function (part) {
+      var a = base[part], b = kma[part];
+      if (!a || !b) return;
+      Object.keys(b).forEach(function (k) {
+        if (k === 'time' || k === 'interval') return;
+        if (Array.isArray(b[k]) && Array.isArray(a[k])) {
+          b[k].forEach(function (v, i) { if (v != null && i < a[k].length) a[k][i] = v; });
+        } else if (b[k] != null && typeof b[k] !== 'object') a[k] = b[k];
+      });
+    });
+    base.source = 'kma';
+    return base;
   }
   function sampleWeather(loc) {
     var s = window.SAMPLE_WEATHER;
@@ -1977,7 +1996,7 @@ window.TRAVEL = {
     $('wx-temp').textContent = Math.round(c.temperature_2m) + '°';
     $('wx-cond').textContent = info[0] + ' · 체감 ' + Math.round(c.apparent_temperature) + '°';
     $('wx-sub').textContent = Math.round(d.temperature_2m_max[0]) + '° / ' + Math.round(d.temperature_2m_min[0]) + '° · 비 ' + (d.precipitation_probability_max[0] || 0) + '%';
-    $('wx-place').textContent = w.sample ? '예시 날씨' : w.place;
+    $('wx-place').textContent = w.sample ? '예시 날씨' : w.place + (w.source === 'kma' ? ' · 기상청 모델' : '');
     $('wx-place').title = w.sample ? '날씨 서버에 연결하지 못해 예시를 보여줘요' : '';
     $('hourly').innerHTML = w.hours.map(function (hr, i) {
       return '<div class="hour' + (i === 0 ? ' now' : '') + '"><span class="h-time">' + (i === 0 ? '지금' : hr.hour + '시') + '</span>' +
