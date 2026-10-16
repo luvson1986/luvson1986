@@ -467,7 +467,7 @@
         // 오늘 0~23시 기온 (출퇴근 시간 옷차림용)
         var day = d.current.time.slice(0, 10), today = [];
         d.hourly.time.forEach(function (t, i) { if (t.slice(0, 10) === day) today[+t.slice(11, 13)] = d.hourly.temperature_2m[i]; });
-        return { source: d.source || 'open-meteo', place: loc.name, cc: loc.cc || '', country: loc.country || '', current: d.current, daily: d.daily, hours: hours, today: today, air: res[1], sample: false };
+        return { source: d.source || 'open-meteo', lat: loc.lat, lon: loc.lon, place: loc.name, cc: loc.cc || '', country: loc.country || '', current: d.current, daily: d.daily, hours: hours, today: today, air: res[1], sample: false };
       }).catch(function () { return sampleWeather(loc); });
     }).catch(function () { return sampleWeather(null); });
   }
@@ -487,7 +487,7 @@
   }
   function sampleWeather(loc) {
     var s = window.SAMPLE_WEATHER;
-    return { place: (loc && loc.name) || s.place, cc: (loc && loc.cc) || '', country: (loc && loc.country) || '', current: s.current, daily: s.daily, hours: s.hourlyFrom(new Date().getHours()), today: s.todayTemps, air: s.air, sample: true };
+    return { lat: loc && loc.lat, lon: loc && loc.lon, place: (loc && loc.name) || s.place, cc: (loc && loc.cc) || '', country: (loc && loc.country) || '', current: s.current, daily: s.daily, hours: s.hourlyFrom(new Date().getHours()), today: s.todayTemps, air: s.air, sample: true };
   }
 
   function renderWeather(w) {
@@ -515,17 +515,25 @@
     var cc = (w.cc || '').toUpperCase();
     if (!cc || cc === 'KR') { if (travelMode) { travelMode = false; $('hero').classList.remove('travel'); initSeason(); } return; }
     travelMode = true;
-    var t = (window.TRAVEL || {})[cc] || { name: w.country || '해외', kw: ['현지 맛집', '로컬 시장', '기념품 쇼핑', '산책 코스'] };
+    var t = (window.TRAVEL || {})[cc] || { name: w.country || '해외', kw: ['현지 맛집', '로컬 시장', '기념품 쇼핑'] };
+    // 가까운 인기 도시가 있으면 도시 키워드 우선
+    var city = null, best = Infinity;
+    (window.TRAVEL_CITIES || []).forEach(function (c) {
+      if (w.lat == null) return;
+      var dLat = (c.lat - w.lat) * 111, dLon = (c.lon - w.lon) * 111 * Math.cos(w.lat * Math.PI / 180), km = Math.sqrt(dLat * dLat + dLon * dLon);
+      if (km <= c.r && km < best) { best = km; city = c; }
+    });
+    var kw = (city ? city.kw : t.kw).slice(0, 3), place = city ? city.name : w.place;
     var root = document.documentElement;
     root.style.setProperty('--hero-a', '#1d4e89');
     root.style.setProperty('--hero-b', '#7fb7e8');
     root.style.setProperty('--season', '#e8f4ff');
     $('hero').classList.add('travel');
-    $('season-name').textContent = w.place;
+    $('season-name').textContent = place;
     $('season-phase').textContent = flagOf(cc) + ' ' + t.name;
     $('season-phase').dataset.phase = 'travel';
-    $('season-kw').innerHTML = t.kw.slice(0, 4).map(function (k) {
-      return '<a class="kw-chip" href="https://www.google.com/maps/search/' + encodeURIComponent(k + ' ' + w.place) + '" target="_blank" rel="noopener">' + esc(k) + '</a>';
+    $('season-kw').innerHTML = kw.map(function (k) {
+      return '<a class="kw-chip" href="https://www.google.com/maps/search/' + encodeURIComponent(k + ' ' + place) + '" target="_blank" rel="noopener">' + esc(k) + '</a>';
     }).join('');
     $('hero-motif').innerHTML = '<span>' + flagOf(cc) + '</span>';
     scene.start({ type: 'sun', accent: '#e8f4ff' });
