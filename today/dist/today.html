@@ -545,7 +545,7 @@ body.on-news::before {
 .tl-card.flash { animation: flash 1.4s ease 2; }
 .tl-memo {
   font-size: 12.5px; color: var(--ink-2); margin-top: 2px; padding-left: 8px; border-left: 2px solid var(--line);
-  white-space: pre-line; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  white-space: pre-line; overflow-wrap: anywhere; display: block;
 }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .form-grid .full { grid-column: 1 / -1; }
@@ -750,6 +750,9 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .cl-item { align-items: start; }
 .cl-item .cl-check { margin-top: 5px; }
 .cl-item .icon-mini { margin-top: 2px; }
+
+#dt-memo, #sch-memo { overflow: hidden; resize: none; }
+textarea { font-family: var(--f-body); line-height: 1.5; }
 
 </style>
 </head>
@@ -2600,6 +2603,7 @@ window.TRAVEL_CITIES = [
     $('sch-date').value = key;
     $('sch-place').value = item ? item.place || '' : '';
     $('sch-memo').value = item ? item.memo || '' : '';
+    setTimeout(function () { fitText($('sch-memo')); }, 0);
     syncPlaceLink();
     renderCats();
     $('sch-cat').value = item && cats.some(function (c) { return c.id === item.cat; }) ? item.cat : cats[0].id;
@@ -2633,6 +2637,7 @@ window.TRAVEL_CITIES = [
     $('dt-place').hidden = !s.place;
     if (s.place) { $('dt-place').href = naverMap(s.place); $('dt-place').innerHTML = '<span aria-hidden="true">📍</span>' + esc(s.place) + '<em>네이버 지도 ›</em>'; }
     $('dt-memo').value = s.memo || '';
+    setTimeout(function () { fitText($('dt-memo')); }, 0);
     $('dt-saved').textContent = '입력하면 자동으로 저장돼요.';
     $('dt-delete').textContent = '삭제';
     $('dt-delete').dataset.armed = '';
@@ -2772,7 +2777,9 @@ window.TRAVEL_CITIES = [
     });
 
     var mt;
+    $('sch-memo').addEventListener('input', function () { fitText($('sch-memo')); });
     $('dt-memo').addEventListener('input', function () {
+      fitText($('dt-memo'));
       clearTimeout(mt);
       $('dt-saved').textContent = '저장 중…';
       mt = setTimeout(function () {
@@ -2865,7 +2872,7 @@ window.TRAVEL_CITIES = [
     }
   }
   // 체크리스트 항목은 글 길이만큼 줄이 늘어나요
-  function fitText(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+  function fitText(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 2 + 'px'; }
   function fitAll() { Array.prototype.forEach.call(document.querySelectorAll('.cl-text'), fitText); }
   function touch(g) { if (g.sample) { g.sample = false; } saveLists(); }
 

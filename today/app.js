@@ -1009,6 +1009,7 @@
     $('sch-date').value = key;
     $('sch-place').value = item ? item.place || '' : '';
     $('sch-memo').value = item ? item.memo || '' : '';
+    setTimeout(function () { fitText($('sch-memo')); }, 0);
     syncPlaceLink();
     renderCats();
     $('sch-cat').value = item && cats.some(function (c) { return c.id === item.cat; }) ? item.cat : cats[0].id;
@@ -1042,6 +1043,7 @@
     $('dt-place').hidden = !s.place;
     if (s.place) { $('dt-place').href = naverMap(s.place); $('dt-place').innerHTML = '<span aria-hidden="true">📍</span>' + esc(s.place) + '<em>네이버 지도 ›</em>'; }
     $('dt-memo').value = s.memo || '';
+    setTimeout(function () { fitText($('dt-memo')); }, 0);
     $('dt-saved').textContent = '입력하면 자동으로 저장돼요.';
     $('dt-delete').textContent = '삭제';
     $('dt-delete').dataset.armed = '';
@@ -1181,7 +1183,9 @@
     });
 
     var mt;
+    $('sch-memo').addEventListener('input', function () { fitText($('sch-memo')); });
     $('dt-memo').addEventListener('input', function () {
+      fitText($('dt-memo'));
       clearTimeout(mt);
       $('dt-saved').textContent = '저장 중…';
       mt = setTimeout(function () {
@@ -1274,7 +1278,7 @@
     }
   }
   // 체크리스트 항목은 글 길이만큼 줄이 늘어나요
-  function fitText(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+  function fitText(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 2 + 'px'; }
   function fitAll() { Array.prototype.forEach.call(document.querySelectorAll('.cl-text'), fitText); }
   function touch(g) { if (g.sample) { g.sample = false; } saveLists(); }
 

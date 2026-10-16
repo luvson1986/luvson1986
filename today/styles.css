@@ -525,7 +525,7 @@ body.on-news::before {
 .tl-card.flash { animation: flash 1.4s ease 2; }
 .tl-memo {
   font-size: 12.5px; color: var(--ink-2); margin-top: 2px; padding-left: 8px; border-left: 2px solid var(--line);
-  white-space: pre-line; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  white-space: pre-line; overflow-wrap: anywhere; display: block;
 }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .form-grid .full { grid-column: 1 / -1; }
@@ -730,3 +730,6 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .cl-item { align-items: start; }
 .cl-item .cl-check { margin-top: 5px; }
 .cl-item .icon-mini { margin-top: 2px; }
+
+#dt-memo, #sch-memo { overflow: hidden; resize: none; }
+textarea { font-family: var(--f-body); line-height: 1.5; }
