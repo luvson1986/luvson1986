@@ -260,12 +260,8 @@ a { color: var(--accent); }
 .imp-check { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: var(--r-s); background: var(--surface-2); cursor: pointer; font-size: 13px; color: var(--ink-2); }
 .imp-check input { width: 18px; height: 18px; accent-color: var(--bad); margin: 0; }
 .imp-check b { color: var(--bad); margin-right: 6px; }
-.imp-badge {
-  display: inline-block; font-size: 10.5px; font-weight: 700; line-height: 1; padding: 3px 6px; border-radius: 4px;
-  background: var(--bad); color: #fff; margin-right: 6px; vertical-align: 2px;
-}
 .tl-item.imp .tl-title { color: var(--bad); }
-.hero-nn .nn-item.imp .imp-badge { background: #ff5a5a; }
+.hero-nn .nn-item.imp .nn-title { color: #ff9a9a; }
 #dt-title.imp { color: var(--bad); }
 .dt-tags { display: flex; gap: 6px; align-items: center; }
 .dt-tags .tl-tag { color: var(--c); }
@@ -456,7 +452,14 @@ a { color: var(--accent); }
 .en-text mark { background: linear-gradient(transparent 58%, var(--accent-soft) 58%); color: inherit; font-weight: 700; }
 .en-ko { margin: 0; color: var(--ink-2); font-size: 14px; }
 .en-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-.en-actions #en-next { margin-left: auto; }
+.eh-search { width: 100%; padding: 10px 12px; border-radius: var(--r-s); border: 1px solid var(--line); background: var(--surface); }
+.eh-search:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+.eh-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.eh-list li { padding-block: 11px; display: grid; gap: 2px; }
+.eh-list li + li { border-top: 1px solid var(--line); }
+.eh-en { margin: 0; font: 400 16px/1.45 var(--f-display); }
+.eh-ko { margin: 0; font-size: 13px; color: var(--ink-2); }
+#eh-h { display: flex; align-items: center; gap: 8px; }
 
 /* 관심 소식 */
 .news-cards, .news-list, .yt-strip, .yt-grid { list-style: none; margin: 0; padding: 0; }
@@ -697,7 +700,6 @@ body.on-news::before {
         </header>
         <div class="hourly" id="hourly" aria-label="시간별 예보"></div>
         <div class="kw-row"><span class="kw-label">입기</span><ul class="chips-s" id="outfit-list"></ul></div>
-        <div class="kw-row" id="extra-row" hidden><span class="kw-label">일교차</span><ul class="chips-s" id="extra-list"></ul></div>
         <div class="kw-row"><span class="kw-label">챙기기</span><ul class="chips-s" id="bring"></ul></div>
       </section>
 
@@ -716,16 +718,14 @@ body.on-news::before {
       <section class="panel english" id="english-panel" aria-labelledby="en-h">
         <header class="panel-head">
           <h2 id="en-h">오늘의 업무 영어</h2>
-          <span class="pill mono" id="en-count"></span>
+          <button type="button" class="link-btn" id="en-history">공부한 표현 ›</button>
         </header>
         <p class="en-when" id="en-when"></p>
         <blockquote class="en-text" id="en-text" lang="en"></blockquote>
         <p class="en-ko" id="en-ko"></p>
         <div class="en-actions">
-          <button type="button" class="ghost-btn" id="en-prev">이전</button>
           <button type="button" class="ghost-btn" id="en-speak">듣기</button>
           <button type="button" class="ghost-btn" id="en-copy">복사</button>
-          <button type="button" class="ghost-btn" id="en-next">다음</button>
         </div>
       </section>
     </div>
@@ -807,6 +807,18 @@ body.on-news::before {
       <ul class="sd-list" id="sd-hidden"></ul>
     </details>
     </div>
+  </div>
+</dialog>
+
+<!-- 공부한 영어 표현 -->
+<dialog class="sheet" id="en-dialog" aria-labelledby="eh-h">
+  <div class="sheet-body">
+    <header class="panel-head">
+      <h2 id="eh-h">공부한 표현 <span class="pill mono" id="en-hist-count"></span></h2>
+      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
+    </header>
+    <input type="search" class="eh-search" id="en-search" placeholder="영어나 한글로 검색 (예: feedback, 일정)" aria-label="표현 검색" autocomplete="off">
+    <ul class="eh-list" id="en-hist"></ul>
   </div>
 </dialog>
 
@@ -1886,10 +1898,8 @@ window.SAMPLE_NEWS = [
         (b.ico ? '<span aria-hidden="true">' + b.ico + '</span>' : '') + esc(b.t) + (b.v ? ' <b class="mono">' + esc(b.v) + '</b>' : '') + '</li>';
     };
 
-    var wear = [{ t: (band.emoji ? band.emoji + ' ' : '') + band.name, v: '출근 ' + Math.round(tIn) + '°', cls: 'basis', why: COMMUTE[0] + '시 기온 기준' }]
-      .concat(band.items.map(function (t) { return { t: t }; }))
+    var wear = band.items.map(function (t) { return { t: t, why: band.name + ' · 출근 ' + COMMUTE[0] + '시 ' + Math.round(tIn) + '°' }; })
       .concat((band.plus || []).map(function (t) { return { t: '+' + t, cls: 'plus' }; }));
-    $('outfit-list').innerHTML = wear.map(chip).join('');
 
     // 일교차: 퇴근길이 더 추운 구간이면 방한템, 낮이 두 구간 이상 더우면 쿨링템
     var extra = [];
@@ -1898,16 +1908,14 @@ window.SAMPLE_NEWS = [
       var mine = band.plus || [];
       var warm = (outBand.plus || []).filter(function (t) { return mine.indexOf(t) < 0; });
       if (!warm.length) warm = [outBand.items[0] + ' 한 겹'];
-      extra.push({ ico: '🧣', t: '방한템', v: '퇴근 ' + Math.round(tOut) + '°', cls: 'basis-soft', why: COMMUTE[1] + '시는 ' + outBand.name + ' 기온이에요' });
-      warm.forEach(function (t) { extra.push({ t: '+' + t, lvl: 'mid' }); });
+      warm.forEach(function (t) { extra.push({ t: '+' + t, lvl: 'mid', why: '퇴근 ' + COMMUTE[1] + '시 ' + Math.round(tOut) + '° 대비' }); });
     }
     if (iIn - iMid >= 2 || midday - tIn >= 8) {
-      extra.push({ ico: '🧊', t: '쿨링템', v: '낮 ' + Math.round(midday) + '°', cls: 'basis-soft', why: '낮에는 ' + outfitRules[iMid].name + ' 기온이에요' });
-      extra.push({ t: '+벗기 쉬운 겉옷', lvl: 'mid' });
-      if (midday >= 24) extra.push({ t: '+손풍기', lvl: 'mid' });
+      extra.push({ t: '+벗기 쉬운 겉옷', lvl: 'mid', why: '낮 ' + Math.round(midday) + '° 대비' });
+      if (midday >= 24) extra.push({ t: '+손풍기', lvl: 'mid', why: '낮 ' + Math.round(midday) + '° 대비' });
     }
-    $('extra-row').hidden = !extra.length;
-    $('extra-list').innerHTML = extra.map(chip).join('');
+    // 일교차 아이템도 같은 줄에 이어서
+    $('outfit-list').innerHTML = wear.concat(extra).map(chip).join('');
 
     var bring = [];
     var codes = w.hours.map(function (h) { return h.code; }).concat([d.weather_code[0]]);
@@ -1947,14 +1955,34 @@ window.SAMPLE_NEWS = [
     $('en-text').innerHTML = html;
     $('en-ko').textContent = p.ko;
     $('en-when').textContent = p.when;
-    var offset = phraseIdx - dayIndex();
-    $('en-count').textContent = offset === 0 ? '오늘' : (offset > 0 ? '+' + offset : offset);
+  }
+  var phraseAt = function (day) { var l = window.PHRASES; return l[((day % l.length) + l.length) % l.length]; };
+  // 처음 연 날부터 오늘까지 하루 하나씩 본 표현 (최신순, 중복 제외)
+  function studiedPhrases() {
+    var start = store.get('enStart', null), today = dayIndex();
+    if (start === null || start > today) { start = today; store.set('enStart', start); }
+    var seen = {}, out = [];
+    for (var d = today; d >= start && out.length < window.PHRASES.length; d--) {
+      var p = phraseAt(d);
+      if (!seen[p.en]) { seen[p.en] = 1; out.push(p); }
+    }
+    return out;
+  }
+  function renderStudied() {
+    var q = $('en-search').value.trim().toLowerCase();
+    var all = studiedPhrases();
+    var list = q ? all.filter(function (p) { return (p.en + ' ' + p.ko + ' ' + p.when).toLowerCase().indexOf(q) >= 0; }) : all;
+    $('en-hist-count').textContent = q ? list.length + ' / ' + all.length + '개' : all.length + '개';
+    $('en-hist').innerHTML = list.length ? list.map(function (p) {
+      return '<li><p class="eh-en" lang="en">' + esc(p.en) + '</p><p class="eh-ko">' + esc(p.ko) + '</p></li>';
+    }).join('') : '<li class="empty">“' + esc(q) + '”에 맞는 표현이 없어요.</li>';
   }
   function initPhrase() {
     phraseIdx = dayIndex();
     renderPhrase();
-    $('en-prev').onclick = function () { phraseIdx--; renderPhrase(); };
-    $('en-next').onclick = function () { phraseIdx++; renderPhrase(); };
+    studiedPhrases();
+    $('en-history').onclick = function () { $('en-search').value = ''; renderStudied(); openDialog($('en-dialog')); };
+    $('en-search').addEventListener('input', renderStudied);
     $('en-speak').onclick = function () {
       if (!('speechSynthesis' in window)) { toast('이 브라우저는 음성 듣기를 지원하지 않아요'); return; }
       var u = new SpeechSynthesisUtterance($('en-text').textContent);
@@ -2080,7 +2108,7 @@ window.SAMPLE_NEWS = [
       html += '<li class="tl-item ' + state + (s.important ? ' imp' : '') + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="tl-time">' + s.start + '</span><span class="tl-dot"></span>' +
         '<button type="button" class="tl-card" data-id="' + s.id + '">' +
-        '<span class="tl-title">' + (s.important ? '<span class="imp-badge">중요</span>' : '') + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
+        '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
         '<span class="tl-meta">' + s.start + (s.end ? '–' + s.end : '') + ' · ' + esc(catOf(s.cat).name) + (s.place ? ' · ' + esc(s.place) : '') + rel + '</span>' +
         (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
         '</button></li>';
@@ -2104,7 +2132,7 @@ window.SAMPLE_NEWS = [
     var item = function (s, kind, label, bar) {
       return '<button type="button" class="nn-item ' + kind + (s.important ? ' imp' : '') + '" data-id="' + s.id + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="nn-label">' + label + '</span>' +
-        '<span class="nn-title">' + (s.important ? '<span class="imp-badge">중요</span>' : '') + esc(s.title) + '</span>' +
+        '<span class="nn-title">' + esc(s.title) + '</span>' +
         '<span class="nn-meta">' + s.start + '–' + endOf(s) + (s.place ? ' · ' + esc(s.place) : '') + '</span>' +
         (bar != null ? '<span class="nn-bar"><i style="width:' + bar + '%"></i></span>' : '') + '</button>';
     };

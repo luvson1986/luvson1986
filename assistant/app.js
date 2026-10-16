@@ -575,10 +575,8 @@
         (b.ico ? '<span aria-hidden="true">' + b.ico + '</span>' : '') + esc(b.t) + (b.v ? ' <b class="mono">' + esc(b.v) + '</b>' : '') + '</li>';
     };
 
-    var wear = [{ t: (band.emoji ? band.emoji + ' ' : '') + band.name, v: '출근 ' + Math.round(tIn) + '°', cls: 'basis', why: COMMUTE[0] + '시 기온 기준' }]
-      .concat(band.items.map(function (t) { return { t: t }; }))
+    var wear = band.items.map(function (t) { return { t: t, why: band.name + ' · 출근 ' + COMMUTE[0] + '시 ' + Math.round(tIn) + '°' }; })
       .concat((band.plus || []).map(function (t) { return { t: '+' + t, cls: 'plus' }; }));
-    $('outfit-list').innerHTML = wear.map(chip).join('');
 
     // 일교차: 퇴근길이 더 추운 구간이면 방한템, 낮이 두 구간 이상 더우면 쿨링템
     var extra = [];
@@ -587,16 +585,14 @@
       var mine = band.plus || [];
       var warm = (outBand.plus || []).filter(function (t) { return mine.indexOf(t) < 0; });
       if (!warm.length) warm = [outBand.items[0] + ' 한 겹'];
-      extra.push({ ico: '🧣', t: '방한템', v: '퇴근 ' + Math.round(tOut) + '°', cls: 'basis-soft', why: COMMUTE[1] + '시는 ' + outBand.name + ' 기온이에요' });
-      warm.forEach(function (t) { extra.push({ t: '+' + t, lvl: 'mid' }); });
+      warm.forEach(function (t) { extra.push({ t: '+' + t, lvl: 'mid', why: '퇴근 ' + COMMUTE[1] + '시 ' + Math.round(tOut) + '° 대비' }); });
     }
     if (iIn - iMid >= 2 || midday - tIn >= 8) {
-      extra.push({ ico: '🧊', t: '쿨링템', v: '낮 ' + Math.round(midday) + '°', cls: 'basis-soft', why: '낮에는 ' + outfitRules[iMid].name + ' 기온이에요' });
-      extra.push({ t: '+벗기 쉬운 겉옷', lvl: 'mid' });
-      if (midday >= 24) extra.push({ t: '+손풍기', lvl: 'mid' });
+      extra.push({ t: '+벗기 쉬운 겉옷', lvl: 'mid', why: '낮 ' + Math.round(midday) + '° 대비' });
+      if (midday >= 24) extra.push({ t: '+손풍기', lvl: 'mid', why: '낮 ' + Math.round(midday) + '° 대비' });
     }
-    $('extra-row').hidden = !extra.length;
-    $('extra-list').innerHTML = extra.map(chip).join('');
+    // 일교차 아이템도 같은 줄에 이어서
+    $('outfit-list').innerHTML = wear.concat(extra).map(chip).join('');
 
     var bring = [];
     var codes = w.hours.map(function (h) { return h.code; }).concat([d.weather_code[0]]);
@@ -636,14 +632,34 @@
     $('en-text').innerHTML = html;
     $('en-ko').textContent = p.ko;
     $('en-when').textContent = p.when;
-    var offset = phraseIdx - dayIndex();
-    $('en-count').textContent = offset === 0 ? '오늘' : (offset > 0 ? '+' + offset : offset);
+  }
+  var phraseAt = function (day) { var l = window.PHRASES; return l[((day % l.length) + l.length) % l.length]; };
+  // 처음 연 날부터 오늘까지 하루 하나씩 본 표현 (최신순, 중복 제외)
+  function studiedPhrases() {
+    var start = store.get('enStart', null), today = dayIndex();
+    if (start === null || start > today) { start = today; store.set('enStart', start); }
+    var seen = {}, out = [];
+    for (var d = today; d >= start && out.length < window.PHRASES.length; d--) {
+      var p = phraseAt(d);
+      if (!seen[p.en]) { seen[p.en] = 1; out.push(p); }
+    }
+    return out;
+  }
+  function renderStudied() {
+    var q = $('en-search').value.trim().toLowerCase();
+    var all = studiedPhrases();
+    var list = q ? all.filter(function (p) { return (p.en + ' ' + p.ko + ' ' + p.when).toLowerCase().indexOf(q) >= 0; }) : all;
+    $('en-hist-count').textContent = q ? list.length + ' / ' + all.length + '개' : all.length + '개';
+    $('en-hist').innerHTML = list.length ? list.map(function (p) {
+      return '<li><p class="eh-en" lang="en">' + esc(p.en) + '</p><p class="eh-ko">' + esc(p.ko) + '</p></li>';
+    }).join('') : '<li class="empty">“' + esc(q) + '”에 맞는 표현이 없어요.</li>';
   }
   function initPhrase() {
     phraseIdx = dayIndex();
     renderPhrase();
-    $('en-prev').onclick = function () { phraseIdx--; renderPhrase(); };
-    $('en-next').onclick = function () { phraseIdx++; renderPhrase(); };
+    studiedPhrases();
+    $('en-history').onclick = function () { $('en-search').value = ''; renderStudied(); openDialog($('en-dialog')); };
+    $('en-search').addEventListener('input', renderStudied);
     $('en-speak').onclick = function () {
       if (!('speechSynthesis' in window)) { toast('이 브라우저는 음성 듣기를 지원하지 않아요'); return; }
       var u = new SpeechSynthesisUtterance($('en-text').textContent);
@@ -769,7 +785,7 @@
       html += '<li class="tl-item ' + state + (s.important ? ' imp' : '') + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="tl-time">' + s.start + '</span><span class="tl-dot"></span>' +
         '<button type="button" class="tl-card" data-id="' + s.id + '">' +
-        '<span class="tl-title">' + (s.important ? '<span class="imp-badge">중요</span>' : '') + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
+        '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
         '<span class="tl-meta">' + s.start + (s.end ? '–' + s.end : '') + ' · ' + esc(catOf(s.cat).name) + (s.place ? ' · ' + esc(s.place) : '') + rel + '</span>' +
         (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
         '</button></li>';
@@ -793,7 +809,7 @@
     var item = function (s, kind, label, bar) {
       return '<button type="button" class="nn-item ' + kind + (s.important ? ' imp' : '') + '" data-id="' + s.id + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="nn-label">' + label + '</span>' +
-        '<span class="nn-title">' + (s.important ? '<span class="imp-badge">중요</span>' : '') + esc(s.title) + '</span>' +
+        '<span class="nn-title">' + esc(s.title) + '</span>' +
         '<span class="nn-meta">' + s.start + '–' + endOf(s) + (s.place ? ' · ' + esc(s.place) : '') + '</span>' +
         (bar != null ? '<span class="nn-bar"><i style="width:' + bar + '%"></i></span>' : '') + '</button>';
     };

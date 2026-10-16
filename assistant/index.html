@@ -106,7 +106,6 @@
         </header>
         <div class="hourly" id="hourly" aria-label="시간별 예보"></div>
         <div class="kw-row"><span class="kw-label">입기</span><ul class="chips-s" id="outfit-list"></ul></div>
-        <div class="kw-row" id="extra-row" hidden><span class="kw-label">일교차</span><ul class="chips-s" id="extra-list"></ul></div>
         <div class="kw-row"><span class="kw-label">챙기기</span><ul class="chips-s" id="bring"></ul></div>
       </section>
 
@@ -125,16 +124,14 @@
       <section class="panel english" id="english-panel" aria-labelledby="en-h">
         <header class="panel-head">
           <h2 id="en-h">오늘의 업무 영어</h2>
-          <span class="pill mono" id="en-count"></span>
+          <button type="button" class="link-btn" id="en-history">공부한 표현 ›</button>
         </header>
         <p class="en-when" id="en-when"></p>
         <blockquote class="en-text" id="en-text" lang="en"></blockquote>
         <p class="en-ko" id="en-ko"></p>
         <div class="en-actions">
-          <button type="button" class="ghost-btn" id="en-prev">이전</button>
           <button type="button" class="ghost-btn" id="en-speak">듣기</button>
           <button type="button" class="ghost-btn" id="en-copy">복사</button>
-          <button type="button" class="ghost-btn" id="en-next">다음</button>
         </div>
       </section>
     </div>
@@ -216,6 +213,18 @@
       <ul class="sd-list" id="sd-hidden"></ul>
     </details>
     </div>
+  </div>
+</dialog>
+
+<!-- 공부한 영어 표현 -->
+<dialog class="sheet" id="en-dialog" aria-labelledby="eh-h">
+  <div class="sheet-body">
+    <header class="panel-head">
+      <h2 id="eh-h">공부한 표현 <span class="pill mono" id="en-hist-count"></span></h2>
+      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
+    </header>
+    <input type="search" class="eh-search" id="en-search" placeholder="영어나 한글로 검색 (예: feedback, 일정)" aria-label="표현 검색" autocomplete="off">
+    <ul class="eh-list" id="en-hist"></ul>
   </div>
 </dialog>
 
