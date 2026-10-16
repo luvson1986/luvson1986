@@ -1587,7 +1587,7 @@
   }
   function initBackup() {
     $('bk-export').onclick = function () {
-      var name = '오늘의비서-백업-' + ymd(new Date()) + '.json';
+      var name = '오늘-백업-' + ymd(new Date()) + '.json';
       var blob = new Blob([backupData()], { type: 'application/json' });
       var file = typeof File === 'function' ? new File([blob], name, { type: 'application/json' }) : null;
       // 폰에서는 공유 시트로 (파일 앱·카카오톡·메일 등에 저장), 안 되면 다운로드
@@ -1612,7 +1612,7 @@
           toast('백업을 불러왔어요. 다시 여는 중…');
           setTimeout(function () { location.reload(); }, 900);
         } catch (err) {
-          toast('오늘의 비서 백업 파일이 아니에요. 파일을 다시 확인해 주세요');
+          toast('오늘 앱 백업 파일이 아니에요. 파일을 다시 확인해 주세요');
         }
         e.target.value = '';
       };

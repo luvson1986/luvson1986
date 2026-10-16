@@ -1,6 +1,6 @@
 {
-  "name": "오늘의 비서",
-  "short_name": "오늘의 비서",
+  "name": "오늘",
+  "short_name": "오늘",
   "description": "날씨·옷차림, 제철 추천, 일정, 체크리스트, 관심 소식, 업무 영어",
   "lang": "ko",
   "start_url": "./",
