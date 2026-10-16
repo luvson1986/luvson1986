@@ -19,7 +19,7 @@
 
 ## 폰에 앱으로 설치하기
 1. GitHub 저장소 **Settings → Pages**에서 *Deploy from a branch*, 브랜치와 `/(root)` 선택 후 저장
-2. 1~2분 뒤 `https://luvson1986.github.io/luvson1986/assistant/` 접속
+2. 1~2분 뒤 `https://luvson1986.github.io/luvson1986/today/` 접속
 3. iPhone: Safari 공유 버튼 → **홈 화면에 추가** / Android: Chrome 메뉴 → **앱 설치**
 4. 처음 열 때 위치 권한을 허용하면 현재 위치 날씨를 보여줘요
 
@@ -32,7 +32,7 @@ python3 build.py   # dist/today.html — 이 파일 하나만 열어도 동작
 
 ## 실행
 ```bash
-cd assistant && python3 -m http.server 8000
+cd today && python3 -m http.server 8000
 # http://localhost:8000
 ```
-GitHub Pages로 배포하면 `/assistant/` 경로에서 바로 열립니다.
+GitHub Pages로 배포하면 `/today/` 경로에서 바로 열립니다.
