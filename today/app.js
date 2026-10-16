@@ -1004,8 +1004,18 @@
     });
   }
   // 날짜를 바꿔도 일정 섹션 머리가 화면에서 제자리에 있도록
+  var holdTimer;
   function keepScheduleInPlace(fn) {
     var panel = $('schedule-panel'), before = panel.getBoundingClientRect().top;
+    // 내용이 짧아져도 화면이 끌려 올라가지 않게 지금 높이를 잠시 유지
+    var home = $('view-home');
+    home.style.minHeight = home.offsetHeight + 'px';
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(function release() {
+      // 사용자가 위로 스크롤했거나 여유 공간이 화면 밖이면 풀어요
+      home.style.minHeight = '';
+      if (home.offsetHeight < window.scrollY + window.innerHeight) { home.style.minHeight = (window.scrollY + window.innerHeight) + 'px'; holdTimer = setTimeout(release, 4000); }
+    }, 4000);
     fn();
     var diff = panel.getBoundingClientRect().top - before;
     if (Math.abs(diff) > 1) window.scrollBy(0, diff);
@@ -1591,10 +1601,11 @@
     if (!n.image) return '<span class="thumb ' + cls + '">' + tile + '</span>';
     return '<span class="thumb ' + cls + '">' + tile + '<img src="' + esc(n.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"></span>';
   }
-  function newsCard(n, big) {
+  function newsCard(n) {
     var read = readSet.has(n.link);
-    return '<li><a class="news-card' + (big ? ' big' : '') + (read ? ' read' : '') + '" href="' + esc(n.link) + '" target="_blank" rel="noopener" data-id="' + esc(n.link) + '">' +
-      thumbHtml(n, big ? 'wide' : 'square') +
+    var img = n.image ? '<span class="thumb square"><img src="' + esc(n.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="var a=this.closest(\'.news-card\');this.parentNode.remove();a.classList.add(\'noimg\')"></span>' : '';
+    return '<li><a class="news-card' + (n.image ? '' : ' noimg') + (read ? ' read' : '') + '" href="' + esc(n.link) + '" target="_blank" rel="noopener" data-id="' + esc(n.link) + '">' +
+      img +
       '<span class="n-body"><span class="n-title">' + esc(n.title) + '</span>' +
       '<span class="n-meta">' + (n.outlets > 1 ? '<span class="n-hot">' + n.outlets + '개 매체 보도</span>' : '') + '<span class="n-tag">' + esc(n.interest) + '</span>' +
       (n.source ? '<span>' + esc(n.source) + '</span>' : '') + (n.date ? '<span>' + ago(n.date) + '</span>' : '') + '</span></span></a></li>';
@@ -1621,7 +1632,7 @@
     $('news-panel').hidden = false;
     $('news-note').hidden = !newsSample;
     $('news-note').textContent = newsSample ? '뉴스 서버에 연결하지 못해 예시를 보여드려요. 링크를 누르면 실제 검색 결과로 이동해요.' : '';
-    $('news-top').innerHTML = stories.slice(0, 3).map(function (n, i) { return newsCard(n, i === 0); }).join('');
+    $('news-top').innerHTML = stories.slice(0, 3).map(function (n) { return newsCard(n); }).join('');
     $('news-empty').hidden = stories.length > 0;
     $('news-more').hidden = false;
     $('news-total').textContent = stories.length > 3 ? stories.length : '';
@@ -1643,7 +1654,7 @@
     $('news-hint').textContent = newsKind === 'news' ? '오늘 올라온 기사 중 여러 매체가 함께 다룬 순서예요.'
       : newsKind === 'video' ? (videos.length ? '오늘 올라온 영상을 조회수 순으로 모았어요.' : '영상을 불러오지 못해 유튜브 검색으로 연결해요. 설정에 유튜브 API 키를 넣으면 오늘 영상을 조회수 순으로 보여줘요.')
       : '인스타그램은 게시물을 가져올 공개 방법이 없어 해시태그 페이지로 연결해요.';
-    if (newsKind === 'news') $('news-all').innerHTML = list.length ? list.map(function (n) { return newsCard(n, false); }).join('') : '<li class="empty">오늘 올라온 소식이 아직 없어요.</li>';
+    if (newsKind === 'news') $('news-all').innerHTML = list.length ? list.map(function (n) { return newsCard(n); }).join('') : '<li class="empty">오늘 올라온 소식이 아직 없어요.</li>';
     if (newsKind === 'video') $('yt-all').innerHTML = list.length ? list.map(videoCard).join('') : settings.interests.map(ytSearchCard).join('');
     if (newsKind === 'ig') $('ig-tags').innerHTML = settings.interests.map(function (q) {
       var t = igTag(q);
