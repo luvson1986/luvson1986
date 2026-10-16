@@ -463,11 +463,14 @@
         for (var i = start; i < start + 12 && i < d.hourly.time.length; i++) {
           hours.push({ hour: +d.hourly.time[i].slice(11, 13), temp: d.hourly.temperature_2m[i], pop: d.hourly.precipitation_probability[i], code: d.hourly.weather_code[i] });
         }
-        return { place: loc.name, current: d.current, daily: d.daily, hours: hours, air: res[1], sample: false };
+        // 오늘 0~23시 기온 (출퇴근 시간 옷차림용)
+        var day = d.current.time.slice(0, 10), today = [];
+        d.hourly.time.forEach(function (t, i) { if (t.slice(0, 10) === day) today[+t.slice(11, 13)] = d.hourly.temperature_2m[i]; });
+        return { place: loc.name, current: d.current, daily: d.daily, hours: hours, today: today, air: res[1], sample: false };
       });
     }).catch(function () {
       var s = window.SAMPLE_WEATHER;
-      return { place: s.place, current: s.current, daily: s.daily, hours: s.hourlyFrom(new Date().getHours()), air: s.air, sample: true };
+      return { place: s.place, current: s.current, daily: s.daily, hours: s.hourlyFrom(new Date().getHours()), today: s.todayTemps, air: s.air, sample: true };
     });
   }
 
@@ -488,35 +491,50 @@
     renderOutfit(w);
   }
 
-  /* ---------- 옷차림 / 준비물 (키워드) ---------- */
+  /* ---------- 옷차림 / 준비물 ----------
+     내 룰: 출퇴근 시간(10시·20시) 기온 기준. 일교차에 따라 방한템/쿨링템 추가.
+     min 이상이면 그 구간 (위에서부터 확인). 기온은 반올림한 정수로 비교 */
   var OUTFIT = [
-    { min: 28, items: ['민소매', '반팔', '린넨 셔츠', '반바지'] },
-    { min: 23, items: ['반팔', '얇은 셔츠', '면바지', '얇은 가디건'] },
-    { min: 20, items: ['블라우스', '얇은 긴팔', '슬랙스'] },
-    { min: 17, items: ['얇은 니트', '가디건', '맨투맨', '청바지'] },
-    { min: 12, items: ['자켓', '가디건', '니트 조끼', '스타킹'] },
-    { min: 9, items: ['트렌치코트', '니트', '기모 바지'] },
-    { min: 5, items: ['울 코트', '히트텍', '두꺼운 니트'] },
-    { min: -99, items: ['롱패딩', '목도리', '장갑', '기모 이너'] }
+    { name: '한여름', emoji: '🔥', min: 28, items: ['반팔', '나시', '반바지'], plus: ['샌들'] },
+    { name: '여름', emoji: '☀️', min: 24, items: ['반팔', '얇은 가디건'], plus: ['샌들'] },
+    { name: '초여름', emoji: '🌿', min: 19, items: ['외투 없는 긴팔', '얇은 외투 걸친 반팔'], plus: ['스카프'] },
+    { name: '봄가을', emoji: '🌸', min: 14, items: ['가디건', '자켓', '트렌치코트', '긴팔'], plus: ['스카프', '스타킹'] },
+    { name: '환절기', emoji: '🍂', min: 9, items: ['얇은 코트', '얇은 패딩', '두꺼운 가디건', '가죽점퍼', '얇은 니트', '긴팔', '숄 가디건'], plus: ['스카프/얇은 목도리', '스타킹'] },
+    { name: '초겨울', emoji: '💨', min: 4, items: ['얇은 코트', '무스탕', '얇은 패딩', '겨울니트'], plus: ['스카프/얇은 목도리', '부츠', '스타킹'] },
+    { name: '겨울', emoji: '⛄', min: -3, items: ['코트', '패딩', '무스탕', '퍼', '겨울니트'], plus: ['목도리', '부츠', '스타킹'] },
+    { name: '한겨울', emoji: '❄️', min: -99, items: ['패딩', '퍼', '겨울니트'], plus: ['목도리', '부츠', '두꺼운 스타킹'] }
   ];
-  var outfitRules = store.get('outfitRules', null) || OUTFIT.map(function (o) { return { min: o.min, items: o.items.slice() }; });
+  var COMMUTE = [10, 20]; // 출근, 퇴근 시각
+  var cloneRules = function (r) { return JSON.parse(JSON.stringify(r)); };
+  var outfitRules = store.get('outfitRules3', null) || cloneRules(OUTFIT);
   var lastWeather = null;
+  var bandIndex = function (t) { var r = Math.round(t), i = outfitRules.findIndex(function (o) { return r >= o.min; }); return i < 0 ? outfitRules.length - 1 : i; };
+  var splitList = function (v) { return v.split(',').map(function (x) { return x.trim(); }).filter(Boolean); };
+
   function renderRuleEditor(rules) {
     $('rule-list').innerHTML = rules.map(function (r, i) {
       var last = i === rules.length - 1;
       return '<li class="rule-row">' +
-        '<span class="rule-min">' + (last ? '<span class="rule-else">그 외(가장 추울 때)</span>' :
-          '<input type="number" class="rule-num" value="' + r.min + '" min="-30" max="45" aria-label="기준 체감온도"><span>° 이상</span>') + '</span>' +
-        '<input class="rule-items" value="' + esc(r.items.join(', ')) + '" aria-label="옷 목록">' +
-        (rules.length > 2 && !last ? '<button type="button" class="icon-mini" data-del="' + i + '" aria-label="줄 삭제">✕</button>' : '<span></span>') + '</li>';
+        '<input class="rule-name" value="' + esc((r.emoji ? r.emoji + ' ' : '') + r.name) + '" maxlength="12" aria-label="구간 이름">' +
+        '<span class="rule-min">' + (last ? '<span class="rule-else">그보다 추울 때</span>' :
+          '<input type="number" class="rule-num" value="' + r.min + '" min="-30" max="45" aria-label="기준 기온"><span>° 이상</span>') + '</span>' +
+        (rules.length > 2 && !last ? '<button type="button" class="icon-mini rule-del" data-del="' + i + '" aria-label="구간 삭제">✕</button>' : '<span class="rule-del"></span>') +
+        '<label class="rule-l items">옷<input class="rule-items" value="' + esc(r.items.join(', ')) + '" placeholder="쉼표로 구분"></label>' +
+        '<label class="rule-l plus">+아이템<input class="rule-plus" value="' + esc((r.plus || []).join(', ')) + '" placeholder="목도리, 부츠…"></label>' +
+        '</li>';
     }).join('');
   }
   function readRuleEditor() {
     var rows = Array.prototype.map.call(document.querySelectorAll('#rule-list .rule-row'), function (li, i, all) {
       var num = li.querySelector('.rule-num');
+      var nm = li.querySelector('.rule-name').value.trim();
+      var m = nm.match(/^(\S+)\s+(.+)$/);
+      var emoji = m && !/[가-힣A-Za-z0-9]/.test(m[1]) ? m[1] : '';
       return {
+        name: emoji ? m[2] : nm || '구간', emoji: emoji,
         min: i === all.length - 1 ? -99 : (num && num.value !== '' ? +num.value : 0),
-        items: li.querySelector('.rule-items').value.split(',').map(function (x) { return x.trim(); }).filter(Boolean)
+        items: splitList(li.querySelector('.rule-items').value),
+        plus: splitList(li.querySelector('.rule-plus').value)
       };
     });
     var last = rows.pop();
@@ -526,7 +544,7 @@
   function initRules() {
     $('rule-open').onclick = function () { renderRuleEditor(outfitRules); openDialog($('rule-dialog')); };
     $('rule-add-row').onclick = function () {
-      var r = readRuleEditor(); r.splice(r.length - 1, 0, { min: 0, items: [] }); renderRuleEditor(r);
+      var r = readRuleEditor(); r.splice(r.length - 1, 0, { name: '새 구간', emoji: '', min: 0, items: [], plus: [] }); renderRuleEditor(r);
     };
     $('rule-list').addEventListener('click', function (e) {
       var b = e.target.closest('[data-del]'); if (!b) return;
@@ -535,27 +553,50 @@
     $('rule-reset').onclick = function () { renderRuleEditor(OUTFIT); };
     $('rule-form').addEventListener('submit', function (e) {
       e.preventDefault();
-      outfitRules = readRuleEditor().filter(function (r) { return r.items.length; });
-      if (!outfitRules.length || outfitRules[outfitRules.length - 1].min !== -99) outfitRules.push({ min: -99, items: ['패딩'] });
-      store.set('outfitRules', outfitRules);
+      outfitRules = readRuleEditor().filter(function (r) { return r.items.length || r.plus.length; });
+      if (!outfitRules.length || outfitRules[outfitRules.length - 1].min !== -99) outfitRules.push(cloneRules(OUTFIT[OUTFIT.length - 1]));
+      store.set('outfitRules3', outfitRules);
       closeDialog($('rule-dialog'));
       if (lastWeather) renderOutfit(lastWeather);
       toast('옷차림 룰을 저장했어요');
     });
   }
+
   function renderOutfit(w) {
     lastWeather = w;
-    var d = w.daily;
-    var base = Math.round((d.apparent_temperature_max[0] + d.apparent_temperature_min[0]) / 2);
-    var band = outfitRules.find(function (o) { return base >= o.min; }) || outfitRules[outfitRules.length - 1];
-    var gap = Math.round(d.temperature_2m_max[0] - d.temperature_2m_min[0]);
+    var d = w.daily, today = w.today || [];
+    var tAt = function (h) { return today[h] != null ? today[h] : (d.temperature_2m_min[0] + d.temperature_2m_max[0]) / 2; };
+    var tIn = tAt(COMMUTE[0]), tOut = tAt(COMMUTE[1]);
+    var midday = Math.max.apply(null, [11, 12, 13, 14, 15, 16, 17].map(tAt));
+    var iIn = bandIndex(tIn), iOut = bandIndex(tOut), iMid = bandIndex(midday);
+    var band = outfitRules[iIn];
     var chip = function (b) {
       return '<li class="' + (b.lvl ? 'lvl-' + b.lvl : '') + (b.cls ? ' ' + b.cls : '') + '"' + (b.why ? ' title="' + esc(b.why) + '"' : '') + '>' +
         (b.ico ? '<span aria-hidden="true">' + b.ico + '</span>' : '') + esc(b.t) + (b.v ? ' <b class="mono">' + esc(b.v) + '</b>' : '') + '</li>';
     };
-    var wear = [{ t: '체감', v: base + '°', cls: 'basis' }].concat(band.items.map(function (t) { return { t: t }; }));
-    if (gap >= 10) wear.push({ t: '일교차', v: gap + '°', lvl: 'mid', why: '아침저녁엔 한 겹 더 입으세요' });
+
+    var wear = [{ t: (band.emoji ? band.emoji + ' ' : '') + band.name, v: '출근 ' + Math.round(tIn) + '°', cls: 'basis', why: COMMUTE[0] + '시 기온 기준' }]
+      .concat(band.items.map(function (t) { return { t: t }; }))
+      .concat((band.plus || []).map(function (t) { return { t: '+' + t, cls: 'plus' }; }));
     $('outfit-list').innerHTML = wear.map(chip).join('');
+
+    // 일교차: 퇴근길이 더 추운 구간이면 방한템, 낮이 두 구간 이상 더우면 쿨링템
+    var extra = [];
+    if (iOut > iIn) {
+      var outBand = outfitRules[iOut];
+      var mine = band.plus || [];
+      var warm = (outBand.plus || []).filter(function (t) { return mine.indexOf(t) < 0; });
+      if (!warm.length) warm = [outBand.items[0] + ' 한 겹'];
+      extra.push({ ico: '🧣', t: '방한템', v: '퇴근 ' + Math.round(tOut) + '°', cls: 'basis-soft', why: COMMUTE[1] + '시는 ' + outBand.name + ' 기온이에요' });
+      warm.forEach(function (t) { extra.push({ t: '+' + t, lvl: 'mid' }); });
+    }
+    if (iIn - iMid >= 2 || midday - tIn >= 8) {
+      extra.push({ ico: '🧊', t: '쿨링템', v: '낮 ' + Math.round(midday) + '°', cls: 'basis-soft', why: '낮에는 ' + outfitRules[iMid].name + ' 기온이에요' });
+      extra.push({ t: '+벗기 쉬운 겉옷', lvl: 'mid' });
+      if (midday >= 24) extra.push({ t: '+손풍기', lvl: 'mid' });
+    }
+    $('extra-row').hidden = !extra.length;
+    $('extra-list').innerHTML = extra.map(chip).join('');
 
     var bring = [];
     var codes = w.hours.map(function (h) { return h.code; }).concat([d.weather_code[0]]);
@@ -576,10 +617,8 @@
     var sunny = codes.slice(0, 8).filter(function (c) { return c <= 1; }).length >= 4;
     if (uv >= 6 || (uv >= 4 && sunny)) bring.push({ ico: '🕶️', t: '선글라스', v: 'UV ' + Math.round(uv), lvl: uv >= 8 ? 'high' : 'mid', why: '자외선이 강하거나 햇빛이 쨍해요' });
     if (uv >= 7 || d.temperature_2m_max[0] >= 30) bring.push({ ico: '🧢', t: '모자', v: uv >= 7 ? 'UV ' + Math.round(uv) : Math.round(d.temperature_2m_max[0]) + '°', lvl: 'mid' });
-    if (w.current.wind_speed_10m >= 8) bring.push({ ico: '🧥', t: '바람막이', v: Math.round(w.current.wind_speed_10m) + 'm/s', lvl: 'mid' });
-    if (d.temperature_2m_max[0] >= 31) bring.push({ ico: '💧', t: '물·손풍기', v: Math.round(d.temperature_2m_max[0]) + '°', lvl: 'mid' });
+    if (w.current.wind_speed_10m >= 8) bring.push({ ico: '🌬️', t: '바람막이', v: Math.round(w.current.wind_speed_10m) + 'm/s', lvl: 'mid' });
     if (d.temperature_2m_min[0] <= 0) bring.push({ ico: '🔥', t: '핫팩', v: Math.round(d.temperature_2m_min[0]) + '°', lvl: 'mid' });
-    if (gap >= 10 && !bring.some(function (b) { return b.ico === '🧥'; })) bring.push({ ico: '🧥', t: '겉옷', v: '퇴근길 ' + Math.round(d.temperature_2m_min[0]) + '°' });
     if (!bring.length) bring.push({ ico: '👌', t: '특별히 없어요' });
     $('bring').innerHTML = bring.map(chip).join('');
   }
@@ -624,7 +663,61 @@
   }
 
   /* ---------- 일정 ---------- */
-  var CAT = { meeting: '회의', focus: '집중 업무', personal: '개인', health: '운동·건강' };
+  /* 카테고리: 직접 추가·삭제, 색 지정 */
+  var CAT_PALETTE = ['#3b6fe0', '#8a5cd6', '#e0782a', '#2f9e6a', '#d64a7a', '#c9a227', '#1f9bb0', '#7a6a5a'];
+  var DEFAULT_CATS = [
+    { id: 'meeting', name: '회의', color: '#3b6fe0' }, { id: 'focus', name: '집중 업무', color: '#8a5cd6' },
+    { id: 'personal', name: '개인', color: '#e0782a' }, { id: 'health', name: '운동·건강', color: '#2f9e6a' }
+  ];
+  var cats = store.get('categories', null) || DEFAULT_CATS.slice();
+  var saveCats = function () { store.set('categories', cats); };
+  function catOf(id) { return cats.find(function (c) { return c.id === id; }) || { id: '', name: '기타', color: '#8a94a6' }; }
+  function renderCats() {
+    var sel = $('sch-cat'), cur = sel.value;
+    sel.innerHTML = cats.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>'; }).join('');
+    if (cur && cats.some(function (c) { return c.id === cur; })) sel.value = cur;
+    $('cat-legend').innerHTML = cats.map(function (c) {
+      return '<span class="cat-chip" style="--c:' + c.color + '"><i></i>' + esc(c.name) + '</span>';
+    }).join('') + '<button type="button" class="link-btn sm" data-open-cats>편집</button>';
+    $('cat-list').innerHTML = cats.map(function (c) {
+      return '<li class="cat-row" data-id="' + esc(c.id) + '">' +
+        '<input type="color" class="cat-color" value="' + c.color + '" aria-label="' + esc(c.name) + ' 색">' +
+        '<input class="cat-name" value="' + esc(c.name) + '" maxlength="12" aria-label="카테고리 이름">' +
+        '<button type="button" class="icon-mini" data-del-cat aria-label="' + esc(c.name) + ' 삭제">✕</button></li>';
+    }).join('');
+    $('cat-new-color').value = CAT_PALETTE[cats.length % CAT_PALETTE.length];
+  }
+  function initCats() {
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('[data-open-cats]')) { renderCats(); openDialog($('cat-dialog')); }
+    });
+    $('cat-list').addEventListener('change', function (e) {
+      var row = e.target.closest('.cat-row'), c = cats.find(function (x) { return x.id === row.dataset.id; });
+      if (e.target.classList.contains('cat-color')) c.color = e.target.value;
+      if (e.target.classList.contains('cat-name')) c.name = e.target.value.trim() || c.name;
+      saveCats(); renderCats(); renderSchedule();
+    });
+    $('cat-list').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-del-cat]'); if (!b) return;
+      if (cats.length <= 1) { toast('카테고리는 하나 이상 있어야 해요'); return; }
+      if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = '삭제?'; b.classList.add('armed'); return; }
+      var id = b.closest('.cat-row').dataset.id;
+      cats = cats.filter(function (c) { return c.id !== id; });
+      saveCats(); renderCats(); renderSchedule();
+    });
+    $('cat-new').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = $('cat-new-name').value.trim();
+      if (!name) { $('cat-new-name').focus(); return; }
+      var c = { id: 'c' + Date.now().toString(36), name: name, color: $('cat-new-color').value };
+      cats.push(c); saveCats();
+      $('cat-new-name').value = '';
+      renderCats();
+      $('sch-cat').value = c.id;
+      toast('“' + name + '” 카테고리를 추가했어요');
+    });
+    renderCats();
+  }
   var viewDate = new Date();
   var schedules = store.get('schedules', null);
   if (schedules === null) {
@@ -635,7 +728,7 @@
       { id: 's1', start: '09:30', end: '10:00', title: '데일리 스탠드업', cat: 'meeting', place: '팀 채널', memo: '어제 한 일 / 오늘 할 일 / 막힌 것', sample: true },
       { id: 's2', start: '10:30', end: '12:00', title: '모바일 뱅킹 송금 플로우 시안 작업', cat: 'focus', place: '', memo: '', sample: true },
       { id: 's3', start: '12:10', end: '13:00', title: '점심 산책', cat: 'health', place: '', memo: '', sample: true },
-      { id: 's4', start: '14:00', end: '15:00', title: '디자인 리뷰: 대출 신청 화면', cat: 'meeting', place: '12층 회의실', memo: '금리 안내 문구 법무 검토 결과 공유', sample: true },
+      { id: 's4', start: '14:00', end: '15:00', title: '디자인 리뷰: 대출 신청 화면', cat: 'meeting', important: true, place: '12층 회의실', memo: '금리 안내 문구 법무 검토 결과 공유', sample: true },
       { id: 's5', start: '19:30', end: '20:30', title: '필라테스', cat: 'personal', place: '', memo: '', sample: true }
     ];
   }
@@ -673,11 +766,11 @@
       var rel = '';
       if (state === 'current') rel = ' · 진행 중';
       else if (diff === 0 && !state) { var m = st - nowMin; rel = m < 60 ? ' · ' + m + '분 후' : ''; }
-      html += '<li class="tl-item ' + state + '" style="--c: var(--cat-' + s.cat + ')">' +
+      html += '<li class="tl-item ' + state + (s.important ? ' imp' : '') + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="tl-time">' + s.start + '</span><span class="tl-dot"></span>' +
         '<button type="button" class="tl-card" data-id="' + s.id + '">' +
-        '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
-        '<span class="tl-meta">' + s.start + (s.end ? '–' + s.end : '') + ' · ' + CAT[s.cat] + (s.place ? ' · ' + esc(s.place) : '') + rel + '</span>' +
+        '<span class="tl-title">' + (s.important ? '<span class="imp-badge">중요</span>' : '') + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
+        '<span class="tl-meta">' + s.start + (s.end ? '–' + s.end : '') + ' · ' + esc(catOf(s.cat).name) + (s.place ? ' · ' + esc(s.place) : '') + rel + '</span>' +
         (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
         '</button></li>';
       if (!nowPlaced && state === 'current') { html += nowRow(now); nowPlaced = true; }
@@ -698,9 +791,9 @@
     var cur = list.find(function (s) { return toMin(s.start) <= nm && nm < toMin(endOf(s)); });
     var next = list.find(function (s) { return toMin(s.start) > nm; });
     var item = function (s, kind, label, bar) {
-      return '<button type="button" class="nn-item ' + kind + '" data-id="' + s.id + '" style="--c: var(--cat-' + s.cat + ')">' +
+      return '<button type="button" class="nn-item ' + kind + (s.important ? ' imp' : '') + '" data-id="' + s.id + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="nn-label">' + label + '</span>' +
-        '<span class="nn-title">' + esc(s.title) + '</span>' +
+        '<span class="nn-title">' + (s.important ? '<span class="imp-badge">중요</span>' : '') + esc(s.title) + '</span>' +
         '<span class="nn-meta">' + s.start + '–' + endOf(s) + (s.place ? ' · ' + esc(s.place) : '') + '</span>' +
         (bar != null ? '<span class="nn-bar"><i style="width:' + bar + '%"></i></span>' : '') + '</button>';
     };
@@ -732,7 +825,9 @@
     $('sch-date').value = key;
     $('sch-place').value = item ? item.place || '' : '';
     $('sch-memo').value = item ? item.memo || '' : '';
-    $('sch-cat').value = item ? item.cat : 'meeting';
+    renderCats();
+    $('sch-cat').value = item && cats.some(function (c) { return c.id === item.cat; }) ? item.cat : cats[0].id;
+    $('sch-imp').checked = !!(item && item.important);
     var start;
     if (item) start = item.start;
     else {
@@ -758,8 +853,10 @@
     if (!s) return;
     detail = { key: key, id: id };
     var d = parseYmd(key);
-    $('dt-cat').textContent = CAT[s.cat];
-    $('dt-cat').style.setProperty('--c', 'var(--cat-' + s.cat + ')');
+    $('dt-cat').textContent = catOf(s.cat).name;
+    $('dt-cat').style.setProperty('--c', catOf(s.cat).color);
+    $('dt-imp').setAttribute('aria-pressed', String(!!s.important));
+    $('dt-title').classList.toggle('imp', !!s.important);
     $('dt-title').textContent = s.title;
     $('dt-meta').textContent = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 (' + DAYS[d.getDay()] + ') ' + s.start + (s.end ? '–' + s.end : '') + (s.place ? ' · ' + s.place : '');
     $('dt-memo').value = s.memo || '';
@@ -864,7 +961,7 @@
         if (!schedules[origKey].length) delete schedules[origKey];
       }
       var list = schedules[date] || (schedules[date] = []);
-      list.push({ id: editing || 'e' + Date.now().toString(36), start: start, end: end, title: title, cat: $('sch-cat').value, place: $('sch-place').value.trim(), memo: $('sch-memo').value.trim() });
+      list.push({ id: editing || 'e' + Date.now().toString(36), start: start, end: end, title: title, cat: $('sch-cat').value, important: $('sch-imp').checked, place: $('sch-place').value.trim(), memo: $('sch-memo').value.trim() });
       saveSchedules();
       viewDate = parseYmd(date);
       renderSchedule();
@@ -886,6 +983,14 @@
         $('cal-google').href = links.google; $('cal-outlook').href = links.outlook; $('cal-outlook-work').href = links.outlookWork;
       }, 400);
     });
+    $('dt-imp').onclick = function () {
+      var s = findItem(detail.key, detail.id); if (!s) return;
+      s.important = !s.important;
+      $('dt-imp').setAttribute('aria-pressed', String(s.important));
+      $('dt-title').classList.toggle('imp', s.important);
+      saveSchedules(); renderSchedule();
+      toast(s.important ? '중요 일정으로 표시했어요' : '중요 표시를 뺐어요');
+    };
     $('dt-edit').onclick = function () {
       var s = findItem(detail.key, detail.id);
       closeDialog($('detail-dialog'));
@@ -935,8 +1040,9 @@
     $('cl-empty').hidden = lists.length > 0;
     $('cl-groups').innerHTML = lists.map(function (g) {
       var done = g.items.filter(function (i) { return i.done; }).length, total = g.items.length;
-      return '<div class="cl-group" data-g="' + g.id + '">' +
+      return '<div class="cl-group' + (g.collapsed ? ' collapsed' : '') + '" data-g="' + g.id + '">' +
         '<div class="cl-head">' +
+          '<button type="button" class="cl-fold" data-act="fold" aria-expanded="' + !g.collapsed + '" aria-label="' + esc(g.title) + (g.collapsed ? ' 펼치기' : ' 접기') + '"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg></button>' +
           '<input class="cl-title" value="' + esc(g.title) + '" maxlength="30" aria-label="목록 제목">' +
           '<span class="cl-count mono">' + done + '/' + total + '</span>' +
           '<button type="button" class="icon-mini" data-act="del-group" aria-label="' + esc(g.title) + ' 목록 삭제">✕</button>' +
@@ -989,6 +1095,10 @@
     root.addEventListener('click', function (e) {
       var b = e.target.closest('[data-act]'); if (!b) return;
       var gEl = b.closest('.cl-group'), g = findGroup(gEl.dataset.g);
+      if (b.dataset.act === 'fold') {
+        g.collapsed = !g.collapsed; saveLists(); renderLists();
+        return;
+      }
       if (b.dataset.act === 'del-item') {
         var id = b.closest('.cl-item').dataset.i;
         g.items = g.items.filter(function (x) { return x.id !== id; });
@@ -1323,6 +1433,7 @@
   initSeasonDialog();
   initRules();
   initPhrase();
+  initCats();
   initSchedule();
   initChecklist();
   initSettings();

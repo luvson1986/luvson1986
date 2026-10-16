@@ -312,8 +312,9 @@ window.SAMPLE_WEATHER = {
     precipitation_probability_max: [10, 40], snowfall_sum: [0, 0], uv_index_max: [4.5, 3.8],
     weather_code: [1, 3], sunrise: ['', ''], sunset: ['', '']
   },
+  todayTemps: [10, 10, 9, 9, 9, 10, 11, 13, 15, 17, 19, 20, 21, 21, 20, 19, 17, 15, 14, 13, 12, 11, 11, 10],
   hourlyFrom: function (startHour) {
-    var temps = [10, 10, 9, 9, 9, 10, 11, 13, 15, 17, 19, 20, 21, 21, 20, 19, 17, 15, 14, 13, 12, 11, 11, 10];
+    var temps = this.todayTemps;
     var out = [];
     for (var i = 0; i < 12; i++) {
       var h = (startHour + i) % 24;

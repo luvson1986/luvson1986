@@ -76,6 +76,7 @@
             <button type="button" class="add-icon" id="sch-add" aria-label="일정 추가">+</button>
           </div>
         </header>
+        <div class="cat-legend" id="cat-legend"></div>
         <p class="sample-banner" id="sample-banner" hidden>예시 일정이에요. 첫 일정을 추가하면 사라져요. <button type="button" class="link-btn" id="clear-samples">예시 지우기</button></p>
         <ol class="timeline" id="timeline"></ol>
         <p class="empty" id="timeline-empty" hidden>등록된 일정이 없어요. 오른쪽 위 + 로 추가하세요.</p>
@@ -105,6 +106,7 @@
         </header>
         <div class="hourly" id="hourly" aria-label="시간별 예보"></div>
         <div class="kw-row"><span class="kw-label">입기</span><ul class="chips-s" id="outfit-list"></ul></div>
+        <div class="kw-row" id="extra-row" hidden><span class="kw-label">일교차</span><ul class="chips-s" id="extra-list"></ul></div>
         <div class="kw-row"><span class="kw-label">챙기기</span><ul class="chips-s" id="bring"></ul></div>
       </section>
 
@@ -217,6 +219,23 @@
   </div>
 </dialog>
 
+<!-- 일정 카테고리 -->
+<dialog class="sheet" id="cat-dialog" aria-labelledby="cat-h">
+  <div class="sheet-body">
+    <header class="panel-head">
+      <h2 id="cat-h">일정 카테고리</h2>
+      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
+    </header>
+    <p class="hint">색을 눌러 바꾸고, 이름을 눌러 고칠 수 있어요. 삭제한 카테고리의 일정은 '기타'(회색)로 보여요.</p>
+    <ul class="cat-list" id="cat-list"></ul>
+    <form class="cat-new" id="cat-new">
+      <input type="color" id="cat-new-color" value="#d64a7a" aria-label="새 카테고리 색">
+      <input id="cat-new-name" maxlength="12" placeholder="새 카테고리 (예: 스터디)" aria-label="새 카테고리 이름">
+      <button type="submit" class="primary-btn">추가</button>
+    </form>
+  </div>
+</dialog>
+
 <!-- 옷차림 룰 -->
 <dialog class="sheet" id="rule-dialog" aria-labelledby="rule-h">
   <form class="sheet-body" id="rule-form" novalidate>
@@ -224,9 +243,9 @@
       <h2 id="rule-h">옷차림 룰</h2>
       <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
-    <p class="hint">하루 평균 체감온도가 기준 온도 이상이면 그 줄의 옷을 보여줘요. 위에서부터 차례로 확인해요. 옷은 쉼표로 구분해요.</p>
+    <p class="hint">출근(10시) 기온이 기준 이상인 첫 구간의 옷과 + 아이템을 보여줘요. 퇴근(20시)이 더 추운 구간이면 그 구간의 + 아이템을 방한템으로, 낮이 많이 더우면 쿨링템을 더해요. 쉼표로 구분해요.</p>
     <ol class="rule-list" id="rule-list"></ol>
-    <button type="button" class="ghost-btn sm" id="rule-add-row">+ 줄 추가</button>
+    <button type="button" class="ghost-btn sm" id="rule-add-row">+ 구간 추가</button>
     <div class="form-actions split">
       <button type="button" class="ghost-btn" id="rule-reset">기본값으로</button>
       <button type="submit" class="primary-btn">저장</button>
@@ -299,18 +318,20 @@
         <input id="sch-end" type="time" value="10:00">
       </div>
       <div class="field">
-        <label for="sch-cat">분류</label>
-        <select id="sch-cat">
-          <option value="meeting">회의</option>
-          <option value="focus">집중 업무</option>
-          <option value="personal">개인</option>
-          <option value="health">운동·건강</option>
-        </select>
+        <label for="sch-cat">카테고리</label>
+        <div class="cat-pick">
+          <select id="sch-cat"></select>
+          <button type="button" class="ghost-btn sm" data-open-cats>편집</button>
+        </div>
       </div>
       <div class="field">
         <label for="sch-place">장소</label>
         <input id="sch-place" type="text" maxlength="60" placeholder="예: 12층 회의실">
       </div>
+      <label class="imp-check full" for="sch-imp">
+        <input type="checkbox" id="sch-imp">
+        <span><b>중요 일정</b> 빨간 글씨로 눈에 띄게 보여줘요</span>
+      </label>
       <div class="field full">
         <label for="sch-memo">메모</label>
         <textarea id="sch-memo" rows="3" maxlength="1000" placeholder="준비할 것, 논의할 내용"></textarea>
@@ -329,7 +350,8 @@
   <div class="sheet-body">
     <header class="panel-head">
       <div class="dt-head">
-        <span class="tl-tag" id="dt-cat"></span>
+        <span class="dt-tags"><span class="tl-tag" id="dt-cat"></span>
+          <button type="button" class="imp-toggle" id="dt-imp" aria-pressed="false">중요 표시</button></span>
         <h2 id="dt-title"></h2>
         <p class="dt-meta" id="dt-meta"></p>
       </div>
