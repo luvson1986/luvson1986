@@ -325,7 +325,7 @@ window.SAMPLE_WEATHER = {
 };
 
 window.SAMPLE_NEWS = [
-  { title: '시중은행, 고령층 위한 큰 글씨 간편 앱 확대', source: '예시 뉴스', interest: '디지털 금융', date: null, image: '', link: 'https://news.google.com/search?q=' + encodeURIComponent('디지털 금융') + '&hl=ko&gl=KR&ceid=KR:ko' },
-  { title: '생성형 AI가 바꾸는 프로덕트 디자인 워크플로', source: '예시 뉴스', interest: 'UX 디자인', date: null, image: '', link: 'https://news.google.com/search?q=' + encodeURIComponent('UX 디자인') + '&hl=ko&gl=KR&ceid=KR:ko' },
-  { title: '오픈뱅킹 3년, 핀테크 앱 이용자 경험은 어떻게 달라졌나', source: '예시 뉴스', interest: '핀테크', date: null, image: '', link: 'https://news.google.com/search?q=' + encodeURIComponent('핀테크') + '&hl=ko&gl=KR&ceid=KR:ko' }
+  { title: '시중은행, 고령층 위한 큰 글씨 간편 앱 확대', source: '예시 뉴스', outlets: 14, interest: '디지털 금융', date: null, image: '', link: 'https://news.google.com/search?q=' + encodeURIComponent('디지털 금융') + '&hl=ko&gl=KR&ceid=KR:ko' },
+  { title: '생성형 AI가 바꾸는 프로덕트 디자인 워크플로', source: '예시 뉴스', outlets: 9, interest: 'UX 디자인', date: null, image: '', link: 'https://news.google.com/search?q=' + encodeURIComponent('UX 디자인') + '&hl=ko&gl=KR&ceid=KR:ko' },
+  { title: '오픈뱅킹 3년, 핀테크 앱 이용자 경험은 어떻게 달라졌나', source: '예시 뉴스', outlets: 6, interest: '핀테크', date: null, image: '', link: 'https://news.google.com/search?q=' + encodeURIComponent('핀테크') + '&hl=ko&gl=KR&ceid=KR:ko' }
 ];

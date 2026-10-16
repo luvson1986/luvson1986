@@ -90,15 +90,38 @@ a { color: var(--accent); }
 }
 .hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
 .hero-motif {
-  position: absolute; z-index: 1; right: max(4px, env(safe-area-inset-right, 0px)); bottom: -8px;
-  font-size: clamp(96px, 20vw, 190px); line-height: 1; display: flex; gap: 0.05em;
+  position: absolute; z-index: 1; right: max(4px, env(safe-area-inset-right, 0px)); top: 64px;
+  font-size: clamp(96px, 22vw, 190px); line-height: 1; display: flex; gap: 0.05em;
   filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.28)); transform: rotate(-10deg); pointer-events: none;
 }
 .hero-motif span:nth-child(2) { font-size: 0.5em; align-self: flex-end; transform: rotate(18deg); }
-.hero-inner { position: relative; z-index: 2; padding-block: 16px 18px; display: grid; gap: 14px; }
+.hero-inner {
+  position: relative; z-index: 2; padding-block: 16px 18px; display: grid; gap: 14px;
+  grid-template-areas: "top" "wx" "season" "nn";
+}
+.hero-top { grid-area: top; } .wx { grid-area: wx; } .season-box { grid-area: season; } .hero-nn { grid-area: nn; }
 .hero-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .hero-date { margin: 0; font-size: 12.5px; letter-spacing: 0.04em; opacity: 0.85; }
-.hero-greet { margin: 0; font: 700 19px/1.3 var(--f-body); text-wrap: balance; }
+.hero-greet {
+  all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  font: 700 19px/1.3 var(--f-body); text-wrap: balance; border-radius: 8px; padding: 2px 4px; margin-left: -4px;
+}
+.hero-greet svg { opacity: 0.55; flex: none; }
+.hero-greet:hover svg, .hero-greet:focus-visible svg { opacity: 1; }
+.hero-greet:focus-visible { outline: 2px solid #fff; }
+.hero-greet.has-note { font-family: var(--f-display); }
+.note-form { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.note-form input {
+  flex: 1 1 200px; min-width: 0; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.25); color: #fff; font-size: 15px;
+}
+.note-form input::placeholder { color: rgba(255, 255, 255, 0.7); }
+.note-form input:focus { outline: 2px solid #fff; }
+.glass-btn {
+  border: 0; cursor: pointer; padding: 8px 12px; border-radius: 10px; font-weight: 600; font-size: 13px;
+  background: rgba(255, 255, 255, 0.9); color: #1a1a1a;
+}
+.glass-btn + .glass-btn { background: rgba(255, 255, 255, 0.2); color: #fff; }
 .icon-btn {
   display: inline-grid; place-items: center; width: 38px; height: 38px; flex: none;
   border-radius: 50%; border: 0; cursor: pointer; text-decoration: none; font-size: 18px;
@@ -114,37 +137,59 @@ a { color: var(--accent); }
 .wx-cond { font-weight: 600; font-size: 14px; }
 .wx-sub { opacity: 0.88; font-variant-numeric: tabular-nums; }
 
-.season-btn {
-  all: unset; box-sizing: border-box; display: grid; gap: 8px; justify-items: start; cursor: pointer;
-  max-width: min(100%, 26em); padding-right: 90px;
-}
-.season-btn:focus-visible { outline: 2px solid #fff; outline-offset: 4px; border-radius: 8px; }
-.season-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.season-box { display: grid; gap: 8px; justify-items: start; padding-right: 80px; }
+.season-main { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-radius: 8px; }
+.season-main:focus-visible, .kw-chip:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .season-name { font: 700 clamp(30px, 7vw, 40px)/1.1 var(--f-display); text-shadow: 0 2px 16px rgba(0, 0, 0, 0.25); }
+.season-main:hover .season-name { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
 .phase {
   display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700;
   background: rgba(255, 255, 255, 0.92); color: #1a1a1a;
 }
 .season-kw { display: flex; flex-wrap: wrap; gap: 6px; }
-.season-kw span {
-  font-size: 12.5px; padding: 4px 10px; border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(6px);
+.kw-chip {
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: #fff;
+  font: 500 13px/1 var(--f-body); padding: 6px 11px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.32); backdrop-filter: blur(6px);
 }
-.season-more { font-size: 12px; font-weight: 600; opacity: 0.85; }
-.season-btn:hover .season-more { opacity: 1; text-decoration: underline; }
+.kw-chip:hover { background: rgba(255, 255, 255, 0.3); }
+
+/* 히어로 안 지금 · 다음 (세로) */
+.hero-nn { display: grid; gap: 6px; }
+.hero-nn .nn-item {
+  all: unset; box-sizing: border-box; display: grid; grid-template-columns: 74px 1fr; gap: 1px 10px; align-items: center;
+  padding: 9px 12px; border-radius: 12px; cursor: pointer; color: #fff;
+  background: rgba(10, 14, 24, 0.34); backdrop-filter: blur(10px); border-left: 3px solid var(--c, rgba(255, 255, 255, 0.4));
+}
+.hero-nn .nn-item:hover { background: rgba(10, 14, 24, 0.46); }
+.hero-nn .nn-item:focus-visible { outline: 2px solid #fff; }
+.hero-nn .nn-item.idle { cursor: default; border-left-color: rgba(255, 255, 255, 0.25); }
+.nn-label { grid-row: span 2; font-size: 11.5px; font-weight: 700; line-height: 1.3; opacity: 0.9; font-variant-numeric: tabular-nums; }
+.nn-title { font-size: 14px; font-weight: 600; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.nn-item.idle .nn-title { opacity: 0.75; font-weight: 500; }
+.nn-meta { font-size: 12px; opacity: 0.8; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.nn-bar { grid-column: 1 / -1; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); margin-top: 6px; overflow: hidden; }
+.nn-bar i { display: block; height: 100%; background: #fff; }
 
 /* ---------- 보드 ----------
    모바일: 한 열로 펼치고 order로 순서 지정 (지금·다음 → 날씨 → 체크리스트 → 일정 → 소식 → 영어)
    데스크톱: 왼쪽(일정·체크리스트) / 오른쪽(날씨·소식·영어) */
 .board { display: grid; gap: 12px; padding-block: 14px 40px; }
 .col { display: contents; }
-#now-next { order: 1; } #weather-panel { order: 2; } #check-panel { order: 3; }
+#weather-panel { order: 2; } #check-panel { order: 3; }
 #schedule-panel { order: 4; } #news-panel { order: 5; } #english-panel { order: 6; }
 @media (min-width: 880px) {
   .board { grid-template-columns: 1.1fr 1fr; gap: 18px; padding-block: 20px 56px; align-items: start; }
   .col { display: grid; gap: 18px; align-content: start; min-width: 0; }
-  #now-next, #weather-panel, #check-panel, #schedule-panel, #news-panel, #english-panel { order: 0; }
-  .hero-inner { padding-block: 22px 24px; }
+  #weather-panel, #check-panel, #schedule-panel, #news-panel, #english-panel { order: 0; }
+  .hero-inner {
+    padding-block: 22px 24px; column-gap: 40px; align-items: start;
+    grid-template-columns: 1fr minmax(300px, 380px);
+    grid-template-areas: "top top" "wx nn" "season nn";
+  }
+  .hero-top .icon-btn { margin-left: auto; }
+  .season-box { padding-right: 0; }
+  .hero-motif { top: auto; right: max(420px, 36vw); bottom: -12px; font-size: 150px; opacity: 0.85; }
 }
 
 .panel {
@@ -200,23 +245,44 @@ a { color: var(--accent); }
 .chips-s li.lvl-high { background: color-mix(in srgb, var(--bad) 14%, var(--surface)); }
 .chips-s li.lvl-mid { background: color-mix(in srgb, var(--warn) 14%, var(--surface)); }
 
-/* 지금 · 다음 */
-.nn { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.nn-item {
-  all: unset; box-sizing: border-box; display: grid; gap: 2px; align-content: start; min-width: 0; cursor: pointer;
-  padding: 10px 12px; border-radius: var(--r-s); background: var(--surface-2);
-  border-left: 3px solid var(--c, var(--line));
+.chips-s li.basis { background: var(--ink); color: var(--bg); }
+.chips-s li.basis b { color: inherit; opacity: 0.8; }
+.rule-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.rule-row { display: grid; grid-template-columns: 112px 1fr 28px; gap: 8px; align-items: center; }
+.rule-min { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+.rule-num, .rule-items { padding: 7px 9px; border-radius: var(--r-s); border: 1px solid var(--line); background: var(--surface); min-width: 0; }
+.rule-num { width: 62px; font-family: var(--f-mono); }
+.rule-items { width: 100%; }
+.rule-else { font-size: 12px; color: var(--ink-3); }
+.n-hot { color: var(--bad); font-weight: 700; }
+
+/* 시즌 캘린더 */
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--ink-2); margin-bottom: 8px; }
+.legend i { display: inline-block; width: 18px; height: 7px; border-radius: 4px; vertical-align: middle; margin-right: 5px; }
+.lg-bar { background: var(--line); } .lg-peak { background: var(--bad); } .legend i.lg-today { width: 2px; height: 12px; background: var(--accent); }
+.cal-box { overflow-x: auto; }
+.ycal { display: grid; }
+.yc-row {
+  all: unset; box-sizing: border-box; display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center;
+  min-height: 30px; border-radius: 6px; cursor: pointer;
 }
-.nn-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.nn-item.current { background: color-mix(in srgb, var(--c) 12%, var(--surface)); }
-.nn-item.idle { cursor: default; border-left-color: var(--line); }
-.nn-label { font-size: 11.5px; font-weight: 700; color: var(--c, var(--ink-3)); font-variant-numeric: tabular-nums; }
-.nn-item.idle .nn-label { color: var(--ink-3); }
-.nn-title { font-size: 14px; font-weight: 600; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.nn-item.idle .nn-title { color: var(--ink-3); font-weight: 500; }
-.nn-meta { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nn-bar { height: 3px; border-radius: 2px; background: var(--line); margin-top: 4px; overflow: hidden; }
-.nn-bar i { display: block; height: 100%; background: var(--c); }
+.yc-row:not(.yc-head):hover { background: var(--surface-2); }
+.yc-row:focus-visible { outline: 2px solid var(--accent); }
+.yc-row.on { background: var(--accent-soft); }
+.yc-head { cursor: default; min-height: 22px; }
+.yc-name { font-size: 13px; padding-left: 6px; display: flex; gap: 5px; align-items: center; white-space: nowrap; overflow: hidden; color: var(--ink-2); }
+.yc-row.active .yc-name { color: var(--ink); font-weight: 600; }
+.yc-months { display: grid; grid-template-columns: repeat(12, 1fr); font: 500 11px var(--f-mono); color: var(--ink-3); }
+.yc-track {
+  position: relative; height: 30px;
+  background-image: repeating-linear-gradient(90deg, transparent 0, transparent calc(100% / 12 - 1px), var(--line) calc(100% / 12 - 1px), var(--line) calc(100% / 12));
+}
+.yc-track i { position: absolute; }
+.yc-bar { top: 11px; height: 8px; border-radius: 4px; background: var(--line); }
+.yc-row.active .yc-bar { background: color-mix(in srgb, var(--bad) 30%, var(--line)); }
+.yc-peak { top: 10px; height: 10px; border-radius: 5px; background: var(--bad); opacity: 0.55; }
+.yc-row.active .yc-peak { opacity: 1; }
+.yc-today { top: 0; bottom: 0; width: 2px; background: var(--accent); }
 
 /* 섹션 우상단 아이콘 */
 .head-tools { display: flex; align-items: center; gap: 6px; }
@@ -478,12 +544,13 @@ body.on-news::before {
 @media (max-width: 420px) {
   .wx-temp { font-size: 42px; }
   .form-grid { grid-template-columns: 1fr; }
-  .season-btn { padding-right: 70px; }
+  .season-box { padding-right: 64px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .hero { transition: none; }
   .tl-card.flash { animation: none; outline: 2px solid var(--accent); }
 }
+.sheet .seg { background: var(--surface-2); }
 
 </style>
 </head>
@@ -499,7 +566,15 @@ body.on-news::before {
       <div class="hero-top">
         <div>
           <p class="hero-date" id="today-label"></p>
-          <h1 class="hero-greet" id="greeting">좋은 하루예요</h1>
+          <button type="button" class="hero-greet" id="note-btn" aria-label="한 줄 메모 편집">
+            <span id="greeting">좋은 하루예요</span>
+            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="m14.1 5.9 4 4L8 20H4v-4L14.1 5.9Zm1.4-1.4 1.6-1.6a1.5 1.5 0 0 1 2.1 0l1.9 1.9a1.5 1.5 0 0 1 0 2.1l-1.6 1.6-4-4Z"/></svg>
+          </button>
+          <form class="note-form" id="note-form" hidden>
+            <input id="note-input" maxlength="60" placeholder="오늘 나에게 하고 싶은 말" aria-label="한 줄 메모">
+            <button type="submit" class="glass-btn">저장</button>
+            <button type="button" class="glass-btn" id="note-del">삭제</button>
+          </form>
         </div>
         <button class="icon-btn glass" id="open-settings" type="button" aria-label="설정 열기">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Zm7.4-2.5a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6Z"/></svg>
@@ -515,28 +590,21 @@ body.on-news::before {
         </span>
       </div>
 
-      <button type="button" class="season-btn" id="season-open" aria-label="시즌 목록 열기">
-        <span class="season-line">
+      <div class="season-box">
+        <button type="button" class="season-main" id="season-open" aria-label="시즌 캘린더 열기">
           <span class="season-name" id="season-name"></span>
           <span class="phase" id="season-phase"></span>
-        </span>
-        <span class="season-kw" id="season-kw"></span>
-        <span class="season-more">시즌 목록 ›</span>
-      </button>
+        </button>
+        <div class="season-kw" id="season-kw" aria-label="이 시기의 다른 시즌"></div>
+      </div>
+
+      <!-- 지금 · 다음 일정 -->
+      <div class="hero-nn" id="nn" aria-label="지금과 다음 일정"></div>
     </div>
   </section>
 
   <div class="wrap board">
     <div class="col col-a">
-      <!-- 지금 · 다음 일정 -->
-      <section class="panel now-next" id="now-next" aria-labelledby="nn-h">
-        <header class="panel-head">
-          <h2 id="nn-h">지금 · 다음</h2>
-          <button type="button" class="link-btn" id="nn-all">전체 일정 ›</button>
-        </header>
-        <div class="nn" id="nn"></div>
-      </section>
-
       <!-- 전체 일정 -->
       <section class="panel" id="schedule-panel" aria-labelledby="sch-h">
         <header class="panel-head">
@@ -572,29 +640,25 @@ body.on-news::before {
       <section class="panel" id="weather-panel" aria-labelledby="wx-h">
         <header class="panel-head">
           <h2 id="wx-h">날씨 · 옷차림</h2>
-          <span class="pill" id="wx-place"></span>
+          <div class="head-tools">
+            <span class="pill" id="wx-place"></span>
+            <button type="button" class="ghost-btn sm" id="rule-open">옷차림 룰</button>
+          </div>
         </header>
         <div class="hourly" id="hourly" aria-label="시간별 예보"></div>
         <div class="kw-row"><span class="kw-label">입기</span><ul class="chips-s" id="outfit-list"></ul></div>
         <div class="kw-row"><span class="kw-label">챙기기</span><ul class="chips-s" id="bring"></ul></div>
       </section>
 
-      <!-- 관심 소식 -->
+      <!-- 관심 소식: 오늘 가장 많이 보도된 3건 -->
       <section class="panel" id="news-panel" aria-labelledby="news-h" hidden>
         <header class="panel-head">
-          <h2 id="news-h">관심 소식</h2>
-          <a class="link-btn" id="news-more" href="#news" hidden>더보기 <span class="mono" id="news-total"></span></a>
+          <h2 id="news-h">오늘의 관심 소식</h2>
+          <button type="button" class="link-btn" id="news-more" hidden>전체보기 <span class="mono" id="news-total"></span></button>
         </header>
         <p class="note" id="news-note" hidden></p>
         <ul class="news-cards" id="news-top"></ul>
-        <div class="media-block" id="yt-block" hidden>
-          <h3 class="sub-h">유튜브</h3>
-          <ul class="yt-strip" id="yt-top"></ul>
-        </div>
-        <div class="media-block" id="ig-block">
-          <h3 class="sub-h">인스타그램</h3>
-          <div class="ig-tags" id="ig-tags"></div>
-        </div>
+        <p class="empty" id="news-empty" hidden>오늘 올라온 관심사 소식이 아직 없어요.</p>
       </section>
 
       <!-- 영어 -->
@@ -617,31 +681,31 @@ body.on-news::before {
   </div>
 </main>
 
-<!-- 관심 소식 더보기 -->
-<main id="view-news" class="view" hidden>
-  <header class="sub-header">
-    <div class="wrap sub-header-inner">
-      <a class="icon-btn back" href="#home" aria-label="홈으로">‹</a>
-      <h1>관심 소식</h1>
-      <span class="pill mono" id="news-all-count"></span>
-    </div>
-  </header>
-  <div class="wrap news-page">
+<!-- 관심 소식 전체보기 -->
+<dialog class="sheet wide" id="news-dialog" aria-labelledby="nd-h">
+  <div class="sheet-body">
+    <header class="panel-head">
+      <h2 id="nd-h">오늘의 관심 소식</h2>
+      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
+    </header>
     <div class="seg" role="tablist" aria-label="소식 종류">
       <button type="button" role="tab" class="seg-btn" data-kind="news" aria-selected="true">뉴스</button>
       <button type="button" role="tab" class="seg-btn" data-kind="video" aria-selected="false">영상</button>
+      <button type="button" role="tab" class="seg-btn" data-kind="ig" aria-selected="false">인스타그램</button>
     </div>
     <div class="chips" id="news-filters" role="tablist" aria-label="관심사 필터"></div>
+    <p class="hint" id="news-hint"></p>
     <ul class="news-list big" id="news-all"></ul>
     <ul class="yt-grid" id="yt-all" hidden></ul>
+    <div class="ig-tags" id="ig-tags" hidden></div>
   </div>
-</main>
+</dialog>
 
 <!-- 시즌 목록 -->
 <dialog class="sheet wide" id="season-dialog" aria-labelledby="sd-h">
   <div class="sheet-body">
     <header class="panel-head">
-      <h2 id="sd-h">시즌 목록</h2>
+      <h2 id="sd-h">시즌 캘린더</h2>
       <div class="head-tools">
         <button type="button" class="add-icon" id="sd-add" aria-label="시즌 추가">+</button>
         <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
@@ -674,6 +738,15 @@ body.on-news::before {
       </div>
     </form>
 
+    <div class="seg" role="tablist" aria-label="보기 방식" id="sd-tabs">
+      <button type="button" role="tab" class="seg-btn" data-view="cal" aria-selected="true">캘린더</button>
+      <button type="button" role="tab" class="seg-btn" data-view="list" aria-selected="false">목록·편집</button>
+    </div>
+    <div id="sd-cal-view">
+      <div class="legend"><span><i class="lg-bar"></i>제철</span><span><i class="lg-peak"></i>절정</span><span><i class="lg-today"></i>오늘</span></div>
+      <div class="cal-box"><div class="ycal" id="sd-cal"></div></div>
+    </div>
+    <div id="sd-list-view" hidden>
     <p class="hint">지금 시기에 맞는 순서예요. 눌러서 배경으로 볼 수 있어요.</p>
     <ul class="sd-list" id="sd-now"></ul>
     <h3 class="sub-h">다른 시기</h3>
@@ -682,7 +755,25 @@ body.on-news::before {
       <summary>숨긴 시즌 <span class="mono" id="sd-hidden-count"></span></summary>
       <ul class="sd-list" id="sd-hidden"></ul>
     </details>
+    </div>
   </div>
+</dialog>
+
+<!-- 옷차림 룰 -->
+<dialog class="sheet" id="rule-dialog" aria-labelledby="rule-h">
+  <form class="sheet-body" id="rule-form" novalidate>
+    <header class="panel-head">
+      <h2 id="rule-h">옷차림 룰</h2>
+      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
+    </header>
+    <p class="hint">하루 평균 체감온도가 기준 온도 이상이면 그 줄의 옷을 보여줘요. 위에서부터 차례로 확인해요. 옷은 쉼표로 구분해요.</p>
+    <ol class="rule-list" id="rule-list"></ol>
+    <button type="button" class="ghost-btn sm" id="rule-add-row">+ 줄 추가</button>
+    <div class="form-actions split">
+      <button type="button" class="ghost-btn" id="rule-reset">기본값으로</button>
+      <button type="submit" class="primary-btn">저장</button>
+    </div>
+  </form>
 </dialog>
 
 <!-- 설정 -->
@@ -1139,9 +1230,9 @@ window.SAMPLE_WEATHER = {
 };
 
 window.SAMPLE_NEWS = [
-  { title: '시중은행, 고령층 위한 큰 글씨 간편 앱 확대', source: '예시 뉴스', interest: '디지털 금융', date: null, image: '', link: 'https://news.google.com/search?q=' + encodeURIComponent('디지털 금융') + '&hl=ko&gl=KR&ceid=KR:ko' },
-  { title: '생성형 AI가 바꾸는 프로덕트 디자인 워크플로', source: '예시 뉴스', interest: 'UX 디자인', date: null, image: '', link: 'https://news.google.com/search?q=' + encodeURIComponent('UX 디자인') + '&hl=ko&gl=KR&ceid=KR:ko' },
-  { title: '오픈뱅킹 3년, 핀테크 앱 이용자 경험은 어떻게 달라졌나', source: '예시 뉴스', interest: '핀테크', date: null, image: '', link: 'https://news.google.com/search?q=' + encodeURIComponent('핀테크') + '&hl=ko&gl=KR&ceid=KR:ko' }
+  { title: '시중은행, 고령층 위한 큰 글씨 간편 앱 확대', source: '예시 뉴스', outlets: 14, interest: '디지털 금융', date: null, image: '', link: 'https://news.google.com/search?q=' + encodeURIComponent('디지털 금융') + '&hl=ko&gl=KR&ceid=KR:ko' },
+  { title: '생성형 AI가 바꾸는 프로덕트 디자인 워크플로', source: '예시 뉴스', outlets: 9, interest: 'UX 디자인', date: null, image: '', link: 'https://news.google.com/search?q=' + encodeURIComponent('UX 디자인') + '&hl=ko&gl=KR&ceid=KR:ko' },
+  { title: '오픈뱅킹 3년, 핀테크 앱 이용자 경험은 어떻게 달라졌나', source: '예시 뉴스', outlets: 6, interest: '핀테크', date: null, image: '', link: 'https://news.google.com/search?q=' + encodeURIComponent('핀테크') + '&hl=ko&gl=KR&ceid=KR:ko' }
 ];
 
 </script>
@@ -1190,8 +1281,29 @@ window.SAMPLE_NEWS = [
     var now = new Date();
     var h = now.getHours();
     var part = h < 5 ? '늦은 밤이에요' : h < 11 ? '좋은 아침이에요' : h < 14 ? '점심 맛있게 드세요' : h < 18 ? '오후도 힘내세요' : h < 22 ? '오늘 하루 수고했어요' : '편안한 밤 보내세요';
-    $('greeting').textContent = settings.name ? settings.name + '님, ' + part : part;
+    var note = store.get('heroNote', '');
+    $('greeting').textContent = note || (settings.name ? settings.name + '님, ' + part : part);
+    $('note-btn').classList.toggle('has-note', !!note);
     $('today-label').textContent = (now.getMonth() + 1) + '월 ' + now.getDate() + '일 ' + DAYS[now.getDay()] + '요일';
+  }
+
+  /* 한 줄 메모: 지울 때까지 인사말 자리에 보여요 */
+  function initNote() {
+    var form = $('note-form'), btn = $('note-btn');
+    var close = function () { form.hidden = true; btn.hidden = false; };
+    btn.onclick = function () {
+      $('note-input').value = store.get('heroNote', '');
+      btn.hidden = true; form.hidden = false; $('note-input').focus();
+    };
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = $('note-input').value.trim();
+      store.set('heroNote', v);
+      close(); renderGreeting();
+      toast(v ? '메모를 저장했어요' : '메모를 지웠어요');
+    });
+    $('note-del').onclick = function () { store.set('heroNote', ''); close(); renderGreeting(); toast('메모를 지웠어요'); };
+    $('note-input').addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
   }
 
   /* ---------- 계절 ---------- */
@@ -1231,7 +1343,10 @@ window.SAMPLE_NEWS = [
     $('season-name').textContent = s.name;
     $('season-phase').textContent = phaseText(ph);
     $('season-phase').dataset.phase = ph ? ph.phase : 'off';
-    $('season-kw').innerHTML = s.todo.slice(0, 3).map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('');
+    var others = window.rankSeasons(new Date(), visibleSeasons()).filter(function (x) { return x.s.id !== s.id; }).slice(0, 3);
+    $('season-kw').innerHTML = others.map(function (x) {
+      return '<button type="button" class="kw-chip" data-id="' + esc(x.s.id) + '"><span aria-hidden="true">' + esc(x.s.scene.motif[0] || '') + '</span>' + esc(x.s.name) + '</button>';
+    }).join('');
     $('hero-motif').innerHTML = s.scene.motif.map(function (m) { return '<span>' + esc(m) + '</span>'; }).join('');
     scene.start(s.scene);
   }
@@ -1276,13 +1391,65 @@ window.SAMPLE_NEWS = [
     $('sd-hidden-count').textContent = hid.length;
     $('sd-hidden').innerHTML = hid.map(function (s) { return sdRow(s, null, null, true); }).join('');
   }
+  function setSdView(v) {
+    $('sd-cal-view').hidden = v !== 'cal';
+    $('sd-list-view').hidden = v !== 'list';
+    Array.prototype.forEach.call($('sd-tabs').children, function (b) { b.setAttribute('aria-selected', String(b.dataset.view === v)); });
+  }
+  // 1년 시즌 캘린더 (행 = 시즌, 열 = 월)
+  function renderSeasonCal(focusId) {
+    var today = new Date();
+    var pct = function (d) { return (d / 365 * 100).toFixed(3) + '%'; };
+    var seg = function (a, b, cls) {
+      var x = mdDoy(a), y = mdDoy(b) + 1;
+      if (y > x) return '<i class="' + cls + '" style="left:' + pct(x) + ';width:' + pct(y - x) + '"></i>';
+      return '<i class="' + cls + '" style="left:' + pct(x) + ';width:' + pct(365 - x) + '"></i><i class="' + cls + '" style="left:0;width:' + pct(y) + '"></i>';
+    };
+    var ranked = window.rankSeasons(today, visibleSeasons());
+    var activeIds = ranked.map(function (x) { return x.s.id; });
+    // 지금 시즌을 순위대로 먼저, 나머지는 다가오는 순서
+    var rest = visibleSeasons().filter(function (s) { return activeIds.indexOf(s.id) < 0; })
+      .sort(function (a, b) { return daysUntil(a.from) - daysUntil(b.from); });
+    var rows = ranked.map(function (x) { return x.s; }).concat(rest);
+    var t = Math.round((Date.UTC(2001, today.getMonth(), today.getDate()) - Date.UTC(2001, 0, 1)) / 864e5) + 0.5;
+    var html = '<div class="yc-row yc-head"><span class="yc-name"></span><span class="yc-months">' +
+      Array.from({ length: 12 }, function (_, i) { return '<span>' + (i + 1) + '</span>'; }).join('') + '</span></div>';
+    rows.forEach(function (s) {
+      var on = focusId === s.id, active = activeIds.indexOf(s.id) >= 0;
+      html += '<button type="button" class="yc-row' + (on ? ' on' : '') + (active ? ' active' : '') + '" data-sid="' + esc(s.id) + '">' +
+        '<span class="yc-name"><span aria-hidden="true">' + esc(s.scene.motif[0] || '') + '</span>' + esc(s.name) + '</span>' +
+        '<span class="yc-track">' + seg(s.from, s.to, 'yc-bar') + seg(s.peak[0], s.peak[1], 'yc-peak') + '<i class="yc-today" style="left:' + pct(t) + '"></i></span></button>';
+    });
+    $('sd-cal').innerHTML = html;
+    var on = $('sd-cal').querySelector('.yc-row.on');
+    // 선택한 시즌이 보이도록 팝업만 세로로 스크롤 (가로 스크롤은 건드리지 않음)
+    if (on) setTimeout(function () {
+      var dlg = $('season-dialog'), r = on.getBoundingClientRect(), d = dlg.getBoundingClientRect();
+      if (r.bottom > d.bottom - 20 || r.top < d.top + 140) dlg.scrollTop += r.top - d.top - d.height / 2;
+    }, 60);
+  }
   function initSeasonDialog() {
     var dlg = $('season-dialog');
-    $('hero').addEventListener('click', function (e) {
-      if (e.target.closest('#open-settings')) return;
+    var open = function (focusId) {
       renderSeasonDialog();
+      setSdView('cal');
+      renderSeasonCal(focusId);
       $('sd-form').hidden = true;
       openDialog(dlg);
+    };
+    $('season-open').onclick = function () { open(currentSeason && currentSeason.id); };
+    $('season-kw').addEventListener('click', function (e) { var b = e.target.closest('.kw-chip'); if (b) open(b.dataset.id); });
+    // 배경 이미지 빈 곳을 눌러도 캘린더
+    $('hero').addEventListener('click', function (e) {
+      if (e.target === $('hero') || e.target === $('hero-canvas') || e.target.classList.contains('hero-inner')) open(currentSeason && currentSeason.id);
+    });
+    $('sd-tabs').addEventListener('click', function (e) { var b = e.target.closest('.seg-btn'); if (b) setSdView(b.dataset.view); });
+    $('sd-cal').addEventListener('click', function (e) {
+      var r = e.target.closest('[data-sid]'); if (!r) return;
+      var s = findSeason(r.dataset.sid);
+      showSeason(s, window.seasonPhase(s, new Date()));
+      store.set('seasonPick', { date: ymd(new Date()), id: s.id });
+      renderSeasonCal(s.id);
     });
     dlg.addEventListener('click', function (e) {
       var b = e.target.closest('[data-act]');
@@ -1290,6 +1457,7 @@ window.SAMPLE_NEWS = [
       var id = b.closest('.sd-row').dataset.id, s = findSeason(id), act = b.dataset.act;
       if (act === 'show') {
         showSeason(s, window.seasonPhase(s, new Date()));
+        renderSeasonCal(s.id);
         store.set('seasonPick', { date: ymd(new Date()), id: id });
         closeDialog(dlg);
         return;
@@ -1307,6 +1475,7 @@ window.SAMPLE_NEWS = [
       renderSeasonDialog();
     });
     $('sd-add').onclick = function () {
+      setSdView('list');
       var f = $('sd-form');
       f.hidden = !f.hidden;
       if (!f.hidden) {
@@ -1569,16 +1738,61 @@ window.SAMPLE_NEWS = [
     { min: 5, items: ['울 코트', '히트텍', '두꺼운 니트'] },
     { min: -99, items: ['롱패딩', '목도리', '장갑', '기모 이너'] }
   ];
+  var outfitRules = store.get('outfitRules', null) || OUTFIT.map(function (o) { return { min: o.min, items: o.items.slice() }; });
+  var lastWeather = null;
+  function renderRuleEditor(rules) {
+    $('rule-list').innerHTML = rules.map(function (r, i) {
+      var last = i === rules.length - 1;
+      return '<li class="rule-row">' +
+        '<span class="rule-min">' + (last ? '<span class="rule-else">그 외(가장 추울 때)</span>' :
+          '<input type="number" class="rule-num" value="' + r.min + '" min="-30" max="45" aria-label="기준 체감온도"><span>° 이상</span>') + '</span>' +
+        '<input class="rule-items" value="' + esc(r.items.join(', ')) + '" aria-label="옷 목록">' +
+        (rules.length > 2 && !last ? '<button type="button" class="icon-mini" data-del="' + i + '" aria-label="줄 삭제">✕</button>' : '<span></span>') + '</li>';
+    }).join('');
+  }
+  function readRuleEditor() {
+    var rows = Array.prototype.map.call(document.querySelectorAll('#rule-list .rule-row'), function (li, i, all) {
+      var num = li.querySelector('.rule-num');
+      return {
+        min: i === all.length - 1 ? -99 : (num && num.value !== '' ? +num.value : 0),
+        items: li.querySelector('.rule-items').value.split(',').map(function (x) { return x.trim(); }).filter(Boolean)
+      };
+    });
+    var last = rows.pop();
+    rows.sort(function (a, b) { return b.min - a.min; });
+    return rows.concat([last]);
+  }
+  function initRules() {
+    $('rule-open').onclick = function () { renderRuleEditor(outfitRules); openDialog($('rule-dialog')); };
+    $('rule-add-row').onclick = function () {
+      var r = readRuleEditor(); r.splice(r.length - 1, 0, { min: 0, items: [] }); renderRuleEditor(r);
+    };
+    $('rule-list').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-del]'); if (!b) return;
+      var r = readRuleEditor(); r.splice(+b.dataset.del, 1); renderRuleEditor(r);
+    });
+    $('rule-reset').onclick = function () { renderRuleEditor(OUTFIT); };
+    $('rule-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      outfitRules = readRuleEditor().filter(function (r) { return r.items.length; });
+      if (!outfitRules.length || outfitRules[outfitRules.length - 1].min !== -99) outfitRules.push({ min: -99, items: ['패딩'] });
+      store.set('outfitRules', outfitRules);
+      closeDialog($('rule-dialog'));
+      if (lastWeather) renderOutfit(lastWeather);
+      toast('옷차림 룰을 저장했어요');
+    });
+  }
   function renderOutfit(w) {
+    lastWeather = w;
     var d = w.daily;
     var base = Math.round((d.apparent_temperature_max[0] + d.apparent_temperature_min[0]) / 2);
-    var band = OUTFIT.find(function (o) { return base >= o.min; });
+    var band = outfitRules.find(function (o) { return base >= o.min; }) || outfitRules[outfitRules.length - 1];
     var gap = Math.round(d.temperature_2m_max[0] - d.temperature_2m_min[0]);
     var chip = function (b) {
-      return '<li class="' + (b.lvl ? 'lvl-' + b.lvl : '') + '"' + (b.why ? ' title="' + esc(b.why) + '"' : '') + '>' +
+      return '<li class="' + (b.lvl ? 'lvl-' + b.lvl : '') + (b.cls ? ' ' + b.cls : '') + '"' + (b.why ? ' title="' + esc(b.why) + '"' : '') + '>' +
         (b.ico ? '<span aria-hidden="true">' + b.ico + '</span>' : '') + esc(b.t) + (b.v ? ' <b class="mono">' + esc(b.v) + '</b>' : '') + '</li>';
     };
-    var wear = band.items.map(function (t) { return { t: t }; });
+    var wear = [{ t: '체감', v: base + '°', cls: 'basis' }].concat(band.items.map(function (t) { return { t: t }; }));
     if (gap >= 10) wear.push({ t: '일교차', v: gap + '°', lvl: 'mid', why: '아침저녁엔 한 겹 더 입으세요' });
     $('outfit-list').innerHTML = wear.map(chip).join('');
 
@@ -1595,11 +1809,12 @@ window.SAMPLE_NEWS = [
       bring.push({ ico: '🌂', t: '접이식 우산', v: pop + '%', lvl: 'mid' });
     }
     var air = w.air;
-    if (air && (air.pm2_5 > 35 || air.pm10 > 80)) bring.push({ ico: '😷', t: 'KF94', v: '먼지 나쁨', lvl: 'high', why: '미세 ' + Math.round(air.pm10) + ' · 초미세 ' + Math.round(air.pm2_5) + '㎍/㎥' });
+    if (air && (air.pm2_5 > 35 || air.pm10 > 80)) bring.push({ ico: '😷', t: 'KF94 마스크', v: '먼지 나쁨', lvl: 'high', why: '미세 ' + Math.round(air.pm10) + ' · 초미세 ' + Math.round(air.pm2_5) + '㎍/㎥' });
     else if (air && (air.pm2_5 > 15 || air.pm10 > 30)) bring.push({ ico: '😷', t: '마스크', v: '먼지 보통', why: '초미세 ' + Math.round(air.pm2_5) + '㎍/㎥' });
     var uv = d.uv_index_max[0];
-    if (uv >= 6) bring.push({ ico: '🕶️', t: '선크림·선글라스', v: 'UV ' + Math.round(uv), lvl: 'mid' });
-    else if (uv >= 3) bring.push({ ico: '🧴', t: '선크림', v: 'UV ' + Math.round(uv) });
+    var sunny = codes.slice(0, 8).filter(function (c) { return c <= 1; }).length >= 4;
+    if (uv >= 6 || (uv >= 4 && sunny)) bring.push({ ico: '🕶️', t: '선글라스', v: 'UV ' + Math.round(uv), lvl: uv >= 8 ? 'high' : 'mid', why: '자외선이 강하거나 햇빛이 쨍해요' });
+    if (uv >= 7 || d.temperature_2m_max[0] >= 30) bring.push({ ico: '🧢', t: '모자', v: uv >= 7 ? 'UV ' + Math.round(uv) : Math.round(d.temperature_2m_max[0]) + '°', lvl: 'mid' });
     if (w.current.wind_speed_10m >= 8) bring.push({ ico: '🧥', t: '바람막이', v: Math.round(w.current.wind_speed_10m) + 'm/s', lvl: 'mid' });
     if (d.temperature_2m_max[0] >= 31) bring.push({ ico: '💧', t: '물·손풍기', v: Math.round(d.temperature_2m_max[0]) + '°', lvl: 'mid' });
     if (d.temperature_2m_min[0] <= 0) bring.push({ ico: '🔥', t: '핫팩', v: Math.round(d.temperature_2m_min[0]) + '°', lvl: 'mid' });
@@ -1861,7 +2076,6 @@ window.SAMPLE_NEWS = [
     $('day-today').onclick = function () { viewDate = new Date(); renderSchedule(); };
     $('clear-samples').onclick = function () { clearSamples(); renderSchedule(); toast('예시 일정을 지웠어요'); };
     $('sch-add').onclick = function () { openForm(null); };
-    $('nn-all').onclick = function () { scrollToSchedule(); };
     $('nn').addEventListener('click', function (e) {
       var b = e.target.closest('.nn-item[data-id]');
       scrollToSchedule(b && b.dataset.id);
@@ -2037,10 +2251,12 @@ window.SAMPLE_NEWS = [
     renderLists();
   }
 
-  /* ---------- 관심 소식: 뉴스 + 유튜브 + 인스타그램 ---------- */
-  var news = [], videos = [], newsFilter = 'all', newsKind = 'news', newsSample = false;
+  /* ---------- 관심 소식: 오늘 가장 많이 보도된 소식 ----------
+     공유·조회수 같은 바이럴 지표는 무료로 얻을 수 없어서,
+     같은 사건을 다룬 매체 수(보도 규모)를 화제성 지표로 써요. */
+  var stories = [], videos = [], newsFilter = 'all', newsKind = 'news', newsSample = false;
   var readSet = new Set(store.get('newsRead', []));
-  var squash = function (t) { return String(t).toLowerCase().replace(/\s+/g, ''); };
+  var squash = function (t) { return String(t).toLowerCase().replace(/[^0-9a-z가-힣]/g, ''); };
 
   function parseRss(xml, interest) {
     var doc = new DOMParser().parseFromString(xml, 'text/xml');
@@ -2056,14 +2272,10 @@ window.SAMPLE_NEWS = [
     if (cut > 0) { if (!source) source = title.slice(cut + 3); title = title.slice(0, cut); }
     var date = r.pubDate ? new Date(r.pubDate.replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d|GMT/.test(r.pubDate) ? '' : 'Z')) : null;
     if (date && isNaN(date)) date = new Date(r.pubDate);
-    var domain = '';
-    try { domain = r.sourceUrl ? new URL(r.sourceUrl).hostname : ''; } catch (e) { /* 무시 */ }
-    return { title: title, link: r.link, source: source, domain: domain, image: r.thumbnail || '', date: date && !isNaN(date) ? date.toISOString() : null, interest: interest };
+    return { title: title, link: r.link, source: source, image: r.thumbnail || '', date: date && !isNaN(date) ? date.toISOString() : null, interest: interest };
   }
-
-  // 구글 뉴스 (관심사별, 이미지 없음)
   function fetchGoogle(q) {
-    var rss = 'https://news.google.com/rss/search?q=' + encodeURIComponent(q + ' when:7d') + '&hl=ko&gl=KR&ceid=KR:ko';
+    var rss = 'https://news.google.com/rss/search?q=' + encodeURIComponent(q + ' when:1d') + '&hl=ko&gl=KR&ceid=KR:ko';
     return getJSON('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(rss))
       .then(function (r) {
         if (r.status !== 'ok') throw new Error('rss2json');
@@ -2075,32 +2287,31 @@ window.SAMPLE_NEWS = [
           .then(function (xml) { return parseRss(xml, q); });
       });
   }
-  // GDELT (대표 이미지 포함). 요청 간격 제한이 있어 관심사를 한 번에 묻고 제목으로 분류
   function fetchGdelt(interests) {
     var terms = interests.map(function (q) { return /\s/.test(q) ? '"' + q + '"' : q; });
     var query = (terms.length > 1 ? '(' + terms.join(' OR ') + ')' : terms[0]) + ' sourcelang:korean';
-    return getJSON('https://api.gdeltproject.org/api/v2/doc/doc?mode=artlist&format=json&sort=datedesc&timespan=7d&maxrecords=40&query=' + encodeURIComponent(query), 9000)
+    return getJSON('https://api.gdeltproject.org/api/v2/doc/doc?mode=artlist&format=json&sort=datedesc&timespan=1d&maxrecords=75&query=' + encodeURIComponent(query), 9000)
       .then(function (r) {
         return (r.articles || []).map(function (a) {
           var t = squash(a.title);
           var hit = interests.find(function (q) { return t.indexOf(squash(q)) >= 0; }) || interests[0];
           var sd = a.seendate || '';
           var iso = sd.length >= 15 ? sd.slice(0, 4) + '-' + sd.slice(4, 6) + '-' + sd.slice(6, 8) + 'T' + sd.slice(9, 11) + ':' + sd.slice(11, 13) + ':' + sd.slice(13, 15) + 'Z' : null;
-          return { title: a.title, link: a.url, source: a.domain, domain: a.domain, image: a.socialimage || '', date: iso, interest: hit };
+          return { title: a.title, link: a.url, source: a.domain, image: a.socialimage || '', date: iso, interest: hit };
         });
       });
   }
 
-  // 유튜브: API 키가 있으면 공식 API, 없으면 공개 Piped 인스턴스
+  // 유튜브: API 키가 있으면 오늘 올라온 영상을 조회수 순으로, 없으면 Piped에서 조회수 순
   var PIPED = ['https://pipedapi.kavin.rocks', 'https://pipedapi.adminforge.de'];
   function fetchYoutube(q) {
     if (settings.ytKey) {
-      var after = new Date(Date.now() - 14 * 864e5).toISOString();
-      return getJSON('https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=relevance&maxResults=8&regionCode=KR&relevanceLanguage=ko' +
-        '&publishedAfter=' + encodeURIComponent(after) + '&q=' + encodeURIComponent(q) + '&key=' + encodeURIComponent(settings.ytKey))
+      var start = new Date(); start.setHours(0, 0, 0, 0);
+      return getJSON('https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=viewCount&maxResults=8&regionCode=KR&relevanceLanguage=ko' +
+        '&publishedAfter=' + encodeURIComponent(start.toISOString()) + '&q=' + encodeURIComponent(q) + '&key=' + encodeURIComponent(settings.ytKey))
         .then(function (r) {
-          return (r.items || []).map(function (v) {
-            return { id: v.id.videoId, title: decodeEntities(v.snippet.title), channel: v.snippet.channelTitle, date: v.snippet.publishedAt, interest: q };
+          return (r.items || []).map(function (v, i) {
+            return { id: v.id.videoId, title: decodeEntities(v.snippet.title), channel: v.snippet.channelTitle, date: v.snippet.publishedAt, rank: i, interest: q };
           });
         });
     }
@@ -2108,9 +2319,10 @@ window.SAMPLE_NEWS = [
       if (i >= PIPED.length) return Promise.reject(new Error('piped'));
       return getJSON(PIPED[i] + '/search?filter=videos&q=' + encodeURIComponent(q), 7000)
         .then(function (r) {
-          return (r.items || []).filter(function (v) { return v.url && v.url.indexOf('/watch') === 0; }).slice(0, 8).map(function (v) {
-            return { id: v.url.split('v=')[1], title: v.title, channel: v.uploaderName, date: v.uploaded > 0 ? new Date(v.uploaded).toISOString() : null, ago: v.uploadedDate, interest: q };
-          });
+          return (r.items || []).filter(function (v) { return v.url && v.url.indexOf('/watch') === 0; })
+            .sort(function (a, b) { return (b.views || 0) - (a.views || 0); }).slice(0, 8).map(function (v) {
+              return { id: v.url.split('v=')[1], title: v.title, channel: v.uploaderName, views: v.views, date: v.uploaded > 0 ? new Date(v.uploaded).toISOString() : null, ago: v.uploadedDate, interest: q };
+            });
         })
         .catch(function () { return tryAt(i + 1); });
     };
@@ -2118,33 +2330,57 @@ window.SAMPLE_NEWS = [
   }
   function decodeEntities(s) { var t = document.createElement('textarea'); t.innerHTML = s; return t.value; }
 
+  // 제목 글자 2-gram 유사도로 같은 사건을 묶어요
+  function grams(t) { var s = squash(t), g = {}; for (var i = 0; i < s.length - 1; i++) g[s.substr(i, 2)] = 1; return g; }
+  function similar(a, b) {
+    var n = 0, ka = Object.keys(a), kb = Object.keys(b).length;
+    ka.forEach(function (k) { if (b[k]) n++; });
+    return n / Math.max(1, Math.min(ka.length, kb));
+  }
+  function clusterStories(items) {
+    var clusters = [];
+    items.forEach(function (it) {
+      var g = grams(it.title);
+      var hit = clusters.find(function (c) { return similar(c.g, g) >= 0.5; });
+      if (hit) { hit.items.push(it); return; }
+      clusters.push({ g: g, items: [it] });
+    });
+    return clusters.map(function (c) {
+      var sources = {};
+      c.items.forEach(function (x) { sources[x.source || x.link] = 1; });
+      var lead = c.items.find(function (x) { return x.image; }) || c.items[0];
+      var latest = c.items.map(function (x) { return x.date || ''; }).sort().pop();
+      return {
+        title: lead.title, link: lead.link, source: lead.source, interest: lead.interest, date: latest || null,
+        image: lead.image || (c.items.find(function (x) { return x.image; }) || {}).image || '',
+        outlets: Object.keys(sources).length
+      };
+    }).sort(function (a, b) {
+      return (b.outlets - a.outlets) || ((b.image ? 1 : 0) - (a.image ? 1 : 0)) || (b.date || '').localeCompare(a.date || '');
+    });
+  }
+  var isToday = function (iso) { return iso && ymd(new Date(iso)) === ymd(new Date()); };
+
   function loadNews() {
-    var sig = settings.interests.join('|') + '#' + (settings.ytKey ? 'k' : '');
-    var cache = store.get('feedCache', null);
-    if (cache && cache.sig === sig && Date.now() - cache.at < 30 * 60 * 1000 && cache.news.length) {
-      return Promise.resolve({ news: cache.news, videos: cache.videos, failed: false });
+    var sig = ymd(new Date()) + '|' + settings.interests.join('|') + '#' + (settings.ytKey ? 'k' : '');
+    var cache = store.get('feedCache2', null);
+    if (cache && cache.sig === sig && Date.now() - cache.at < 30 * 60 * 1000 && cache.stories.length) {
+      return Promise.resolve({ stories: cache.stories, videos: cache.videos, failed: false });
     }
     var qs = settings.interests;
-    if (!qs.length) return Promise.resolve({ news: [], videos: [], failed: false });
+    if (!qs.length) return Promise.resolve({ stories: [], videos: [], failed: false });
     var settle = function (p) { return p.then(function (v) { return { ok: true, v: v }; }, function () { return { ok: false, v: [] }; }); };
     var jobs = [settle(fetchGdelt(qs))].concat(qs.map(function (q) { return settle(fetchGoogle(q)); }));
     var vids = Promise.all(qs.map(function (q) { return settle(fetchYoutube(q)); }));
     return Promise.all([Promise.all(jobs), vids]).then(function (res) {
-      var seen = {}, items = [];
-      res[0].forEach(function (r) {
-        r.v.forEach(function (it) {
-          var k = squash(it.title).slice(0, 40);
-          if (!it.title || !it.link) return;
-          if (seen[k]) { if (!seen[k].image && it.image) seen[k].image = it.image; return; }
-          seen[k] = it; items.push(it);
-        });
-      });
-      items.sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
+      var all = [];
+      res[0].forEach(function (r) { r.v.forEach(function (it) { if (it.title && it.link && isToday(it.date)) all.push(it); }); });
       var vseen = {}, vs = [];
       res[1].forEach(function (r) { r.v.forEach(function (v) { if (v.id && !vseen[v.id]) { vseen[v.id] = 1; vs.push(v); } }); });
       var failed = res[0].every(function (r) { return !r.ok; });
-      if (!failed) store.set('feedCache', { sig: sig, at: Date.now(), news: items, videos: vs });
-      return { news: items, videos: vs, failed: failed };
+      var out = { stories: clusterStories(all), videos: vs, failed: failed };
+      if (!failed) store.set('feedCache2', { sig: sig, at: Date.now(), stories: out.stories, videos: vs });
+      return out;
     });
   }
 
@@ -2155,77 +2391,53 @@ window.SAMPLE_NEWS = [
     if (m < 1440) return Math.round(m / 60) + '시간 전';
     return Math.round(m / 1440) + '일 전';
   }
-  // 관심사마다 고정된 색 (썸네일이 없을 때 타일 색)
   function hueOf(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
   function thumbHtml(n, cls) {
-    var h = hueOf(n.interest);
-    var tile = '<span class="thumb-fallback" style="--h:' + h + '"><span>' + esc(n.interest) + '</span></span>';
+    var tile = '<span class="thumb-fallback" style="--h:' + hueOf(n.interest) + '"><span>' + esc(n.interest) + '</span></span>';
     if (!n.image) return '<span class="thumb ' + cls + '">' + tile + '</span>';
     return '<span class="thumb ' + cls + '">' + tile + '<img src="' + esc(n.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"></span>';
   }
   function newsCard(n, big) {
-    var id = n.link, read = readSet.has(id);
-    var isNew = n.date && Date.now() - new Date(n.date) < 864e5 && !read;
-    return '<li><a class="news-card' + (big ? ' big' : '') + (read ? ' read' : '') + '" href="' + esc(n.link) + '" target="_blank" rel="noopener" data-id="' + esc(id) + '">' +
+    var read = readSet.has(n.link);
+    return '<li><a class="news-card' + (big ? ' big' : '') + (read ? ' read' : '') + '" href="' + esc(n.link) + '" target="_blank" rel="noopener" data-id="' + esc(n.link) + '">' +
       thumbHtml(n, big ? 'wide' : 'square') +
       '<span class="n-body"><span class="n-title">' + esc(n.title) + '</span>' +
-      '<span class="n-meta">' + (isNew ? '<span class="n-new">NEW</span>' : '') + '<span class="n-tag">' + esc(n.interest) + '</span>' +
+      '<span class="n-meta">' + (n.outlets > 1 ? '<span class="n-hot">' + n.outlets + '개 매체 보도</span>' : '') + '<span class="n-tag">' + esc(n.interest) + '</span>' +
       (n.source ? '<span>' + esc(n.source) + '</span>' : '') + (n.date ? '<span>' + ago(n.date) + '</span>' : '') + '</span></span></a></li>';
   }
+  function fmtViews(v) { return v >= 10000 ? Math.round(v / 1000) / 10 + '만회' : v >= 1000 ? Math.round(v / 100) / 10 + '천회' : v + '회'; }
   function videoCard(v) {
     return '<li><a class="yt-card" href="https://www.youtube.com/watch?v=' + encodeURIComponent(v.id) + '" target="_blank" rel="noopener" data-id="yt:' + esc(v.id) + '">' +
-      '<span class="thumb wide">' + '<span class="thumb-fallback" style="--h:' + hueOf(v.interest) + '"><span>' + esc(v.interest) + '</span></span>' +
+      '<span class="thumb wide"><span class="thumb-fallback" style="--h:' + hueOf(v.interest) + '"><span>' + esc(v.interest) + '</span></span>' +
       '<img src="https://i.ytimg.com/vi/' + encodeURIComponent(v.id) + '/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="play" aria-hidden="true"></span></span>' +
       '<span class="yt-title">' + esc(v.title) + '</span>' +
-      '<span class="n-meta"><span>' + esc(v.channel || '') + '</span><span>' + (v.date ? ago(v.date) : esc(v.ago || '')) + '</span></span></a></li>';
+      '<span class="n-meta"><span>' + esc(v.channel || '') + '</span>' + (v.views ? '<span>조회 ' + fmtViews(v.views) + '</span>' : '') + '<span>' + (v.date ? ago(v.date) : esc(v.ago || '')) + '</span></span></a></li>';
   }
   function ytSearchCard(q) {
-    return '<li><a class="yt-card" href="https://www.youtube.com/results?search_query=' + encodeURIComponent(q) + '&sp=CAI%253D" target="_blank" rel="noopener">' +
+    return '<li><a class="yt-card" href="https://www.youtube.com/results?search_query=' + encodeURIComponent(q) + '&sp=CAMSAggC" target="_blank" rel="noopener">' +
       '<span class="thumb wide"><span class="thumb-fallback yt" style="--h:' + hueOf(q) + '"><span>' + esc(q) + '</span></span><span class="play" aria-hidden="true"></span></span>' +
-      '<span class="yt-title">' + esc(q) + ' 최신 영상 보기</span><span class="n-meta"><span>YouTube 검색</span></span></a></li>';
+      '<span class="yt-title">' + esc(q) + ' 오늘 인기 영상</span><span class="n-meta"><span>YouTube 검색 · 조회수순</span></span></a></li>';
   }
   function igTag(q) { return q.replace(/[^0-9A-Za-z가-힣_]/g, ''); }
 
   function renderNews(result) {
-    news = result.news; videos = result.videos || [];
-    newsSample = false;
-    if (result.failed) { news = window.SAMPLE_NEWS; newsSample = true; }
-    var panel = $('news-panel');
-    panel.hidden = false;
+    stories = result.stories; videos = result.videos || [];
+    newsSample = !!result.failed;
+    if (newsSample) stories = window.SAMPLE_NEWS;
+    $('news-panel').hidden = false;
     $('news-note').hidden = !newsSample;
     $('news-note').textContent = newsSample ? '뉴스 서버에 연결하지 못해 예시를 보여드려요. 링크를 누르면 실제 검색 결과로 이동해요.' : '';
-
-    // 안 읽은 것 > 썸네일 있는 것 > 최신순
-    var fresh = function (n) { return n.date ? Math.max(0, 1 - (Date.now() - new Date(n.date)) / (3 * 864e5)) : 0; };
-    var top = news.slice().sort(function (a, b) {
-      var sa = (readSet.has(a.link) ? 0 : 2) + (a.image ? 1 : 0) + fresh(a);
-      var sb = (readSet.has(b.link) ? 0 : 2) + (b.image ? 1 : 0) + fresh(b);
-      return sb - sa;
-    }).slice(0, 3);
-    $('news-top').innerHTML = top.map(function (n, i) { return newsCard(n, i === 0); }).join('');
-    $('news-top').hidden = !top.length;
-
-    $('yt-block').hidden = false;
-    $('yt-top').innerHTML = videos.length
-      ? videos.slice(0, 6).map(videoCard).join('')
-      : settings.interests.map(ytSearchCard).join('');
-
-    $('ig-tags').innerHTML = settings.interests.map(function (q) {
-      var t = igTag(q);
-      return t ? '<a class="ig-tag" href="https://www.instagram.com/explore/tags/' + encodeURIComponent(t) + '/" target="_blank" rel="noopener">#' + esc(t) + '</a>' : '';
-    }).join('');
-    $('ig-block').hidden = !settings.interests.length;
-
-    var total = news.length + videos.length;
-    $('news-more').hidden = newsSample || total <= 3;
-    $('news-total').textContent = total;
-    renderNewsPage();
-    route();
+    $('news-top').innerHTML = stories.slice(0, 3).map(function (n, i) { return newsCard(n, i === 0); }).join('');
+    $('news-empty').hidden = stories.length > 0;
+    $('news-more').hidden = false;
+    $('news-total').textContent = stories.length > 3 ? stories.length : '';
+    renderNewsDialog();
   }
-  function renderNewsPage() {
-    var src = newsKind === 'news' ? news : videos;
+  function renderNewsDialog() {
+    var src = newsKind === 'video' ? videos : newsKind === 'news' ? stories : [];
     var interests = settings.interests.filter(function (i) { return src.some(function (n) { return n.interest === i; }); });
     if (newsFilter !== 'all' && interests.indexOf(newsFilter) < 0) newsFilter = 'all';
+    $('news-filters').hidden = newsKind === 'ig' || !src.length;
     $('news-filters').innerHTML = ['all'].concat(interests).map(function (i) {
       var c = i === 'all' ? src.length : src.filter(function (n) { return n.interest === i; }).length;
       return '<button type="button" class="chip" role="tab" data-f="' + esc(i) + '" aria-selected="' + (newsFilter === i) + '">' + (i === 'all' ? '전체' : esc(i)) + ' <span class="mono">' + c + '</span></button>';
@@ -2233,10 +2445,17 @@ window.SAMPLE_NEWS = [
     var list = newsFilter === 'all' ? src : src.filter(function (n) { return n.interest === newsFilter; });
     $('news-all').hidden = newsKind !== 'news';
     $('yt-all').hidden = newsKind !== 'video';
-    if (newsKind === 'news') $('news-all').innerHTML = list.map(function (n) { return newsCard(n, false); }).join('');
-    else $('yt-all').innerHTML = list.length ? list.map(videoCard).join('') : settings.interests.map(ytSearchCard).join('');
-    $('news-all-count').textContent = list.length + '건';
-    Array.prototype.forEach.call(document.querySelectorAll('.seg-btn'), function (b) { b.setAttribute('aria-selected', String(b.dataset.kind === newsKind)); });
+    $('ig-tags').hidden = newsKind !== 'ig';
+    $('news-hint').textContent = newsKind === 'news' ? '오늘 올라온 기사 중 여러 매체가 함께 다룬 순서예요.'
+      : newsKind === 'video' ? (videos.length ? '오늘 올라온 영상을 조회수 순으로 모았어요.' : '영상을 불러오지 못해 유튜브 검색으로 연결해요. 설정에 유튜브 API 키를 넣으면 오늘 영상을 조회수 순으로 보여줘요.')
+      : '인스타그램은 게시물을 가져올 공개 방법이 없어 해시태그 페이지로 연결해요.';
+    if (newsKind === 'news') $('news-all').innerHTML = list.length ? list.map(function (n) { return newsCard(n, false); }).join('') : '<li class="empty">오늘 올라온 소식이 아직 없어요.</li>';
+    if (newsKind === 'video') $('yt-all').innerHTML = list.length ? list.map(videoCard).join('') : settings.interests.map(ytSearchCard).join('');
+    if (newsKind === 'ig') $('ig-tags').innerHTML = settings.interests.map(function (q) {
+      var t = igTag(q);
+      return t ? '<a class="ig-tag" href="https://www.instagram.com/explore/tags/' + encodeURIComponent(t) + '/" target="_blank" rel="noopener">#' + esc(t) + '</a>' : '';
+    }).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('#news-dialog .seg-btn'), function (b) { b.setAttribute('aria-selected', String(b.dataset.kind === newsKind)); });
   }
   function initNews() {
     document.addEventListener('click', function (e) {
@@ -2248,23 +2467,14 @@ window.SAMPLE_NEWS = [
     });
     $('news-filters').addEventListener('click', function (e) {
       var b = e.target.closest('.chip');
-      if (b) { newsFilter = b.dataset.f; renderNewsPage(); }
+      if (b) { newsFilter = b.dataset.f; renderNewsDialog(); }
     });
-    document.querySelector('.seg').addEventListener('click', function (e) {
+    document.querySelector('#news-dialog .seg').addEventListener('click', function (e) {
       var b = e.target.closest('.seg-btn');
-      if (b) { newsKind = b.dataset.kind; newsFilter = 'all'; renderNewsPage(); }
+      if (b) { newsKind = b.dataset.kind; newsFilter = 'all'; renderNewsDialog(); }
     });
+    $('news-more').onclick = function () { newsKind = 'news'; newsFilter = 'all'; renderNewsDialog(); openDialog($('news-dialog')); };
     loadNews().then(renderNews);
-  }
-
-  /* ---------- 화면 전환 ---------- */
-  function route() {
-    var onNews = location.hash === '#news' && !newsSample && (news.length + videos.length) > 0;
-    var was = !$('view-news').hidden;
-    $('view-home').hidden = onNews;
-    $('view-news').hidden = !onNews;
-    document.body.classList.toggle('on-news', onNews);
-    if (was !== onNews) window.scrollTo(0, 0);
   }
 
   /* ---------- 설정 ---------- */
@@ -2347,16 +2557,16 @@ window.SAMPLE_NEWS = [
 
   /* ---------- 시작 ---------- */
   renderGreeting();
+  initNote();
   initSeason();
   initSeasonDialog();
+  initRules();
   initPhrase();
   initSchedule();
   initChecklist();
   initSettings();
   loadWeather().then(renderWeather);
   initNews();
-  window.addEventListener('hashchange', route);
-  route();
 
   setInterval(function () { renderGreeting(); if (ymd(viewDate) === ymd(new Date())) renderSchedule(); else renderNowNext(); }, 60 * 1000);
 })();
