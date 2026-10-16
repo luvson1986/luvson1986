@@ -700,3 +700,11 @@ input[type="date"], input[type="time"] {
 input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; }
 .city-row input { min-width: 0; }
 .qa #qa-date { min-width: 0; }
+
+/* iOS: 팝업은 세로로만 움직이게, 넘치는 것은 잘라내요 */
+.sheet { overflow-x: hidden; touch-action: pan-y; }
+.sheet-body { overflow-x: hidden; }
+.field { overflow: hidden; padding: 2px; margin: -2px; }
+.form-grid .field { min-width: 0; }
+input[type="date"], input[type="time"] { box-sizing: border-box; -webkit-min-logical-width: 0; }
+input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { min-width: 0; margin: 0; }
