@@ -1531,6 +1531,58 @@
     });
   }
 
+  /* ---------- 데이터 백업 / 복원 ---------- */
+  function backupData() {
+    var data = {};
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k.indexOf('pa:') === 0 && k.indexOf('pa:feedCache') !== 0) data[k] = localStorage.getItem(k);
+      }
+    } catch (e) { /* 저장소 접근 불가 */ }
+    return JSON.stringify({ app: 'todays-assistant', version: 1, savedAt: new Date().toISOString(), data: data });
+  }
+  function initBackup() {
+    $('bk-export').onclick = function () {
+      var name = '오늘의비서-백업-' + ymd(new Date()) + '.json';
+      var blob = new Blob([backupData()], { type: 'application/json' });
+      var file = typeof File === 'function' ? new File([blob], name, { type: 'application/json' }) : null;
+      // 폰에서는 공유 시트로 (파일 앱·카카오톡·메일 등에 저장), 안 되면 다운로드
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: name }).catch(function () {});
+        return;
+      }
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    };
+    $('bk-import').addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0];
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var obj = JSON.parse(reader.result);
+          if (!obj || obj.app !== 'todays-assistant' || !obj.data) throw new Error('형식');
+          Object.keys(obj.data).forEach(function (k) { if (k.indexOf('pa:') === 0) localStorage.setItem(k, obj.data[k]); });
+          toast('백업을 불러왔어요. 다시 여는 중…');
+          setTimeout(function () { location.reload(); }, 900);
+        } catch (err) {
+          toast('오늘의 비서 백업 파일이 아니에요. 파일을 다시 확인해 주세요');
+        }
+        e.target.value = '';
+      };
+      reader.readAsText(f);
+    });
+  }
+
+  /* 홈 화면 앱: 오프라인 지원, 저장소 보존 요청 */
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
+
   /* ---------- 시작 ---------- */
   renderGreeting();
   initNote();
@@ -1543,6 +1595,7 @@
   initSchedule();
   initChecklist();
   initSettings();
+  initBackup();
   loadWeather().then(renderWeather);
   initNews();
 

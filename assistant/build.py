@@ -25,7 +25,7 @@ def bundle(page: str) -> str:
 
 
 def fragment(html: str) -> str:
-    drop = re.compile(r'^(<!doctype html>|<html[^>]*>|<head>|</head>|<body>|</body>|</html>|<meta charset[^>]*>|<meta name="viewport"[^>]*>)$')
+    drop = re.compile(r'^(<!doctype html>|<html[^>]*>|<head>|</head>|<body>|</body>|</html>|<meta charset[^>]*>|<meta name="viewport"[^>]*>|<link rel="(manifest|icon|apple-touch-icon)"[^>]*>|<meta name="(apple-mobile-web-app|mobile-web-app)[^>]*>)$')
     return "\n".join(l for l in html.splitlines() if not drop.match(l.strip()))
 
 

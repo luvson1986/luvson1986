@@ -16,6 +16,14 @@
 
 설정(이름, 관심사, 지역)과 일정은 브라우저 localStorage에 저장됩니다.
 
+## 폰에 앱으로 설치하기
+1. GitHub 저장소 **Settings → Pages**에서 *Deploy from a branch*, 브랜치와 `/(root)` 선택 후 저장
+2. 1~2분 뒤 `https://luvson1986.github.io/luvson1986/assistant/` 접속
+3. iPhone: Safari 공유 버튼 → **홈 화면에 추가** / Android: Chrome 메뉴 → **앱 설치**
+4. 처음 열 때 위치 권한을 허용하면 현재 위치 날씨를 보여줘요
+
+데이터(일정·체크리스트·메모·설정)는 폰 안에만 저장돼요. 설정 → **백업 파일 만들기**로 가끔 백업해 두세요.
+
 ## 한 파일로 묶기
 ```bash
 python3 build.py   # dist/today.html — 이 파일 하나만 열어도 동작

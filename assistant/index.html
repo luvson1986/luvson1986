@@ -7,6 +7,13 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#121a26">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="오늘의 비서">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
@@ -327,6 +334,15 @@
       <label for="set-ytkey">유튜브 API 키 (선택)</label>
       <input id="set-ytkey" type="text" autocomplete="off" spellcheck="false" placeholder="AIza…">
       <p class="hint">넣으면 관심사별 최신 영상을 더 안정적으로 가져와요. Google Cloud 콘솔에서 YouTube Data API v3 키를 무료로 만들 수 있어요.</p>
+    </div>
+    <div class="field">
+      <span class="field-label">데이터 백업</span>
+      <div class="backup-row">
+        <button type="button" class="ghost-btn" id="bk-export">백업 파일 만들기</button>
+        <label class="ghost-btn" for="bk-import">백업 불러오기</label>
+        <input type="file" id="bk-import" class="sr-only" accept="application/json,.json">
+      </div>
+      <p class="hint">일정·체크리스트·메모·설정은 이 폰에만 저장돼요. 폰을 바꾸거나 앱을 지우기 전에 백업 파일을 만들어 두세요.</p>
     </div>
     <div class="form-actions">
       <button type="button" class="primary-btn" id="settings-save">저장</button>
