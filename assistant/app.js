@@ -802,7 +802,6 @@
     $('sch-h').textContent = diff === 0 ? '오늘 일정' : diff === 1 ? '내일 일정' : diff === -1 ? '어제 일정' : (viewDate.getMonth() + 1) + '월 ' + viewDate.getDate() + '일 일정';
     $('sample-banner').hidden = !all.some(function (s) { return s.sample; });
     $('timeline-empty').hidden = all.length > 0;
-    if (document.activeElement !== $('qa-text')) $('qa-date').value = key;
 
     var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
     var card = function (s, state, timeLabel, rel) {
@@ -1019,7 +1018,7 @@
 
     $('day-prev').onclick = function () { viewDate.setDate(viewDate.getDate() - 1); renderSchedule(); };
     $('day-next').onclick = function () { viewDate.setDate(viewDate.getDate() + 1); renderSchedule(); };
-    $('day-today').onclick = function () { renderUpcoming(); openDialog($('up-dialog')); };
+    $('day-today').onclick = function () { $('qa-date').value = ymd(viewDate); renderUpcoming(); openDialog($('up-dialog')); };
     $('uplist').addEventListener('click', function (e) {
       var b = e.target.closest('.dl-row'); if (!b) return;
       closeDialog($('up-dialog'));
@@ -1043,9 +1042,8 @@
       });
       clearSamples();
       schedules[date] = (schedules[date] || []).concat(added);
-      saveSchedules();
-      viewDate = parseYmd(date); renderSchedule();
-      $('qa-text').value = '';
+      saveSchedules(); renderSchedule(); renderUpcoming();
+      $('qa-text').value = ''; $('qa-text').focus();
       toast(added.length + '개 일정을 추가했어요');
     });
 
@@ -1539,7 +1537,7 @@
   initSeason();
   initSeasonDialog();
   initRules();
-  $('wx-open').onclick = $('wk-open').onclick = $('hourly').onclick = function () { openDialog($('week-dialog')); };
+  $('wx-open').onclick = $('hourly').onclick = function () { openDialog($('week-dialog')); };
   initPhrase();
   initCats();
   initSchedule();

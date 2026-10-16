@@ -78,15 +78,9 @@
           </div>
         </header>
         <div class="cat-legend" id="cat-legend"></div>
-        <form class="qa" id="qa-form">
-          <input type="date" id="qa-date" aria-label="날짜">
-          <input id="qa-text" maxlength="200" placeholder="1000피티-출근-1900피부과" aria-label="빠른 추가" autocomplete="off">
-          <button type="submit" class="primary-btn sm">추가</button>
-        </form>
-        <p class="hint qa-hint">하이픈(-)으로 나누면 여러 개, 앞의 숫자 4자리는 시간, 끝에 !를 붙이면 중요 일정이에요.</p>
         <p class="sample-banner" id="sample-banner" hidden>예시 일정이에요. 첫 일정을 추가하면 사라져요. <button type="button" class="link-btn" id="clear-samples">예시 지우기</button></p>
         <ol class="timeline" id="timeline"></ol>
-        <p class="empty" id="timeline-empty" hidden>이 날은 일정이 없어요. 위에서 바로 추가하세요.</p>
+        <p class="empty" id="timeline-empty" hidden>이 날은 일정이 없어요. 오른쪽 위 + 로 추가하세요.</p>
       </section>
 
       <!-- 체크리스트 -->
@@ -109,7 +103,6 @@
           <div class="head-tools">
             <span class="pill" id="wx-place"></span>
             <button type="button" class="ghost-btn sm" id="rule-open">옷차림 룰</button>
-            <button type="button" class="ghost-btn sm" id="wk-open">일주일 ›</button>
           </div>
         </header>
         <div class="hourly" id="hourly" aria-label="시간별 예보"></div>
@@ -233,6 +226,15 @@
     </header>
     <ul class="daylist" id="uplist"></ul>
     <p class="empty" id="up-empty" hidden>앞으로 예정된 일정이 없어요.</p>
+    <div class="up-add">
+      <h3 class="sub-h">빠르게 추가</h3>
+    <form class="qa" id="qa-form">
+      <input type="date" id="qa-date" aria-label="날짜">
+      <input id="qa-text" maxlength="200" placeholder="1000피티-출근-1900피부과" aria-label="빠른 추가" autocomplete="off">
+      <button type="submit" class="primary-btn sm">추가</button>
+    </form>
+    <p class="hint qa-hint">하이픈(-)으로 나누면 여러 개, 앞의 숫자 4자리는 시간, 끝에 !를 붙이면 중요 일정이에요.</p>
+    </div>
   </div>
 </dialog>
 

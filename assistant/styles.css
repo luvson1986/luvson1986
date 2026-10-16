@@ -652,3 +652,7 @@ body.on-news::before {
   .qa { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "text text" "date btn"; }
   .qa #qa-text { grid-area: text; } .qa #qa-date { grid-area: date; width: 100%; } .qa button { grid-area: btn; }
 }
+
+.up-add { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.up-add .sub-h { margin: 0; color: var(--ink); font-size: 14px; }
+.up-add .qa-hint { margin-top: 0; }

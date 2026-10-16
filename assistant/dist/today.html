@@ -666,6 +666,10 @@ body.on-news::before {
   .qa #qa-text { grid-area: text; } .qa #qa-date { grid-area: date; width: 100%; } .qa button { grid-area: btn; }
 }
 
+.up-add { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.up-add .sub-h { margin: 0; color: var(--ink); font-size: 14px; }
+.up-add .qa-hint { margin-top: 0; }
+
 </style>
 </head>
 <body>
@@ -734,15 +738,9 @@ body.on-news::before {
           </div>
         </header>
         <div class="cat-legend" id="cat-legend"></div>
-        <form class="qa" id="qa-form">
-          <input type="date" id="qa-date" aria-label="날짜">
-          <input id="qa-text" maxlength="200" placeholder="1000피티-출근-1900피부과" aria-label="빠른 추가" autocomplete="off">
-          <button type="submit" class="primary-btn sm">추가</button>
-        </form>
-        <p class="hint qa-hint">하이픈(-)으로 나누면 여러 개, 앞의 숫자 4자리는 시간, 끝에 !를 붙이면 중요 일정이에요.</p>
         <p class="sample-banner" id="sample-banner" hidden>예시 일정이에요. 첫 일정을 추가하면 사라져요. <button type="button" class="link-btn" id="clear-samples">예시 지우기</button></p>
         <ol class="timeline" id="timeline"></ol>
-        <p class="empty" id="timeline-empty" hidden>이 날은 일정이 없어요. 위에서 바로 추가하세요.</p>
+        <p class="empty" id="timeline-empty" hidden>이 날은 일정이 없어요. 오른쪽 위 + 로 추가하세요.</p>
       </section>
 
       <!-- 체크리스트 -->
@@ -765,7 +763,6 @@ body.on-news::before {
           <div class="head-tools">
             <span class="pill" id="wx-place"></span>
             <button type="button" class="ghost-btn sm" id="rule-open">옷차림 룰</button>
-            <button type="button" class="ghost-btn sm" id="wk-open">일주일 ›</button>
           </div>
         </header>
         <div class="hourly" id="hourly" aria-label="시간별 예보"></div>
@@ -889,6 +886,15 @@ body.on-news::before {
     </header>
     <ul class="daylist" id="uplist"></ul>
     <p class="empty" id="up-empty" hidden>앞으로 예정된 일정이 없어요.</p>
+    <div class="up-add">
+      <h3 class="sub-h">빠르게 추가</h3>
+    <form class="qa" id="qa-form">
+      <input type="date" id="qa-date" aria-label="날짜">
+      <input id="qa-text" maxlength="200" placeholder="1000피티-출근-1900피부과" aria-label="빠른 추가" autocomplete="off">
+      <button type="submit" class="primary-btn sm">추가</button>
+    </form>
+    <p class="hint qa-hint">하이픈(-)으로 나누면 여러 개, 앞의 숫자 4자리는 시간, 끝에 !를 붙이면 중요 일정이에요.</p>
+    </div>
   </div>
 </dialog>
 
@@ -2219,7 +2225,6 @@ window.SAMPLE_NEWS = [
     $('sch-h').textContent = diff === 0 ? '오늘 일정' : diff === 1 ? '내일 일정' : diff === -1 ? '어제 일정' : (viewDate.getMonth() + 1) + '월 ' + viewDate.getDate() + '일 일정';
     $('sample-banner').hidden = !all.some(function (s) { return s.sample; });
     $('timeline-empty').hidden = all.length > 0;
-    if (document.activeElement !== $('qa-text')) $('qa-date').value = key;
 
     var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
     var card = function (s, state, timeLabel, rel) {
@@ -2436,7 +2441,7 @@ window.SAMPLE_NEWS = [
 
     $('day-prev').onclick = function () { viewDate.setDate(viewDate.getDate() - 1); renderSchedule(); };
     $('day-next').onclick = function () { viewDate.setDate(viewDate.getDate() + 1); renderSchedule(); };
-    $('day-today').onclick = function () { renderUpcoming(); openDialog($('up-dialog')); };
+    $('day-today').onclick = function () { $('qa-date').value = ymd(viewDate); renderUpcoming(); openDialog($('up-dialog')); };
     $('uplist').addEventListener('click', function (e) {
       var b = e.target.closest('.dl-row'); if (!b) return;
       closeDialog($('up-dialog'));
@@ -2460,9 +2465,8 @@ window.SAMPLE_NEWS = [
       });
       clearSamples();
       schedules[date] = (schedules[date] || []).concat(added);
-      saveSchedules();
-      viewDate = parseYmd(date); renderSchedule();
-      $('qa-text').value = '';
+      saveSchedules(); renderSchedule(); renderUpcoming();
+      $('qa-text').value = ''; $('qa-text').focus();
       toast(added.length + '개 일정을 추가했어요');
     });
 
@@ -2956,7 +2960,7 @@ window.SAMPLE_NEWS = [
   initSeason();
   initSeasonDialog();
   initRules();
-  $('wx-open').onclick = $('wk-open').onclick = $('hourly').onclick = function () { openDialog($('week-dialog')); };
+  $('wx-open').onclick = $('hourly').onclick = function () { openDialog($('week-dialog')); };
   initPhrase();
   initCats();
   initSchedule();
