@@ -2516,16 +2516,22 @@ window.TRAVEL_CITIES = [
 
   /* 지금 · 다음 (홈 상단 요약) */
   function relLabel(m) { return m < 60 ? m + '분 후' : Math.floor(m / 60) + '시간' + (m % 60 ? ' ' + (m % 60) + '분' : '') + ' 후'; }
+  // 시간 있는 일정 우선, 비는 시간에는 시간 미정 일정을 쌓인 순서대로 보여줘요
   function renderNowNext() {
     var key = ymd(new Date()), now = new Date(), nm = now.getHours() * 60 + now.getMinutes();
-    var list = (schedules[key] || []).filter(function (s) { return s.start; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
+    var all = schedules[key] || [];
+    var list = all.filter(function (s) { return s.start; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
+    var todo = all.filter(function (s) { return !s.start; });
     var cur = list.find(function (s) { return toMin(s.start) <= nm && nm < toMin(endOf(s)); });
     var next = list.find(function (s) { return toMin(s.start) > nm; });
+    var curTodo = null, nextTodo = null;
+    if (!cur) curTodo = todo[0] || null;
+    if (!next) nextTodo = todo[curTodo ? 1 : 0] || null;
     var item = function (s, kind, label, bar) {
       return '<button type="button" class="nn-item ' + kind + (s.important ? ' imp' : '') + '" data-id="' + s.id + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="nn-label">' + label + '</span>' +
         '<span class="nn-title">' + esc(s.title) + '</span>' +
-        '<span class="nn-meta">' + s.start + '–' + endOf(s) + (s.place ? ' · ' + esc(s.place) : '') + '</span>' +
+        '<span class="nn-meta">' + (s.start ? s.start + '–' + endOf(s) : '시간 미정') + (s.place ? ' · ' + esc(s.place) : '') + '</span>' +
         (bar != null ? '<span class="nn-bar"><i style="width:' + bar + '%"></i></span>' : '') + '</button>';
     };
     var idle = function (label, text) { return '<div class="nn-item idle"><span class="nn-label">' + label + '</span><span class="nn-title">' + text + '</span></div>'; };
@@ -2533,8 +2539,11 @@ window.TRAVEL_CITIES = [
     if (cur) {
       var st = toMin(cur.start), en = toMin(endOf(cur));
       html += item(cur, 'current', '진행 중 · ' + (en - nm) + '분 남음', Math.round((nm - st) / (en - st) * 100));
-    } else html += idle('지금', '비어 있는 시간이에요');
-    html += next ? item(next, 'next', '다음 · ' + relLabel(toMin(next.start) - nm)) : idle('다음', '오늘 남은 일정이 없어요');
+    } else if (curTodo) html += item(curTodo, 'current', '지금 할 일');
+    else html += idle('지금', '비어 있는 시간이에요');
+    if (next) html += item(next, 'next', '다음 · ' + relLabel(toMin(next.start) - nm));
+    else if (nextTodo) html += item(nextTodo, 'next', '다음 할 일');
+    else html += idle('다음', '오늘 남은 일정이 없어요');
     $('nn').innerHTML = html;
   }
   function scrollToSchedule(id) {
