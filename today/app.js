@@ -199,11 +199,11 @@
       $('sd-form').hidden = true;
       openDialog(dlg);
     };
-    $('season-open').onclick = function () { open(currentSeason && currentSeason.id); };
-    $('season-kw').addEventListener('click', function (e) { var b = e.target.closest('.kw-chip'); if (b) open(b.dataset.id); });
+    $('season-open').onclick = function () { if (!travelMode) open(currentSeason && currentSeason.id); };
+    $('season-kw').addEventListener('click', function (e) { var b = e.target.closest('.kw-chip'); if (b && !travelMode) open(b.dataset.id); });
     // 배경 이미지 빈 곳을 눌러도 캘린더
     $('hero').addEventListener('click', function (e) {
-      if (e.target === $('hero') || e.target === $('hero-canvas') || e.target.classList.contains('hero-inner')) open(currentSeason && currentSeason.id);
+      if (!travelMode && (e.target === $('hero') || e.target === $('hero-canvas') || e.target.classList.contains('hero-inner'))) open(currentSeason && currentSeason.id);
     });
     $('sd-tabs').addEventListener('click', function (e) { var b = e.target.closest('.seg-btn'); if (b) setSdView(b.dataset.view); });
     $('sd-cal').addEventListener('click', function (e) {
@@ -429,7 +429,7 @@
           if (done) return; done = true;
           var g = { mode: 'auto', lat: +pos.coords.latitude.toFixed(3), lon: +pos.coords.longitude.toFixed(3), name: '현재 위치' };
           getJSON('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + g.lat + '&longitude=' + g.lon + '&localityLanguage=ko', 4000)
-            .then(function (r) { g.name = r.locality || r.city || r.principalSubdivision || g.name; })
+            .then(function (r) { g.name = r.city || r.locality || r.principalSubdivision || g.name; g.cc = r.countryCode || ''; g.country = r.countryName || ''; })
             .catch(function () {})
             .then(function () { store.set('lastGeo', g); resolve(g); });
         }, fallback, { timeout: 5000, maximumAge: 30 * 60 * 1000 });
@@ -458,12 +458,13 @@
         // 오늘 0~23시 기온 (출퇴근 시간 옷차림용)
         var day = d.current.time.slice(0, 10), today = [];
         d.hourly.time.forEach(function (t, i) { if (t.slice(0, 10) === day) today[+t.slice(11, 13)] = d.hourly.temperature_2m[i]; });
-        return { place: loc.name, current: d.current, daily: d.daily, hours: hours, today: today, air: res[1], sample: false };
-      });
-    }).catch(function () {
-      var s = window.SAMPLE_WEATHER;
-      return { place: s.place, current: s.current, daily: s.daily, hours: s.hourlyFrom(new Date().getHours()), today: s.todayTemps, air: s.air, sample: true };
-    });
+        return { place: loc.name, cc: loc.cc || '', country: loc.country || '', current: d.current, daily: d.daily, hours: hours, today: today, air: res[1], sample: false };
+      }).catch(function () { return sampleWeather(loc); });
+    }).catch(function () { return sampleWeather(null); });
+  }
+  function sampleWeather(loc) {
+    var s = window.SAMPLE_WEATHER;
+    return { place: (loc && loc.name) || s.place, cc: (loc && loc.cc) || '', country: (loc && loc.country) || '', current: s.current, daily: s.daily, hours: s.hourlyFrom(new Date().getHours()), today: s.todayTemps, air: s.air, sample: true };
   }
 
   function renderWeather(w) {
@@ -482,6 +483,29 @@
     }).join('');
     renderOutfit(w);
     renderWeek(w);
+    applyPlace(w);
+  }
+  /* 해외에 있으면 시즌 대신 도시 이름 + 국기 + 그 나라 여행 키워드 */
+  var travelMode = false;
+  function flagOf(cc) { return cc && cc.length === 2 ? String.fromCodePoint.apply(null, cc.toUpperCase().split('').map(function (c) { return 0x1F1E6 + c.charCodeAt(0) - 65; })) : '🌏'; }
+  function applyPlace(w) {
+    var cc = (w.cc || '').toUpperCase();
+    if (!cc || cc === 'KR') { if (travelMode) { travelMode = false; $('hero').classList.remove('travel'); initSeason(); } return; }
+    travelMode = true;
+    var t = (window.TRAVEL || {})[cc] || { name: w.country || '해외', kw: ['현지 맛집', '로컬 시장', '기념품 쇼핑', '산책 코스'] };
+    var root = document.documentElement;
+    root.style.setProperty('--hero-a', '#1d4e89');
+    root.style.setProperty('--hero-b', '#7fb7e8');
+    root.style.setProperty('--season', '#e8f4ff');
+    $('hero').classList.add('travel');
+    $('season-name').textContent = w.place;
+    $('season-phase').textContent = flagOf(cc) + ' ' + t.name;
+    $('season-phase').dataset.phase = 'travel';
+    $('season-kw').innerHTML = t.kw.slice(0, 4).map(function (k) {
+      return '<a class="kw-chip" href="https://www.google.com/maps/search/' + encodeURIComponent(k + ' ' + w.place) + '" target="_blank" rel="noopener">' + esc(k) + '</a>';
+    }).join('');
+    $('hero-motif').innerHTML = '<span>' + flagOf(cc) + '</span>';
+    scene.start({ type: 'sun', accent: '#e8f4ff' });
   }
   // 향후 일주일 (오늘 포함 8일)
   function renderWeek(w) {
@@ -1495,7 +1519,7 @@
             var res = r.results || [];
             $('city-results').innerHTML = res.length ? res.map(function (c) {
               var label = c.name + (c.admin1 ? ', ' + c.admin1 : '') + (c.country ? ' · ' + c.country : '');
-              return '<li><button type="button" data-lat="' + c.latitude + '" data-lon="' + c.longitude + '" data-name="' + esc(c.name) + '">' + esc(label) + '</button></li>';
+              return '<li><button type="button" data-lat="' + c.latitude + '" data-lon="' + c.longitude + '" data-name="' + esc(c.name) + '" data-cc="' + esc(c.country_code || '') + '" data-country="' + esc(c.country || '') + '">' + esc(label) + '</button></li>';
             }).join('') : '<li class="hint">검색 결과가 없어요. 다른 이름으로 찾아보세요.</li>';
           })
           .catch(function () { $('city-results').innerHTML = '<li class="hint">지역 검색 서버에 연결하지 못했어요.</li>'; });
@@ -1504,7 +1528,7 @@
     $('city-results').addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (!b) return;
-      draft.location = { mode: 'city', name: b.dataset.name, lat: +b.dataset.lat, lon: +b.dataset.lon };
+      draft.location = { mode: 'city', name: b.dataset.name, lat: +b.dataset.lat, lon: +b.dataset.lon, cc: b.dataset.cc, country: b.dataset.country };
       $('city-results').innerHTML = ''; $('set-city').value = '';
       renderTags();
     });

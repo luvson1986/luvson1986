@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>오늘</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="color-scheme" content="light dark">
@@ -696,6 +696,13 @@ body.on-news::before {
 .order-list .on-name { flex: 1; font-size: 14px; font-weight: 600; }
 .order-list button { width: 32px; height: 30px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; cursor: pointer; color: var(--ink); font-size: 14px; }
 .order-list button:disabled { opacity: 0.3; cursor: default; }
+
+/* iPhone: 16px 미만 입력칸은 포커스 때 자동 확대돼서 모바일에선 16px로 */
+@media (max-width: 820px), (pointer: coarse) {
+  input, select, textarea, .cl-text, .cl-title, .cl-new-input, .qa input, .eh-search, .rule-name, .rule-num, .rule-items, .rule-plus, .cat-name, #cat-new-name { font-size: 16px !important; }
+}
+.hero.travel .hero-motif { font-size: clamp(80px, 18vw, 150px); transform: rotate(-8deg); }
+a.kw-chip { text-decoration: none; }
 
 </style>
 </head>
@@ -1460,6 +1467,39 @@ window.SAMPLE_NEWS = [
   { title: '오픈뱅킹 3년, 핀테크 앱 이용자 경험은 어떻게 달라졌나', source: '예시 뉴스', outlets: 6, interest: '핀테크', date: null, image: '', link: 'https://news.google.com/search?q=' + encodeURIComponent('핀테크') + '&hl=ko&gl=KR&ceid=KR:ko' }
 ];
 
+/* 해외에 있을 때: 나라별 여행 키워드 (국가 코드 ISO 3166-1) */
+window.TRAVEL = {
+  JP: { name: '일본', kw: ['라멘·스시', '편의점 디저트', '온천', '돈키호테 쇼핑', '이자카야'] },
+  CN: { name: '중국', kw: ['훠궈', '딤섬', '야시장', '알리페이 결제', '고궁 산책'] },
+  TW: { name: '대만', kw: ['우육면', '버블티', '야시장', '지우펀', '펑리수'] },
+  HK: { name: '홍콩', kw: ['딤섬', '에그타르트', '빅토리아 피크', '야경', '밀크티'] },
+  MO: { name: '마카오', kw: ['에그타르트', '세나도 광장', '야경', '포르투갈 요리'] },
+  TH: { name: '태국', kw: ['팟타이', '타이 마사지', '야시장', '망고 스티키라이스', '루프탑 바'] },
+  VN: { name: '베트남', kw: ['쌀국수', '반미', '코코넛 커피', '마사지', '야시장'] },
+  PH: { name: '필리핀', kw: ['호핑 투어', '망고', '스노클링', '선셋'] },
+  SG: { name: '싱가포르', kw: ['칠리크랩', '호커센터', '마리나 베이', '카야 토스트'] },
+  MY: { name: '말레이시아', kw: ['나시르막', '페트로나스 타워', '야시장', '두리안'] },
+  ID: { name: '인도네시아', kw: ['나시고렝', '발리 스파', '서핑', '라이스 테라스'] },
+  US: { name: '미국', kw: ['브런치', '아울렛 쇼핑', '스테이크', '팁 계산', '국립공원'] },
+  GU: { name: '괌', kw: ['투몬 비치', '스노클링', '아울렛 쇼핑', '선셋 바비큐'] },
+  MP: { name: '사이판', kw: ['마나가하섬', '스노클링', '선셋', '스테이크'] },
+  CA: { name: '캐나다', kw: ['메이플 시럽', '팀홀튼', '호수 산책', '푸틴'] },
+  GB: { name: '영국', kw: ['애프터눈 티', '피시앤칩스', '뮤지컬', '펍', '박물관'] },
+  FR: { name: '프랑스', kw: ['크루아상', '와인', '미술관', '마카롱', '센강 산책'] },
+  IT: { name: '이탈리아', kw: ['젤라토', '파스타', '에스프레소', '성당', '와이너리'] },
+  ES: { name: '스페인', kw: ['타파스', '빠에야', '추로스', '가우디 건축', '플라멩코'] },
+  PT: { name: '포르투갈', kw: ['에그타르트', '포트와인', '트램', '노을 전망대'] },
+  DE: { name: '독일', kw: ['맥주', '소시지', '크리스마스 마켓', '성 투어'] },
+  CH: { name: '스위스', kw: ['퐁뒤', '산악열차', '호수 산책', '초콜릿'] },
+  AT: { name: '오스트리아', kw: ['자허토르테', '클래식 공연', '비엔나 커피', '궁전'] },
+  CZ: { name: '체코', kw: ['맥주', '꼴레뇨', '구시가지', '야경'] },
+  NL: { name: '네덜란드', kw: ['운하 산책', '자전거', '미술관', '치즈'] },
+  TR: { name: '튀르키예', kw: ['케밥', '터키 디저트', '열기구', '그랜드 바자르'] },
+  AE: { name: '아랍에미리트', kw: ['사막 사파리', '부르즈 할리파', '쇼핑몰', '데이츠'] },
+  AU: { name: '호주', kw: ['플랫화이트', '브런치', '해변', '오페라하우스'] },
+  NZ: { name: '뉴질랜드', kw: ['호수 트레킹', '양고기', '와이너리', '별 보기'] }
+};
+
 </script>
 <script>
 (function () {
@@ -1663,11 +1703,11 @@ window.SAMPLE_NEWS = [
       $('sd-form').hidden = true;
       openDialog(dlg);
     };
-    $('season-open').onclick = function () { open(currentSeason && currentSeason.id); };
-    $('season-kw').addEventListener('click', function (e) { var b = e.target.closest('.kw-chip'); if (b) open(b.dataset.id); });
+    $('season-open').onclick = function () { if (!travelMode) open(currentSeason && currentSeason.id); };
+    $('season-kw').addEventListener('click', function (e) { var b = e.target.closest('.kw-chip'); if (b && !travelMode) open(b.dataset.id); });
     // 배경 이미지 빈 곳을 눌러도 캘린더
     $('hero').addEventListener('click', function (e) {
-      if (e.target === $('hero') || e.target === $('hero-canvas') || e.target.classList.contains('hero-inner')) open(currentSeason && currentSeason.id);
+      if (!travelMode && (e.target === $('hero') || e.target === $('hero-canvas') || e.target.classList.contains('hero-inner'))) open(currentSeason && currentSeason.id);
     });
     $('sd-tabs').addEventListener('click', function (e) { var b = e.target.closest('.seg-btn'); if (b) setSdView(b.dataset.view); });
     $('sd-cal').addEventListener('click', function (e) {
@@ -1893,7 +1933,7 @@ window.SAMPLE_NEWS = [
           if (done) return; done = true;
           var g = { mode: 'auto', lat: +pos.coords.latitude.toFixed(3), lon: +pos.coords.longitude.toFixed(3), name: '현재 위치' };
           getJSON('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + g.lat + '&longitude=' + g.lon + '&localityLanguage=ko', 4000)
-            .then(function (r) { g.name = r.locality || r.city || r.principalSubdivision || g.name; })
+            .then(function (r) { g.name = r.city || r.locality || r.principalSubdivision || g.name; g.cc = r.countryCode || ''; g.country = r.countryName || ''; })
             .catch(function () {})
             .then(function () { store.set('lastGeo', g); resolve(g); });
         }, fallback, { timeout: 5000, maximumAge: 30 * 60 * 1000 });
@@ -1922,12 +1962,13 @@ window.SAMPLE_NEWS = [
         // 오늘 0~23시 기온 (출퇴근 시간 옷차림용)
         var day = d.current.time.slice(0, 10), today = [];
         d.hourly.time.forEach(function (t, i) { if (t.slice(0, 10) === day) today[+t.slice(11, 13)] = d.hourly.temperature_2m[i]; });
-        return { place: loc.name, current: d.current, daily: d.daily, hours: hours, today: today, air: res[1], sample: false };
-      });
-    }).catch(function () {
-      var s = window.SAMPLE_WEATHER;
-      return { place: s.place, current: s.current, daily: s.daily, hours: s.hourlyFrom(new Date().getHours()), today: s.todayTemps, air: s.air, sample: true };
-    });
+        return { place: loc.name, cc: loc.cc || '', country: loc.country || '', current: d.current, daily: d.daily, hours: hours, today: today, air: res[1], sample: false };
+      }).catch(function () { return sampleWeather(loc); });
+    }).catch(function () { return sampleWeather(null); });
+  }
+  function sampleWeather(loc) {
+    var s = window.SAMPLE_WEATHER;
+    return { place: (loc && loc.name) || s.place, cc: (loc && loc.cc) || '', country: (loc && loc.country) || '', current: s.current, daily: s.daily, hours: s.hourlyFrom(new Date().getHours()), today: s.todayTemps, air: s.air, sample: true };
   }
 
   function renderWeather(w) {
@@ -1946,6 +1987,29 @@ window.SAMPLE_NEWS = [
     }).join('');
     renderOutfit(w);
     renderWeek(w);
+    applyPlace(w);
+  }
+  /* 해외에 있으면 시즌 대신 도시 이름 + 국기 + 그 나라 여행 키워드 */
+  var travelMode = false;
+  function flagOf(cc) { return cc && cc.length === 2 ? String.fromCodePoint.apply(null, cc.toUpperCase().split('').map(function (c) { return 0x1F1E6 + c.charCodeAt(0) - 65; })) : '🌏'; }
+  function applyPlace(w) {
+    var cc = (w.cc || '').toUpperCase();
+    if (!cc || cc === 'KR') { if (travelMode) { travelMode = false; $('hero').classList.remove('travel'); initSeason(); } return; }
+    travelMode = true;
+    var t = (window.TRAVEL || {})[cc] || { name: w.country || '해외', kw: ['현지 맛집', '로컬 시장', '기념품 쇼핑', '산책 코스'] };
+    var root = document.documentElement;
+    root.style.setProperty('--hero-a', '#1d4e89');
+    root.style.setProperty('--hero-b', '#7fb7e8');
+    root.style.setProperty('--season', '#e8f4ff');
+    $('hero').classList.add('travel');
+    $('season-name').textContent = w.place;
+    $('season-phase').textContent = flagOf(cc) + ' ' + t.name;
+    $('season-phase').dataset.phase = 'travel';
+    $('season-kw').innerHTML = t.kw.slice(0, 4).map(function (k) {
+      return '<a class="kw-chip" href="https://www.google.com/maps/search/' + encodeURIComponent(k + ' ' + w.place) + '" target="_blank" rel="noopener">' + esc(k) + '</a>';
+    }).join('');
+    $('hero-motif').innerHTML = '<span>' + flagOf(cc) + '</span>';
+    scene.start({ type: 'sun', accent: '#e8f4ff' });
   }
   // 향후 일주일 (오늘 포함 8일)
   function renderWeek(w) {
@@ -2959,7 +3023,7 @@ window.SAMPLE_NEWS = [
             var res = r.results || [];
             $('city-results').innerHTML = res.length ? res.map(function (c) {
               var label = c.name + (c.admin1 ? ', ' + c.admin1 : '') + (c.country ? ' · ' + c.country : '');
-              return '<li><button type="button" data-lat="' + c.latitude + '" data-lon="' + c.longitude + '" data-name="' + esc(c.name) + '">' + esc(label) + '</button></li>';
+              return '<li><button type="button" data-lat="' + c.latitude + '" data-lon="' + c.longitude + '" data-name="' + esc(c.name) + '" data-cc="' + esc(c.country_code || '') + '" data-country="' + esc(c.country || '') + '">' + esc(label) + '</button></li>';
             }).join('') : '<li class="hint">검색 결과가 없어요. 다른 이름으로 찾아보세요.</li>';
           })
           .catch(function () { $('city-results').innerHTML = '<li class="hint">지역 검색 서버에 연결하지 못했어요.</li>'; });
@@ -2968,7 +3032,7 @@ window.SAMPLE_NEWS = [
     $('city-results').addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (!b) return;
-      draft.location = { mode: 'city', name: b.dataset.name, lat: +b.dataset.lat, lon: +b.dataset.lon };
+      draft.location = { mode: 'city', name: b.dataset.name, lat: +b.dataset.lat, lon: +b.dataset.lon, cc: b.dataset.cc, country: b.dataset.country };
       $('city-results').innerHTML = ''; $('set-city').value = '';
       renderTags();
     });

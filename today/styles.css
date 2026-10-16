@@ -676,3 +676,10 @@ body.on-news::before {
 .order-list .on-name { flex: 1; font-size: 14px; font-weight: 600; }
 .order-list button { width: 32px; height: 30px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; cursor: pointer; color: var(--ink); font-size: 14px; }
 .order-list button:disabled { opacity: 0.3; cursor: default; }
+
+/* iPhone: 16px 미만 입력칸은 포커스 때 자동 확대돼서 모바일에선 16px로 */
+@media (max-width: 820px), (pointer: coarse) {
+  input, select, textarea, .cl-text, .cl-title, .cl-new-input, .qa input, .eh-search, .rule-name, .rule-num, .rule-items, .rule-plus, .cat-name, #cat-new-name { font-size: 16px !important; }
+}
+.hero.travel .hero-motif { font-size: clamp(80px, 18vw, 150px); transform: rotate(-8deg); }
+a.kw-chip { text-decoration: none; }
