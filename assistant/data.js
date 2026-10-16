@@ -307,10 +307,11 @@ window.SAMPLE_WEATHER = {
   place: '서울',
   current: { temperature_2m: 16, apparent_temperature: 15, relative_humidity_2m: 58, weather_code: 1, wind_speed_10m: 2.4 },
   daily: {
-    temperature_2m_max: [21, 19], temperature_2m_min: [10, 9],
-    apparent_temperature_max: [20, 18], apparent_temperature_min: [8, 7],
-    precipitation_probability_max: [10, 40], snowfall_sum: [0, 0], uv_index_max: [4.5, 3.8],
-    weather_code: [1, 3], sunrise: ['', ''], sunset: ['', '']
+    temperature_2m_max: [21, 19, 18, 20, 22, 17, 15, 16], temperature_2m_min: [10, 9, 8, 9, 11, 9, 6, 5],
+    apparent_temperature_max: [20, 18, 17, 19, 21, 15, 13, 14], apparent_temperature_min: [8, 7, 6, 7, 9, 7, 3, 2],
+    precipitation_probability_max: [10, 40, 70, 20, 0, 60, 30, 10], snowfall_sum: [0, 0, 0, 0, 0, 0, 0, 0],
+    uv_index_max: [4.5, 3.8, 2.1, 4.0, 4.6, 2.5, 3.9, 4.2],
+    weather_code: [1, 3, 61, 2, 0, 80, 3, 1], sunrise: [], sunset: []
   },
   todayTemps: [10, 10, 9, 9, 9, 10, 11, 13, 15, 17, 19, 20, 21, 21, 20, 19, 17, 15, 14, 13, 12, 11, 11, 10],
   hourlyFrom: function (startHour) {

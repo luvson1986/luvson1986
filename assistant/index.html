@@ -39,14 +39,15 @@
         </button>
       </div>
 
-      <div class="wx">
+      <button type="button" class="wx" id="wx-open" aria-label="일주일 날씨 보기">
         <span class="wx-icon" id="wx-icon" aria-hidden="true">🌤️</span>
         <span class="wx-temp" id="wx-temp">--°</span>
         <span class="wx-meta">
           <span class="wx-cond" id="wx-cond">날씨 불러오는 중</span>
           <span class="wx-sub" id="wx-sub"></span>
         </span>
-      </div>
+        <span class="wx-more" aria-hidden="true">›</span>
+      </button>
 
       <div class="season-box">
         <button type="button" class="season-main" id="season-open" aria-label="시즌 캘린더 열기">
@@ -63,23 +64,22 @@
 
   <div class="wrap board">
     <div class="col col-a">
-      <!-- 전체 일정 -->
+      <!-- 일정: 오늘부터 날짜별 리스트 -->
       <section class="panel" id="schedule-panel" aria-labelledby="sch-h">
         <header class="panel-head">
-          <h2 id="sch-h">오늘 일정</h2>
-          <div class="head-tools">
-            <div class="day-nav">
-              <button type="button" class="ghost-btn sm" id="day-prev" aria-label="이전 날">‹</button>
-              <button type="button" class="ghost-btn sm day-label" id="day-today" aria-haspopup="dialog" aria-label="캘린더 열기"></button>
-              <button type="button" class="ghost-btn sm" id="day-next" aria-label="다음 날">›</button>
-            </div>
-            <button type="button" class="add-icon" id="sch-add" aria-label="일정 추가">+</button>
-          </div>
+          <h2 id="sch-h">다가오는 일정</h2>
+          <button type="button" class="add-icon" id="sch-add" aria-label="일정 자세히 추가">+</button>
         </header>
         <div class="cat-legend" id="cat-legend"></div>
+        <form class="qa" id="qa-form">
+          <input type="date" id="qa-date" aria-label="날짜">
+          <input id="qa-text" maxlength="200" placeholder="1000피티-출근-1900피부과" aria-label="빠른 추가" autocomplete="off">
+          <button type="submit" class="primary-btn sm">추가</button>
+        </form>
+        <p class="hint qa-hint">하이픈(-)으로 나누면 여러 개, 앞의 숫자 4자리는 시간, 끝에 !를 붙이면 중요 일정이에요.</p>
         <p class="sample-banner" id="sample-banner" hidden>예시 일정이에요. 첫 일정을 추가하면 사라져요. <button type="button" class="link-btn" id="clear-samples">예시 지우기</button></p>
-        <ol class="timeline" id="timeline"></ol>
-        <p class="empty" id="timeline-empty" hidden>등록된 일정이 없어요. 오른쪽 위 + 로 추가하세요.</p>
+        <ul class="daylist" id="daylist"></ul>
+        <p class="empty" id="daylist-empty" hidden>앞으로 예정된 일정이 없어요.</p>
       </section>
 
       <!-- 체크리스트 -->
@@ -204,7 +204,7 @@
       <div class="cal-box"><div class="ycal" id="sd-cal"></div></div>
     </div>
     <div id="sd-list-view" hidden>
-    <p class="hint">지금 시기에 맞는 순서예요. 눌러서 배경으로 볼 수 있어요.</p>
+    <p class="hint">오늘 기준 순서예요. 배경에는 항상 오늘 가장 높은 순위 시즌이 나와요.</p>
     <ul class="sd-list" id="sd-now"></ul>
     <h3 class="sub-h">다른 시기</h3>
     <ul class="sd-list" id="sd-later"></ul>
@@ -216,30 +216,14 @@
   </div>
 </dialog>
 
-<!-- 일정 캘린더 -->
-<dialog class="sheet" id="mcal-dialog" aria-labelledby="mc-h">
+<!-- 일주일 날씨 -->
+<dialog class="sheet" id="week-dialog" aria-labelledby="wk-h">
   <div class="sheet-body">
     <header class="panel-head">
-      <div class="mc-nav">
-        <button type="button" class="ghost-btn sm" id="mc-prev" aria-label="이전 달">‹</button>
-        <h2 id="mc-h"></h2>
-        <button type="button" class="ghost-btn sm" id="mc-next" aria-label="다음 달">›</button>
-        <button type="button" class="ghost-btn sm" id="mc-today">오늘</button>
-      </div>
+      <h2 id="wk-h">일주일 날씨 <span class="pill" id="wk-place"></span></h2>
       <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
-    <div class="mc-week" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
-    <div class="mc-grid" id="mc-grid" role="grid"></div>
-    <div class="mc-day">
-      <div class="panel-head">
-        <h3 class="sub-h" id="mc-day-h"></h3>
-        <div class="head-tools">
-          <button type="button" class="ghost-btn sm" id="mc-go">이 날 시간표 보기</button>
-          <button type="button" class="add-icon" id="mc-add" aria-label="이 날 일정 추가">+</button>
-        </div>
-      </div>
-      <ul class="mc-list" id="mc-list"></ul>
-    </div>
+    <ul class="wk-list" id="wk-list"></ul>
   </div>
 </dialog>
 
@@ -346,8 +330,8 @@
         <input id="sch-date" type="date" required>
       </div>
       <div class="field">
-        <label for="sch-start">시작</label>
-        <input id="sch-start" type="time" value="09:00" required>
+        <label for="sch-start">시작 (선택)</label>
+        <input id="sch-start" type="time" value="09:00">
       </div>
       <div class="field">
         <label for="sch-end">종료</label>
