@@ -753,3 +753,11 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .cl-move button { width: 26px; height: 26px; border: 0; background: none; border-radius: 6px; cursor: pointer; color: var(--ink-3); font-size: 13px; }
 .cl-move button:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
 .cl-move button:disabled { opacity: 0.25; cursor: default; }
+
+/* 해외 장소 → 구글맵 */
+.abroad-check { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; }
+.abroad-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.abroad-check span { font-weight: 400; color: var(--ink-3); font-size: 12px; }
+.map-link.google { background: color-mix(in srgb, #4285f4 12%, var(--surface)); }
+.map-link.google em { color: #1a73e8; }
+.map-link.sm.google { color: #1a73e8; }

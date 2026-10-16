@@ -993,10 +993,15 @@
   /* 추가·수정 팝업 */
   // 네이버 지도 검색 (폰에 네이버 지도 앱이 있으면 앱으로 열 수 있어요)
   function naverMap(q) { return 'https://map.naver.com/p/search/' + encodeURIComponent(q); }
+  // 해외 일정: "장소, 도시" 그대로 구글맵에서 검색 (예: Ichiran Shibuya, Tokyo)
+  function googleMap(q) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q); }
+  function mapOf(place, abroad) { return abroad ? { href: googleMap(place), label: '구글맵' } : { href: naverMap(place), label: '네이버 지도' }; }
   function syncPlaceLink() {
+    var abroad = $('sch-abroad').checked;
+    $('sch-place').placeholder = abroad ? '예: Ichiran Shibuya, Tokyo' : '예: 강남역 스타벅스';
     var v = $('sch-place').value.trim();
     $('sch-place-map').hidden = !v;
-    if (v) $('sch-place-map').href = naverMap(v);
+    if (v) { var m = mapOf(v, abroad); $('sch-place-map').href = m.href; $('sch-place-map').textContent = m.label + '에서 확인 ›'; $('sch-place-map').classList.toggle('google', abroad); }
   }
   function setTimeFields(on) {
     Array.prototype.forEach.call(document.querySelectorAll('.time-field'), function (f) { f.hidden = !on; });
@@ -1010,6 +1015,7 @@
     $('sch-place').value = item ? item.place || '' : '';
     $('sch-memo').value = item ? item.memo || '' : '';
     setTimeout(function () { fitText($('sch-memo')); }, 0);
+    $('sch-abroad').checked = !!(item && item.abroad);
     syncPlaceLink();
     renderCats();
     $('sch-cat').value = item && cats.some(function (c) { return c.id === item.cat; }) ? item.cat : cats[0].id;
@@ -1040,7 +1046,7 @@
     $('dt-title').textContent = s.title;
     $('dt-meta').textContent = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 (' + DAYS[d.getDay()] + ')' + (s.start ? ' ' + s.start + (s.end ? '–' + s.end : '') : ' · 시간 미정');
     $('dt-place').hidden = !s.place;
-    if (s.place) { $('dt-place').href = naverMap(s.place); $('dt-place').innerHTML = '<span aria-hidden="true">📍</span>' + esc(s.place) + '<em>네이버 지도 ›</em>'; }
+    if (s.place) { var mp = mapOf(s.place, s.abroad); $('dt-place').href = mp.href; $('dt-place').classList.toggle('google', !!s.abroad); $('dt-place').innerHTML = '<span aria-hidden="true">📍</span>' + esc(s.place) + '<em>' + mp.label + ' ›</em>'; }
     $('dt-memo').value = s.memo || '';
     setTimeout(function () { fitText($('dt-memo')); }, 0);
     $('dt-saved').textContent = '입력하면 자동으로 저장돼요.';
@@ -1157,6 +1163,7 @@
     });
 
     $('sch-place').addEventListener('input', syncPlaceLink);
+    $('sch-abroad').addEventListener('change', syncPlaceLink);
     $('sch-timed').addEventListener('change', function (e) {
       setTimeFields(e.target.checked);
       if (e.target.checked && !$('sch-start').value) {
@@ -1186,7 +1193,7 @@
         if (!schedules[origKey].length) delete schedules[origKey];
       }
       var list = schedules[date] || (schedules[date] = []);
-      list.splice(pos >= 0 ? pos : list.length, 0, { id: editing || 'e' + Date.now().toString(36), start: start, end: end, title: title, cat: $('sch-cat').value, important: $('sch-imp').checked, place: $('sch-place').value.trim(), memo: $('sch-memo').value.trim(), rev: prev ? (prev.rev || 0) + 1 : 0 });
+      list.splice(pos >= 0 ? pos : list.length, 0, { id: editing || 'e' + Date.now().toString(36), start: start, end: end, title: title, cat: $('sch-cat').value, important: $('sch-imp').checked, place: $('sch-place').value.trim(), abroad: $('sch-abroad').checked, memo: $('sch-memo').value.trim(), rev: prev ? (prev.rev || 0) + 1 : 0 });
       saveSchedules();
       viewDate = parseYmd(date);
       renderSchedule();
