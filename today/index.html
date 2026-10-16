@@ -372,13 +372,17 @@
         <label for="sch-date">날짜</label>
         <input id="sch-date" type="date" required>
       </div>
-      <div class="field">
-        <label for="sch-start">시작 (선택)</label>
-        <input id="sch-start" type="time" value="09:00">
+      <label class="imp-check full time-toggle" for="sch-timed">
+        <input type="checkbox" id="sch-timed">
+        <span><b class="plain">시간 정하기</b> 끄면 시간 없이 그날 맨 뒤에 쌓여요</span>
+      </label>
+      <div class="field time-field" hidden>
+        <label for="sch-start">시작</label>
+        <input id="sch-start" type="time">
       </div>
-      <div class="field">
-        <label for="sch-end">종료</label>
-        <input id="sch-end" type="time" value="10:00">
+      <div class="field time-field" hidden>
+        <label for="sch-end">종료 (선택)</label>
+        <input id="sch-end" type="time">
       </div>
       <div class="field">
         <label for="sch-cat">카테고리</label>

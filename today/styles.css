@@ -685,3 +685,5 @@ body.on-news::before {
 }
 .hero.travel .hero-motif { font-size: clamp(80px, 18vw, 150px); transform: rotate(-8deg); }
 a.kw-chip { text-decoration: none; }
+
+.imp-check b.plain { color: var(--ink); }

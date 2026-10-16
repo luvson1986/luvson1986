@@ -839,11 +839,6 @@
   });
 
   // 시간 있는 일정만 시간순으로 정렬하고, 시간 없는 일정은 적은 순서 자리를 지켜요
-  function orderDay(list) {
-    var timed = list.filter(function (s) { return s.start; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
-    var i = 0;
-    return list.map(function (s) { return s.start ? timed[i++] : s; });
-  }
   var hhmm = function (t) { return t ? t.replace(':', '') : ''; };
   function weekKey(d) { var m = new Date(d); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return ymd(m); }
   // 선택한 날의 타임라인. 시간 없는 일정은 위에 '종일'로 적은 순서대로
@@ -868,7 +863,7 @@
         (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
         '</button></li>';
     };
-    var html = untimed.map(function (s) { return card(s, diff < 0 ? 'past' : '', '종일'); }).join('');
+    var html = '';
     var nowPlaced = diff !== 0;
     list.forEach(function (s) {
       var st = toMin(s.start), en = s.end ? toMin(s.end) : st + 30;
@@ -881,6 +876,7 @@
       if (!nowPlaced && state === 'current') { html += nowRow(now); nowPlaced = true; }
     });
     if (!nowPlaced && list.length) html += nowRow(now);
+    html += untimed.map(function (s) { return card(s, diff < 0 ? 'past' : '', '미정'); }).join('');
     $('timeline').innerHTML = html;
     renderNowNext();
   }
@@ -891,10 +887,10 @@
   // 오늘 버튼 → 다가오는 일정: 날짜 + 키워드 (지난 날은 숨김, 주가 바뀌면 간격)
   var hhmm = function (t) { return t ? t.replace(':', '') : ''; };
   function weekKey(d) { var m = new Date(d); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return ymd(m); }
+  // 시간 있는 일정은 시간순, 시간 없는 일정은 적은 순서대로 맨 뒤
   function orderDay(list) {
     var timed = list.filter(function (s) { return s.start; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
-    var i = 0;
-    return list.map(function (s) { return s.start ? timed[i++] : s; });
+    return timed.concat(list.filter(function (s) { return !s.start; }));
   }
   function renderUpcoming() {
     var now = new Date(), todayKey = ymd(now);
@@ -951,6 +947,9 @@
   }
 
   /* 추가·수정 팝업 */
+  function setTimeFields(on) {
+    Array.prototype.forEach.call(document.querySelectorAll('.time-field'), function (f) { f.hidden = !on; });
+  }
   function openForm(item, dateKey) {
     var key = dateKey || ymd(viewDate);
     $('sch-id').value = item ? item.id : '';
@@ -962,16 +961,11 @@
     renderCats();
     $('sch-cat').value = item && cats.some(function (c) { return c.id === item.cat; }) ? item.cat : cats[0].id;
     $('sch-imp').checked = !!(item && item.important);
-    var start;
-    if (item) start = item.start;
-    else {
-      var last = (schedules[key] || []).filter(function (s) { return !s.sample; }).map(function (s) { return s.end || s.start; }).sort().pop();
-      var nowNext = pad(Math.min(new Date().getHours() + 1, 23)) + ':00';
-      start = last || (key === ymd(new Date()) ? nowNext : '09:00');
-    }
-    $('sch-start').value = start;
-    if (item) $('sch-end').value = item.end || '';
-    else { var em = Math.min(toMin(start) + 60, 23 * 60 + 59); $('sch-end').value = pad(Math.floor(em / 60)) + ':' + pad(em % 60); }
+    var timed = !!(item && item.start);
+    $('sch-timed').checked = timed;
+    $('sch-start').value = timed ? item.start : '';
+    $('sch-end').value = timed ? item.end || '' : '';
+    setTimeFields(timed);
     $('sch-dialog-h').textContent = item ? '일정 수정' : '일정 추가';
     $('sch-submit').textContent = item ? '수정 저장' : '일정 추가';
     $('sch-error').hidden = true;
@@ -1035,8 +1029,10 @@
     return [
       'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//todays-assistant//KO', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
       'BEGIN:VEVENT',
-      'UID:' + s.id + '-' + key + '@todays-assistant',
+      'UID:' + s.id + '@todays-assistant',
+      'SEQUENCE:' + (s.rev || 0),
       'DTSTAMP:' + nowUtc,
+      'LAST-MODIFIED:' + nowUtc,
       s.start ? 'DTSTART;TZID=' + tz + ':' + stamp(key, s.start) : 'DTSTART;VALUE=DATE:' + key.replace(/-/g, ''),
       s.start ? 'DTEND;TZID=' + tz + ':' + stamp(key, endOf(s)) : 'DTEND;VALUE=DATE:' + nextDayKey(key).replace(/-/g, ''),
       'SUMMARY:' + escI(s.title),
@@ -1102,11 +1098,20 @@
       toast(added.length + '개 일정을 추가했어요');
     });
 
+    $('sch-timed').addEventListener('change', function (e) {
+      setTimeFields(e.target.checked);
+      if (e.target.checked && !$('sch-start').value) {
+        var h = Math.min(new Date().getHours() + 1, 23);
+        $('sch-start').value = pad(h) + ':00';
+      }
+    });
     $('sch-form').addEventListener('submit', function (e) {
       e.preventDefault();
       var err = $('sch-error');
-      var title = $('sch-title').value.trim(), date = $('sch-date').value, start = $('sch-start').value, end = $('sch-end').value;
+      var timedOn = $('sch-timed').checked;
+      var title = $('sch-title').value.trim(), date = $('sch-date').value, start = timedOn ? $('sch-start').value : '', end = timedOn ? $('sch-end').value : '';
       var fail = function (m, el) { err.textContent = m; err.hidden = false; if (el) el.focus(); };
+      if (timedOn && !start) return fail('시작 시간을 입력하거나 "시간 정하기"를 꺼 주세요.', $('sch-start'));
       if (!title) return fail('일정 이름을 입력해 주세요.', $('sch-title'));
       if (!date) return fail('날짜를 선택해 주세요.', $('sch-date'));
       if (!start && end) return fail('종료 시간을 쓰려면 시작 시간도 입력해 주세요.', $('sch-start'));
@@ -1115,13 +1120,14 @@
       var editing = $('sch-id').value, origKey = $('sch-id').dataset.orig;
       if (!editing) clearSamples();
       var pos = -1;
+      var prev = editing && origKey && schedules[origKey] ? schedules[origKey].find(function (x) { return x.id === editing; }) : null;
       if (editing && origKey && schedules[origKey]) {
         if (origKey === date) pos = schedules[origKey].findIndex(function (s) { return s.id === editing; });
         schedules[origKey] = schedules[origKey].filter(function (s) { return s.id !== editing; });
         if (!schedules[origKey].length) delete schedules[origKey];
       }
       var list = schedules[date] || (schedules[date] = []);
-      list.splice(pos >= 0 ? pos : list.length, 0, { id: editing || 'e' + Date.now().toString(36), start: start, end: end, title: title, cat: $('sch-cat').value, important: $('sch-imp').checked, place: $('sch-place').value.trim(), memo: $('sch-memo').value.trim() });
+      list.splice(pos >= 0 ? pos : list.length, 0, { id: editing || 'e' + Date.now().toString(36), start: start, end: end, title: title, cat: $('sch-cat').value, important: $('sch-imp').checked, place: $('sch-place').value.trim(), memo: $('sch-memo').value.trim(), rev: prev ? (prev.rev || 0) + 1 : 0 });
       saveSchedules();
       viewDate = parseYmd(date);
       renderSchedule();
@@ -1136,7 +1142,7 @@
       mt = setTimeout(function () {
         var s = detail && findItem(detail.key, detail.id);
         if (!s) return;
-        s.memo = $('dt-memo').value.trim();
+        s.memo = $('dt-memo').value.trim(); s.rev = (s.rev || 0) + 1;
         saveSchedules(); renderSchedule();
         $('dt-saved').textContent = '저장했어요.';
         var links = calendarLinks(detail.key, s);
