@@ -878,7 +878,10 @@
         '<span class="tl-time">' + timeLabel + '</span><span class="tl-dot"></span>' +
         '<button type="button" class="tl-card" data-id="' + s.id + '">' +
         '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
-        '<span class="tl-meta">' + (s.start ? s.start + (s.end ? '–' + s.end : '') + ' · ' : '') + esc(catOf(s.cat).name) + (s.place ? ' · ' + esc(s.place) : '') + (rel || '') + '</span>' +
+        (function () {
+          var meta = [s.start ? s.start + (s.end ? '–' + s.end : '') : '', s.place ? esc(s.place) : ''].filter(Boolean).join(' · ') + (rel || '');
+          return meta ? '<span class="tl-meta">' + meta.replace(/^ · /, '') + '</span>' : '';
+        })() +
         (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
         '</button></li>';
     };
@@ -1201,7 +1204,6 @@
       toast('일정을 삭제했어요');
     };
     $('cal-apple').onclick = function (e) { e.preventDefault(); saveIcs(); };
-    $('cal-ics').onclick = function (e) { e.preventDefault(); saveIcs(); };
     $('cal-copy').onclick = function () {
       var s = findItem(detail.key, detail.id);
       copyText($('dt-title').textContent + '\n' + $('dt-meta').textContent + (s.place ? '\n' + s.place : '') + (s.memo ? '\n' + s.memo : ''), '일정을 복사했어요');

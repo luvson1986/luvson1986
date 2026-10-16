@@ -738,6 +738,9 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .map-link em { font-style: normal; color: #03a64b; font-weight: 700; margin-left: 4px; white-space: nowrap; }
 .map-link.sm { margin-top: 2px; padding: 4px 9px; font-size: 12.5px; color: #03a64b; }
 .map-link:hover { background: color-mix(in srgb, #03c75a 22%, var(--surface)); }
+.cal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cal-btn { padding: 10px; } .cal-btn b { font-size: 13.5px; }
+.cal-btn > span { display: none; } .cal-btn { text-align: center; justify-items: center; padding: 12px 6px; } .cal-btn b { white-space: nowrap; }
+@media (max-width: 360px) { .cal-btn b { font-size: 12px; } .cal-grid { gap: 6px; } }
 
 </style>
 </head>
@@ -1158,7 +1161,6 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
       <div class="cal-grid">
         <a class="cal-btn" id="cal-google" target="_blank" rel="noopener"><b>Google 캘린더</b><span>웹·안드로이드</span></a>
         <a class="cal-btn" id="cal-apple" href="#"><b>iPhone 캘린더</b><span>.ics 파일로 추가</span></a>
-        <a class="cal-btn" id="cal-ics" href="#"><b>.ics 파일</b><span>네이버·삼성 캘린더 등</span></a>
         <button type="button" class="cal-btn" id="cal-copy"><b>텍스트 복사</b><span>메신저에 붙여넣기</span></button>
       </div>
     </div>
@@ -2458,7 +2460,10 @@ window.TRAVEL_CITIES = [
         '<span class="tl-time">' + timeLabel + '</span><span class="tl-dot"></span>' +
         '<button type="button" class="tl-card" data-id="' + s.id + '">' +
         '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
-        '<span class="tl-meta">' + (s.start ? s.start + (s.end ? '–' + s.end : '') + ' · ' : '') + esc(catOf(s.cat).name) + (s.place ? ' · ' + esc(s.place) : '') + (rel || '') + '</span>' +
+        (function () {
+          var meta = [s.start ? s.start + (s.end ? '–' + s.end : '') : '', s.place ? esc(s.place) : ''].filter(Boolean).join(' · ') + (rel || '');
+          return meta ? '<span class="tl-meta">' + meta.replace(/^ · /, '') + '</span>' : '';
+        })() +
         (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
         '</button></li>';
     };
@@ -2781,7 +2786,6 @@ window.TRAVEL_CITIES = [
       toast('일정을 삭제했어요');
     };
     $('cal-apple').onclick = function (e) { e.preventDefault(); saveIcs(); };
-    $('cal-ics').onclick = function (e) { e.preventDefault(); saveIcs(); };
     $('cal-copy').onclick = function () {
       var s = findItem(detail.key, detail.id);
       copyText($('dt-title').textContent + '\n' + $('dt-meta').textContent + (s.place ? '\n' + s.place : '') + (s.memo ? '\n' + s.memo : ''), '일정을 복사했어요');

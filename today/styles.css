@@ -718,3 +718,6 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .map-link em { font-style: normal; color: #03a64b; font-weight: 700; margin-left: 4px; white-space: nowrap; }
 .map-link.sm { margin-top: 2px; padding: 4px 9px; font-size: 12.5px; color: #03a64b; }
 .map-link:hover { background: color-mix(in srgb, #03c75a 22%, var(--surface)); }
+.cal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cal-btn { padding: 10px; } .cal-btn b { font-size: 13.5px; }
+.cal-btn > span { display: none; } .cal-btn { text-align: center; justify-items: center; padding: 12px 6px; } .cal-btn b { white-space: nowrap; }
+@media (max-width: 360px) { .cal-btn b { font-size: 12px; } .cal-grid { gap: 6px; } }
