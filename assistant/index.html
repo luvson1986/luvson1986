@@ -64,11 +64,18 @@
 
   <div class="wrap board">
     <div class="col col-a">
-      <!-- 일정: 오늘부터 날짜별 리스트 -->
+      <!-- 일정 -->
       <section class="panel" id="schedule-panel" aria-labelledby="sch-h">
         <header class="panel-head">
-          <h2 id="sch-h">다가오는 일정</h2>
-          <button type="button" class="add-icon" id="sch-add" aria-label="일정 자세히 추가">+</button>
+          <h2 id="sch-h">오늘 일정</h2>
+          <div class="head-tools">
+            <div class="day-nav">
+              <button type="button" class="ghost-btn sm" id="day-prev" aria-label="이전 날">‹</button>
+              <button type="button" class="ghost-btn sm day-label" id="day-today" aria-haspopup="dialog" aria-label="다가오는 일정 보기"></button>
+              <button type="button" class="ghost-btn sm" id="day-next" aria-label="다음 날">›</button>
+            </div>
+            <button type="button" class="add-icon" id="sch-add" aria-label="일정 자세히 추가">+</button>
+          </div>
         </header>
         <div class="cat-legend" id="cat-legend"></div>
         <form class="qa" id="qa-form">
@@ -78,8 +85,8 @@
         </form>
         <p class="hint qa-hint">하이픈(-)으로 나누면 여러 개, 앞의 숫자 4자리는 시간, 끝에 !를 붙이면 중요 일정이에요.</p>
         <p class="sample-banner" id="sample-banner" hidden>예시 일정이에요. 첫 일정을 추가하면 사라져요. <button type="button" class="link-btn" id="clear-samples">예시 지우기</button></p>
-        <ul class="daylist" id="daylist"></ul>
-        <p class="empty" id="daylist-empty" hidden>앞으로 예정된 일정이 없어요.</p>
+        <ol class="timeline" id="timeline"></ol>
+        <p class="empty" id="timeline-empty" hidden>이 날은 일정이 없어요. 위에서 바로 추가하세요.</p>
       </section>
 
       <!-- 체크리스트 -->
@@ -102,6 +109,7 @@
           <div class="head-tools">
             <span class="pill" id="wx-place"></span>
             <button type="button" class="ghost-btn sm" id="rule-open">옷차림 룰</button>
+            <button type="button" class="ghost-btn sm" id="wk-open">일주일 ›</button>
           </div>
         </header>
         <div class="hourly" id="hourly" aria-label="시간별 예보"></div>
@@ -213,6 +221,18 @@
       <ul class="sd-list" id="sd-hidden"></ul>
     </details>
     </div>
+  </div>
+</dialog>
+
+<!-- 다가오는 일정 -->
+<dialog class="sheet" id="up-dialog" aria-labelledby="up-h">
+  <div class="sheet-body">
+    <header class="panel-head">
+      <h2 id="up-h">다가오는 일정</h2>
+      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
+    </header>
+    <ul class="daylist" id="uplist"></ul>
+    <p class="empty" id="up-empty" hidden>앞으로 예정된 일정이 없어요.</p>
   </div>
 </dialog>
 

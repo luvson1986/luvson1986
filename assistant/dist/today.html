@@ -225,6 +225,7 @@ a { color: var(--accent); }
 
 /* 날씨 · 옷차림 */
 .hourly {
+  cursor: pointer;
   display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none;
   padding: 8px 4px; border-radius: var(--r-s); background: var(--surface-2);
 }
@@ -638,7 +639,13 @@ body.on-news::before {
 .qa-hint { margin-top: -6px; }
 .daylist { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .dl-gap { height: 14px; }
-.dl-row { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 6px; align-items: baseline; padding: 5px 0; }
+.dl-row {
+  all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; grid-template-columns: 52px minmax(0, 1fr);
+  gap: 6px; align-items: baseline; padding: 6px 6px; border-radius: 8px;
+}
+.dl-row:hover { background: var(--surface-2); }
+.dl-row:focus-visible { outline: 2px solid var(--accent); }
+.dl-row.on { background: var(--accent-soft); }
 .dl-date { font: 600 15px/1.6 var(--f-body); font-variant-numeric: tabular-nums; display: grid; }
 .dl-date em { font-style: normal; font-size: 10.5px; font-weight: 700; color: var(--accent); line-height: 1; }
 .dl-row.sun .dl-date { color: var(--bad); } .dl-row.sat .dl-date { color: var(--accent); }
@@ -646,11 +653,9 @@ body.on-news::before {
 .dl-items { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 2px; line-height: 1.6; min-width: 0; }
 .dl-sep { color: var(--ink-3); padding-inline: 2px; }
 .dl-item {
-  all: unset; box-sizing: border-box; cursor: pointer; font-size: 15px; padding: 1px 6px; border-radius: 6px;
+  font-size: 15px; padding: 1px 6px; border-radius: 6px;
   background: color-mix(in srgb, var(--c) 16%, transparent); color: var(--ink); overflow-wrap: anywhere;
 }
-.dl-item:hover { background: color-mix(in srgb, var(--c) 28%, transparent); }
-.dl-item:focus-visible { outline: 2px solid var(--accent); }
 .dl-item.imp { color: var(--bad); font-weight: 600; }
 .dl-item.done { opacity: 0.45; text-decoration: line-through; }
 .dl-time { font-family: var(--f-mono); font-size: 13.5px; margin-right: 1px; }
@@ -715,11 +720,18 @@ body.on-news::before {
 
   <div class="wrap board">
     <div class="col col-a">
-      <!-- 일정: 오늘부터 날짜별 리스트 -->
+      <!-- 일정 -->
       <section class="panel" id="schedule-panel" aria-labelledby="sch-h">
         <header class="panel-head">
-          <h2 id="sch-h">다가오는 일정</h2>
-          <button type="button" class="add-icon" id="sch-add" aria-label="일정 자세히 추가">+</button>
+          <h2 id="sch-h">오늘 일정</h2>
+          <div class="head-tools">
+            <div class="day-nav">
+              <button type="button" class="ghost-btn sm" id="day-prev" aria-label="이전 날">‹</button>
+              <button type="button" class="ghost-btn sm day-label" id="day-today" aria-haspopup="dialog" aria-label="다가오는 일정 보기"></button>
+              <button type="button" class="ghost-btn sm" id="day-next" aria-label="다음 날">›</button>
+            </div>
+            <button type="button" class="add-icon" id="sch-add" aria-label="일정 자세히 추가">+</button>
+          </div>
         </header>
         <div class="cat-legend" id="cat-legend"></div>
         <form class="qa" id="qa-form">
@@ -729,8 +741,8 @@ body.on-news::before {
         </form>
         <p class="hint qa-hint">하이픈(-)으로 나누면 여러 개, 앞의 숫자 4자리는 시간, 끝에 !를 붙이면 중요 일정이에요.</p>
         <p class="sample-banner" id="sample-banner" hidden>예시 일정이에요. 첫 일정을 추가하면 사라져요. <button type="button" class="link-btn" id="clear-samples">예시 지우기</button></p>
-        <ul class="daylist" id="daylist"></ul>
-        <p class="empty" id="daylist-empty" hidden>앞으로 예정된 일정이 없어요.</p>
+        <ol class="timeline" id="timeline"></ol>
+        <p class="empty" id="timeline-empty" hidden>이 날은 일정이 없어요. 위에서 바로 추가하세요.</p>
       </section>
 
       <!-- 체크리스트 -->
@@ -753,6 +765,7 @@ body.on-news::before {
           <div class="head-tools">
             <span class="pill" id="wx-place"></span>
             <button type="button" class="ghost-btn sm" id="rule-open">옷차림 룰</button>
+            <button type="button" class="ghost-btn sm" id="wk-open">일주일 ›</button>
           </div>
         </header>
         <div class="hourly" id="hourly" aria-label="시간별 예보"></div>
@@ -864,6 +877,18 @@ body.on-news::before {
       <ul class="sd-list" id="sd-hidden"></ul>
     </details>
     </div>
+  </div>
+</dialog>
+
+<!-- 다가오는 일정 -->
+<dialog class="sheet" id="up-dialog" aria-labelledby="up-h">
+  <div class="sheet-body">
+    <header class="panel-head">
+      <h2 id="up-h">다가오는 일정</h2>
+      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
+    </header>
+    <ul class="daylist" id="uplist"></ul>
+    <p class="empty" id="up-empty" hidden>앞으로 예정된 일정이 없어요.</p>
   </div>
 </dialog>
 
@@ -2183,12 +2208,61 @@ window.SAMPLE_NEWS = [
   }
   var hhmm = function (t) { return t ? t.replace(':', '') : ''; };
   function weekKey(d) { var m = new Date(d); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return ymd(m); }
-  // 오늘부터 앞으로의 일정을 날짜별 한 줄로 (지난 날은 숨김, 주가 바뀌면 간격)
+  // 선택한 날의 타임라인. 시간 없는 일정은 위에 '종일'로 적은 순서대로
   function renderSchedule() {
-    var now = new Date(), todayKey = ymd(now), nowMin = now.getHours() * 60 + now.getMinutes();
+    var key = ymd(viewDate), todayKey = ymd(new Date());
+    var all = schedules[key] || [];
+    var untimed = all.filter(function (s) { return !s.start; });
+    var list = all.filter(function (s) { return s.start; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
+    var diff = Math.round((parseYmd(key) - parseYmd(todayKey)) / 864e5);
+    $('day-today').textContent = diff === 0 ? '오늘' : (viewDate.getMonth() + 1) + '/' + viewDate.getDate() + ' (' + DAYS[viewDate.getDay()] + ')';
+    $('sch-h').textContent = diff === 0 ? '오늘 일정' : diff === 1 ? '내일 일정' : diff === -1 ? '어제 일정' : (viewDate.getMonth() + 1) + '월 ' + viewDate.getDate() + '일 일정';
+    $('sample-banner').hidden = !all.some(function (s) { return s.sample; });
+    $('timeline-empty').hidden = all.length > 0;
+    if (document.activeElement !== $('qa-text')) $('qa-date').value = key;
+
+    var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+    var card = function (s, state, timeLabel, rel) {
+      return '<li class="tl-item ' + state + (s.important ? ' imp' : '') + '" style="--c: ' + catOf(s.cat).color + '">' +
+        '<span class="tl-time">' + timeLabel + '</span><span class="tl-dot"></span>' +
+        '<button type="button" class="tl-card" data-id="' + s.id + '">' +
+        '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
+        '<span class="tl-meta">' + (s.start ? s.start + (s.end ? '–' + s.end : '') + ' · ' : '') + esc(catOf(s.cat).name) + (s.place ? ' · ' + esc(s.place) : '') + (rel || '') + '</span>' +
+        (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
+        '</button></li>';
+    };
+    var html = untimed.map(function (s) { return card(s, diff < 0 ? 'past' : '', '종일'); }).join('');
+    var nowPlaced = diff !== 0;
+    list.forEach(function (s) {
+      var st = toMin(s.start), en = s.end ? toMin(s.end) : st + 30;
+      if (!nowPlaced && nowMin < st) { html += nowRow(now); nowPlaced = true; }
+      var state = diff < 0 ? 'past' : diff > 0 ? '' : en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
+      var rel = '';
+      if (state === 'current') rel = ' · 진행 중';
+      else if (diff === 0 && !state) { var m = st - nowMin; rel = m < 60 ? ' · ' + m + '분 후' : ''; }
+      html += card(s, state, s.start, rel);
+      if (!nowPlaced && state === 'current') { html += nowRow(now); nowPlaced = true; }
+    });
+    if (!nowPlaced && list.length) html += nowRow(now);
+    $('timeline').innerHTML = html;
+    renderNowNext();
+  }
+  function nowRow(now) {
+    return '<li class="tl-now" aria-label="현재 시각"><span class="tl-time">' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + '</span><span class="now-dot"></span><span class="now-line"></span></li>';
+  }
+
+  // 오늘 버튼 → 다가오는 일정: 날짜 + 키워드 (지난 날은 숨김, 주가 바뀌면 간격)
+  var hhmm = function (t) { return t ? t.replace(':', '') : ''; };
+  function weekKey(d) { var m = new Date(d); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return ymd(m); }
+  function orderDay(list) {
+    var timed = list.filter(function (s) { return s.start; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
+    var i = 0;
+    return list.map(function (s) { return s.start ? timed[i++] : s; });
+  }
+  function renderUpcoming() {
+    var now = new Date(), todayKey = ymd(now);
     var keys = Object.keys(schedules).filter(function (k) { return k >= todayKey && schedules[k].length; }).sort();
-    $('sample-banner').hidden = !keys.some(function (k) { return schedules[k].some(function (s) { return s.sample; }); });
-    $('daylist-empty').hidden = keys.length > 0;
+    $('up-empty').hidden = keys.length > 0;
     var html = '', lastWeek = null;
     keys.forEach(function (k) {
       var d = parseYmd(k), wk = weekKey(d);
@@ -2196,19 +2270,14 @@ window.SAMPLE_NEWS = [
       lastWeek = wk;
       var sameMonth = d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       var label = (sameMonth ? d.getDate() : (d.getMonth() + 1) + '/' + d.getDate()) + DAYS[d.getDay()];
-      var items = orderDay(schedules[k]);
-      html += '<li class="dl-row' + (k === todayKey ? ' today' : '') + (d.getDay() === 0 ? ' sun' : d.getDay() === 6 ? ' sat' : '') + '">' +
+      html += '<li><button type="button" class="dl-row' + (k === ymd(viewDate) ? ' on' : '') + (d.getDay() === 0 ? ' sun' : d.getDay() === 6 ? ' sat' : '') + '" data-key="' + k + '">' +
         '<span class="dl-date">' + label + (k === todayKey ? '<em>오늘</em>' : '') + '</span><span class="dl-items">' +
-        items.map(function (s, i) {
-          var done = k === todayKey && s.start && toMin(endOf(s)) <= nowMin;
-          return (i ? '<span class="dl-sep" aria-hidden="true">-</span>' : '') +
-            '<button type="button" class="dl-item' + (s.important ? ' imp' : '') + (done ? ' done' : '') + '" data-key="' + k + '" data-id="' + s.id + '" style="--c:' + catOf(s.cat).color + '">' +
-            (s.start ? '<span class="dl-time">' + hhmm(s.start) + '</span>' : '') + esc(s.title) +
-            (s.memo ? '<i class="dl-memo" title="메모 있음"></i>' : '') + '</button>';
-        }).join('') + '</span></li>';
+        orderDay(schedules[k]).map(function (s, i) {
+          return (i ? '<span class="dl-sep">-</span>' : '') + '<span class="dl-item' + (s.important ? ' imp' : '') + '" style="--c:' + catOf(s.cat).color + '">' +
+            (s.start ? '<span class="dl-time">' + hhmm(s.start) + '</span>' : '') + esc(s.title) + '</span>';
+        }).join('') + '</span></button></li>';
     });
-    $('daylist').innerHTML = html;
-    renderNowNext();
+    $('uplist').innerHTML = html;
   }
 
   /* 지금 · 다음 (홈 상단 요약) */
@@ -2235,10 +2304,11 @@ window.SAMPLE_NEWS = [
     $('nn').innerHTML = html;
   }
   function scrollToSchedule(id) {
+    viewDate = new Date();
     renderSchedule();
     $('schedule-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (id) {
-      var card = document.querySelector('.dl-item[data-id="' + id + '"]');
+      var card = document.querySelector('.tl-card[data-id="' + id + '"]');
       if (card) { card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); }
     }
   }
@@ -2364,12 +2434,20 @@ window.SAMPLE_NEWS = [
       scrollToSchedule(b && b.dataset.id);
     });
 
-    $('daylist').addEventListener('click', function (e) {
-      var b = e.target.closest('.dl-item');
-      if (b) openDetail(b.dataset.key, b.dataset.id);
+    $('day-prev').onclick = function () { viewDate.setDate(viewDate.getDate() - 1); renderSchedule(); };
+    $('day-next').onclick = function () { viewDate.setDate(viewDate.getDate() + 1); renderSchedule(); };
+    $('day-today').onclick = function () { renderUpcoming(); openDialog($('up-dialog')); };
+    $('uplist').addEventListener('click', function (e) {
+      var b = e.target.closest('.dl-row'); if (!b) return;
+      closeDialog($('up-dialog'));
+      viewDate = parseYmd(b.dataset.key); renderSchedule();
+      $('schedule-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    $('timeline').addEventListener('click', function (e) {
+      var card = e.target.closest('.tl-card');
+      if (card) openDetail(ymd(viewDate), card.dataset.id);
     });
     // 빠른 추가: "1000피티-출근-1900피부과!" → 하이픈으로 나눠 여러 개, 앞 숫자 4자리는 시간, 끝의 !는 중요
-    $('qa-date').value = ymd(new Date());
     $('qa-form').addEventListener('submit', function (e) {
       e.preventDefault();
       var date = $('qa-date').value || ymd(new Date()), text = $('qa-text').value.trim();
@@ -2382,7 +2460,8 @@ window.SAMPLE_NEWS = [
       });
       clearSamples();
       schedules[date] = (schedules[date] || []).concat(added);
-      saveSchedules(); renderSchedule();
+      saveSchedules();
+      viewDate = parseYmd(date); renderSchedule();
       $('qa-text').value = '';
       toast(added.length + '개 일정을 추가했어요');
     });
@@ -2877,7 +2956,7 @@ window.SAMPLE_NEWS = [
   initSeason();
   initSeasonDialog();
   initRules();
-  $('wx-open').onclick = function () { openDialog($('week-dialog')); };
+  $('wx-open').onclick = $('wk-open').onclick = $('hourly').onclick = function () { openDialog($('week-dialog')); };
   initPhrase();
   initCats();
   initSchedule();
@@ -2886,7 +2965,7 @@ window.SAMPLE_NEWS = [
   loadWeather().then(renderWeather);
   initNews();
 
-  setInterval(function () { renderGreeting(); renderSchedule(); }, 60 * 1000);
+  setInterval(function () { renderGreeting(); if (ymd(viewDate) === ymd(new Date())) renderSchedule(); else renderNowNext(); }, 60 * 1000);
 })();
 
 </script>

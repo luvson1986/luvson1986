@@ -791,12 +791,61 @@
   }
   var hhmm = function (t) { return t ? t.replace(':', '') : ''; };
   function weekKey(d) { var m = new Date(d); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return ymd(m); }
-  // 오늘부터 앞으로의 일정을 날짜별 한 줄로 (지난 날은 숨김, 주가 바뀌면 간격)
+  // 선택한 날의 타임라인. 시간 없는 일정은 위에 '종일'로 적은 순서대로
   function renderSchedule() {
-    var now = new Date(), todayKey = ymd(now), nowMin = now.getHours() * 60 + now.getMinutes();
+    var key = ymd(viewDate), todayKey = ymd(new Date());
+    var all = schedules[key] || [];
+    var untimed = all.filter(function (s) { return !s.start; });
+    var list = all.filter(function (s) { return s.start; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
+    var diff = Math.round((parseYmd(key) - parseYmd(todayKey)) / 864e5);
+    $('day-today').textContent = diff === 0 ? '오늘' : (viewDate.getMonth() + 1) + '/' + viewDate.getDate() + ' (' + DAYS[viewDate.getDay()] + ')';
+    $('sch-h').textContent = diff === 0 ? '오늘 일정' : diff === 1 ? '내일 일정' : diff === -1 ? '어제 일정' : (viewDate.getMonth() + 1) + '월 ' + viewDate.getDate() + '일 일정';
+    $('sample-banner').hidden = !all.some(function (s) { return s.sample; });
+    $('timeline-empty').hidden = all.length > 0;
+    if (document.activeElement !== $('qa-text')) $('qa-date').value = key;
+
+    var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+    var card = function (s, state, timeLabel, rel) {
+      return '<li class="tl-item ' + state + (s.important ? ' imp' : '') + '" style="--c: ' + catOf(s.cat).color + '">' +
+        '<span class="tl-time">' + timeLabel + '</span><span class="tl-dot"></span>' +
+        '<button type="button" class="tl-card" data-id="' + s.id + '">' +
+        '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
+        '<span class="tl-meta">' + (s.start ? s.start + (s.end ? '–' + s.end : '') + ' · ' : '') + esc(catOf(s.cat).name) + (s.place ? ' · ' + esc(s.place) : '') + (rel || '') + '</span>' +
+        (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
+        '</button></li>';
+    };
+    var html = untimed.map(function (s) { return card(s, diff < 0 ? 'past' : '', '종일'); }).join('');
+    var nowPlaced = diff !== 0;
+    list.forEach(function (s) {
+      var st = toMin(s.start), en = s.end ? toMin(s.end) : st + 30;
+      if (!nowPlaced && nowMin < st) { html += nowRow(now); nowPlaced = true; }
+      var state = diff < 0 ? 'past' : diff > 0 ? '' : en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
+      var rel = '';
+      if (state === 'current') rel = ' · 진행 중';
+      else if (diff === 0 && !state) { var m = st - nowMin; rel = m < 60 ? ' · ' + m + '분 후' : ''; }
+      html += card(s, state, s.start, rel);
+      if (!nowPlaced && state === 'current') { html += nowRow(now); nowPlaced = true; }
+    });
+    if (!nowPlaced && list.length) html += nowRow(now);
+    $('timeline').innerHTML = html;
+    renderNowNext();
+  }
+  function nowRow(now) {
+    return '<li class="tl-now" aria-label="현재 시각"><span class="tl-time">' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + '</span><span class="now-dot"></span><span class="now-line"></span></li>';
+  }
+
+  // 오늘 버튼 → 다가오는 일정: 날짜 + 키워드 (지난 날은 숨김, 주가 바뀌면 간격)
+  var hhmm = function (t) { return t ? t.replace(':', '') : ''; };
+  function weekKey(d) { var m = new Date(d); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return ymd(m); }
+  function orderDay(list) {
+    var timed = list.filter(function (s) { return s.start; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
+    var i = 0;
+    return list.map(function (s) { return s.start ? timed[i++] : s; });
+  }
+  function renderUpcoming() {
+    var now = new Date(), todayKey = ymd(now);
     var keys = Object.keys(schedules).filter(function (k) { return k >= todayKey && schedules[k].length; }).sort();
-    $('sample-banner').hidden = !keys.some(function (k) { return schedules[k].some(function (s) { return s.sample; }); });
-    $('daylist-empty').hidden = keys.length > 0;
+    $('up-empty').hidden = keys.length > 0;
     var html = '', lastWeek = null;
     keys.forEach(function (k) {
       var d = parseYmd(k), wk = weekKey(d);
@@ -804,19 +853,14 @@
       lastWeek = wk;
       var sameMonth = d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       var label = (sameMonth ? d.getDate() : (d.getMonth() + 1) + '/' + d.getDate()) + DAYS[d.getDay()];
-      var items = orderDay(schedules[k]);
-      html += '<li class="dl-row' + (k === todayKey ? ' today' : '') + (d.getDay() === 0 ? ' sun' : d.getDay() === 6 ? ' sat' : '') + '">' +
+      html += '<li><button type="button" class="dl-row' + (k === ymd(viewDate) ? ' on' : '') + (d.getDay() === 0 ? ' sun' : d.getDay() === 6 ? ' sat' : '') + '" data-key="' + k + '">' +
         '<span class="dl-date">' + label + (k === todayKey ? '<em>오늘</em>' : '') + '</span><span class="dl-items">' +
-        items.map(function (s, i) {
-          var done = k === todayKey && s.start && toMin(endOf(s)) <= nowMin;
-          return (i ? '<span class="dl-sep" aria-hidden="true">-</span>' : '') +
-            '<button type="button" class="dl-item' + (s.important ? ' imp' : '') + (done ? ' done' : '') + '" data-key="' + k + '" data-id="' + s.id + '" style="--c:' + catOf(s.cat).color + '">' +
-            (s.start ? '<span class="dl-time">' + hhmm(s.start) + '</span>' : '') + esc(s.title) +
-            (s.memo ? '<i class="dl-memo" title="메모 있음"></i>' : '') + '</button>';
-        }).join('') + '</span></li>';
+        orderDay(schedules[k]).map(function (s, i) {
+          return (i ? '<span class="dl-sep">-</span>' : '') + '<span class="dl-item' + (s.important ? ' imp' : '') + '" style="--c:' + catOf(s.cat).color + '">' +
+            (s.start ? '<span class="dl-time">' + hhmm(s.start) + '</span>' : '') + esc(s.title) + '</span>';
+        }).join('') + '</span></button></li>';
     });
-    $('daylist').innerHTML = html;
-    renderNowNext();
+    $('uplist').innerHTML = html;
   }
 
   /* 지금 · 다음 (홈 상단 요약) */
@@ -843,10 +887,11 @@
     $('nn').innerHTML = html;
   }
   function scrollToSchedule(id) {
+    viewDate = new Date();
     renderSchedule();
     $('schedule-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (id) {
-      var card = document.querySelector('.dl-item[data-id="' + id + '"]');
+      var card = document.querySelector('.tl-card[data-id="' + id + '"]');
       if (card) { card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); }
     }
   }
@@ -972,12 +1017,20 @@
       scrollToSchedule(b && b.dataset.id);
     });
 
-    $('daylist').addEventListener('click', function (e) {
-      var b = e.target.closest('.dl-item');
-      if (b) openDetail(b.dataset.key, b.dataset.id);
+    $('day-prev').onclick = function () { viewDate.setDate(viewDate.getDate() - 1); renderSchedule(); };
+    $('day-next').onclick = function () { viewDate.setDate(viewDate.getDate() + 1); renderSchedule(); };
+    $('day-today').onclick = function () { renderUpcoming(); openDialog($('up-dialog')); };
+    $('uplist').addEventListener('click', function (e) {
+      var b = e.target.closest('.dl-row'); if (!b) return;
+      closeDialog($('up-dialog'));
+      viewDate = parseYmd(b.dataset.key); renderSchedule();
+      $('schedule-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    $('timeline').addEventListener('click', function (e) {
+      var card = e.target.closest('.tl-card');
+      if (card) openDetail(ymd(viewDate), card.dataset.id);
     });
     // 빠른 추가: "1000피티-출근-1900피부과!" → 하이픈으로 나눠 여러 개, 앞 숫자 4자리는 시간, 끝의 !는 중요
-    $('qa-date').value = ymd(new Date());
     $('qa-form').addEventListener('submit', function (e) {
       e.preventDefault();
       var date = $('qa-date').value || ymd(new Date()), text = $('qa-text').value.trim();
@@ -990,7 +1043,8 @@
       });
       clearSamples();
       schedules[date] = (schedules[date] || []).concat(added);
-      saveSchedules(); renderSchedule();
+      saveSchedules();
+      viewDate = parseYmd(date); renderSchedule();
       $('qa-text').value = '';
       toast(added.length + '개 일정을 추가했어요');
     });
@@ -1485,7 +1539,7 @@
   initSeason();
   initSeasonDialog();
   initRules();
-  $('wx-open').onclick = function () { openDialog($('week-dialog')); };
+  $('wx-open').onclick = $('wk-open').onclick = $('hourly').onclick = function () { openDialog($('week-dialog')); };
   initPhrase();
   initCats();
   initSchedule();
@@ -1494,5 +1548,5 @@
   loadWeather().then(renderWeather);
   initNews();
 
-  setInterval(function () { renderGreeting(); renderSchedule(); }, 60 * 1000);
+  setInterval(function () { renderGreeting(); if (ymd(viewDate) === ymd(new Date())) renderSchedule(); else renderNowNext(); }, 60 * 1000);
 })();

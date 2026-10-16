@@ -212,6 +212,7 @@ a { color: var(--accent); }
 
 /* 날씨 · 옷차림 */
 .hourly {
+  cursor: pointer;
   display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none;
   padding: 8px 4px; border-radius: var(--r-s); background: var(--surface-2);
 }
@@ -625,7 +626,13 @@ body.on-news::before {
 .qa-hint { margin-top: -6px; }
 .daylist { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .dl-gap { height: 14px; }
-.dl-row { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 6px; align-items: baseline; padding: 5px 0; }
+.dl-row {
+  all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; grid-template-columns: 52px minmax(0, 1fr);
+  gap: 6px; align-items: baseline; padding: 6px 6px; border-radius: 8px;
+}
+.dl-row:hover { background: var(--surface-2); }
+.dl-row:focus-visible { outline: 2px solid var(--accent); }
+.dl-row.on { background: var(--accent-soft); }
 .dl-date { font: 600 15px/1.6 var(--f-body); font-variant-numeric: tabular-nums; display: grid; }
 .dl-date em { font-style: normal; font-size: 10.5px; font-weight: 700; color: var(--accent); line-height: 1; }
 .dl-row.sun .dl-date { color: var(--bad); } .dl-row.sat .dl-date { color: var(--accent); }
@@ -633,11 +640,9 @@ body.on-news::before {
 .dl-items { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 2px; line-height: 1.6; min-width: 0; }
 .dl-sep { color: var(--ink-3); padding-inline: 2px; }
 .dl-item {
-  all: unset; box-sizing: border-box; cursor: pointer; font-size: 15px; padding: 1px 6px; border-radius: 6px;
+  font-size: 15px; padding: 1px 6px; border-radius: 6px;
   background: color-mix(in srgb, var(--c) 16%, transparent); color: var(--ink); overflow-wrap: anywhere;
 }
-.dl-item:hover { background: color-mix(in srgb, var(--c) 28%, transparent); }
-.dl-item:focus-visible { outline: 2px solid var(--accent); }
 .dl-item.imp { color: var(--bad); font-weight: 600; }
 .dl-item.done { opacity: 0.45; text-decoration: line-through; }
 .dl-time { font-family: var(--f-mono); font-size: 13.5px; margin-right: 1px; }
