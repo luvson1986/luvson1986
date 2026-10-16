@@ -33,7 +33,7 @@
   var DEFAULT_SETTINGS = {
     name: '',
     interests: ['UX 디자인', '핀테크', '디지털 금융', 'AI 서비스'],
-    location: { mode: 'auto', name: '서울', lat: 37.5665, lon: 126.978 }
+    location: { mode: 'auto', name: '서울특별시', lat: 37.5665, lon: 126.978, cc: 'KR' }
   };
   var settings = Object.assign({}, DEFAULT_SETTINGS, store.get('settings', {}));
 
@@ -417,12 +417,16 @@
   var isSnow = function (c) { return (c >= 71 && c <= 77) || c === 85 || c === 86; };
   var isRain = function (c) { return (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95; };
 
+  var SEOUL = { mode: 'auto', name: '서울특별시', lat: 37.5665, lon: 126.978, cc: 'KR', country: '대한민국' };
+  try { localStorage.removeItem('pa:lastGeo'); } catch (e) { /* 무시 */ }
   function locate() {
     var loc = settings.location;
-    if (loc.mode !== 'auto' || !navigator.geolocation) return Promise.resolve(loc);
+    if (loc.mode !== 'auto') return Promise.resolve(loc);
+    if (!navigator.geolocation) return Promise.resolve(SEOUL);
     return new Promise(function (resolve) {
       var done = false;
-      var fallback = function () { if (!done) { done = true; resolve(store.get('lastGeo', loc)); } };
+      // 위치를 못 받으면 항상 서울특별시 (예전에 저장된 위치는 쓰지 않아요)
+      var fallback = function () { if (!done) { done = true; resolve(SEOUL); } };
       setTimeout(fallback, 6000);
       try {
         navigator.geolocation.getCurrentPosition(function (pos) {
@@ -431,7 +435,7 @@
           getJSON('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + g.lat + '&longitude=' + g.lon + '&localityLanguage=ko', 4000)
             .then(function (r) { g.name = r.city || r.locality || r.principalSubdivision || g.name; g.cc = r.countryCode || ''; g.country = r.countryName || ''; })
             .catch(function () {})
-            .then(function () { store.set('lastGeo', g); resolve(g); });
+            .then(function () { resolve(g); });
         }, fallback, { timeout: 5000, maximumAge: 30 * 60 * 1000 });
       } catch (e) { fallback(); }
     });
@@ -492,7 +496,7 @@
     $('wx-temp').textContent = Math.round(c.temperature_2m) + '°';
     $('wx-cond').textContent = info[0] + ' · 체감 ' + Math.round(c.apparent_temperature) + '°';
     $('wx-sub').textContent = Math.round(d.temperature_2m_max[0]) + '° / ' + Math.round(d.temperature_2m_min[0]) + '° · 비 ' + (d.precipitation_probability_max[0] || 0) + '%';
-    $('wx-place').textContent = w.sample ? '예시 날씨' : w.place + (w.source === 'kma' ? ' · 기상청 모델' : '');
+    $('wx-place').textContent = w.sample ? '예시 날씨' : w.place;
     $('wx-place').title = w.sample ? '날씨 서버에 연결하지 못해 예시를 보여줘요' : '';
     $('hourly').innerHTML = w.hours.map(function (hr, i) {
       return '<div class="hour' + (i === 0 ? ' now' : '') + '"><span class="h-time">' + (i === 0 ? '지금' : hr.hour + '시') + '</span>' +
@@ -1505,7 +1509,7 @@
         return '<li>' + esc(t) + '<button type="button" data-i="' + i + '" aria-label="' + esc(t) + ' 삭제">✕</button></li>';
       }).join('');
       var l = draft.location;
-      $('set-city-current').textContent = '현재: ' + (l.mode === 'auto' ? '내 위치 자동 (실패 시 ' + l.name + ')' : l.name);
+      $('set-city-current').textContent = '현재: ' + (l.mode === 'auto' ? '내 위치 자동 (실패 시 서울특별시)' : l.name);
     }
     $('open-settings').onclick = function () {
       draft = JSON.parse(JSON.stringify(settings));
