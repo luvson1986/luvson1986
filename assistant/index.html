@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>오늘의 비서</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#121a26">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,7 +43,7 @@
       </div>
 
       <div class="season" id="season">
-        <p class="eyebrow">지금 이 계절</p>
+        <p class="eyebrow">지금 이 계절 <span class="phase" id="season-phase"></span></p>
         <h2 class="season-title" id="season-title"></h2>
         <p class="season-desc" id="season-desc"></p>
         <ul class="season-todo" id="season-todo"></ul>
@@ -80,41 +81,9 @@
         </header>
         <p class="sample-banner" id="sample-banner" hidden>예시 일정이에요. 첫 일정을 추가하면 사라져요. <button type="button" class="link-btn" id="clear-samples">예시 지우기</button></p>
         <ol class="timeline" id="timeline"></ol>
-        <p class="empty" id="timeline-empty" hidden>등록된 일정이 없어요. 아래에서 추가해 보세요.</p>
+        <p class="empty" id="timeline-empty" hidden>등록된 일정이 없어요.</p>
+        <button type="button" class="add-btn" id="sch-add">+ 일정 추가</button>
 
-        <form class="sch-form" id="sch-form" novalidate>
-          <input type="hidden" id="sch-id">
-          <div class="field full">
-            <label for="sch-title">일정</label>
-            <input id="sch-title" type="text" maxlength="60" placeholder="예: 송금 플로우 디자인 리뷰" required>
-          </div>
-          <div class="field">
-            <label for="sch-start">시작</label>
-            <input id="sch-start" type="time" value="09:00" required>
-          </div>
-          <div class="field">
-            <label for="sch-end">종료</label>
-            <input id="sch-end" type="time" value="10:00">
-          </div>
-          <div class="field">
-            <label for="sch-cat">분류</label>
-            <select id="sch-cat">
-              <option value="meeting">회의</option>
-              <option value="focus">집중 업무</option>
-              <option value="personal">개인</option>
-              <option value="health">운동·건강</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="sch-place">장소·메모</label>
-            <input id="sch-place" type="text" maxlength="60" placeholder="예: 12층 회의실">
-          </div>
-          <p class="form-error full" id="sch-error" role="alert" hidden></p>
-          <div class="form-actions full">
-            <button type="button" class="ghost-btn" id="sch-cancel" hidden>취소</button>
-            <button type="submit" class="primary-btn" id="sch-submit">일정 추가</button>
-          </div>
-        </form>
       </section>
     </div>
 
@@ -136,14 +105,22 @@
         </div>
       </section>
 
-      <!-- 뉴스 -->
+      <!-- 관심 소식 -->
       <section class="panel" id="news-panel" aria-labelledby="news-h" hidden>
         <header class="panel-head">
-          <h2 id="news-h">관심 뉴스</h2>
+          <h2 id="news-h">관심 소식</h2>
           <a class="link-btn" id="news-more" href="#news" hidden>더보기 <span class="mono" id="news-total"></span></a>
         </header>
         <p class="note" id="news-note" hidden></p>
-        <ul class="news-list" id="news-top"></ul>
+        <ul class="news-cards" id="news-top"></ul>
+        <div class="media-block" id="yt-block" hidden>
+          <h3 class="sub-h">유튜브</h3>
+          <ul class="yt-strip" id="yt-top"></ul>
+        </div>
+        <div class="media-block" id="ig-block">
+          <h3 class="sub-h">인스타그램 해시태그</h3>
+          <div class="ig-tags" id="ig-tags"></div>
+        </div>
       </section>
     </div>
   </div>
@@ -154,13 +131,18 @@
   <header class="sub-header">
     <div class="wrap sub-header-inner">
       <a class="icon-btn back" href="#home" aria-label="홈으로">‹</a>
-      <h1>관심 뉴스</h1>
+      <h1>관심 소식</h1>
       <span class="pill mono" id="news-all-count"></span>
     </div>
   </header>
   <div class="wrap news-page">
+    <div class="seg" role="tablist" aria-label="소식 종류">
+      <button type="button" role="tab" class="seg-btn" data-kind="news" aria-selected="true">뉴스</button>
+      <button type="button" role="tab" class="seg-btn" data-kind="video" aria-selected="false">영상</button>
+    </div>
     <div class="chips" id="news-filters" role="tablist" aria-label="관심사 필터"></div>
     <ul class="news-list big" id="news-all"></ul>
+    <ul class="yt-grid" id="yt-all" hidden></ul>
   </div>
 </main>
 
@@ -192,10 +174,100 @@
       <ul class="city-results" id="city-results"></ul>
       <p class="hint" id="set-city-current"></p>
     </div>
+    <div class="field">
+      <label for="set-ytkey">유튜브 API 키 (선택)</label>
+      <input id="set-ytkey" type="text" autocomplete="off" spellcheck="false" placeholder="AIza…">
+      <p class="hint">넣으면 관심사별 최신 영상을 더 안정적으로 가져와요. Google Cloud 콘솔에서 YouTube Data API v3 키를 무료로 만들 수 있어요.</p>
+    </div>
     <div class="form-actions">
       <button class="primary-btn" value="save" id="settings-save">저장</button>
     </div>
   </form>
+</dialog>
+
+<!-- 일정 추가·수정 -->
+<dialog class="sheet" id="sch-dialog" aria-labelledby="sch-dialog-h">
+  <form class="sheet-body" id="sch-form" novalidate>
+    <header class="panel-head">
+      <h2 id="sch-dialog-h">일정 추가</h2>
+      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
+    </header>
+    <input type="hidden" id="sch-id">
+    <div class="form-grid">
+      <div class="field full">
+        <label for="sch-title">일정</label>
+        <input id="sch-title" type="text" maxlength="60" placeholder="예: 송금 플로우 디자인 리뷰" required>
+      </div>
+      <div class="field full">
+        <label for="sch-date">날짜</label>
+        <input id="sch-date" type="date" required>
+      </div>
+      <div class="field">
+        <label for="sch-start">시작</label>
+        <input id="sch-start" type="time" value="09:00" required>
+      </div>
+      <div class="field">
+        <label for="sch-end">종료</label>
+        <input id="sch-end" type="time" value="10:00">
+      </div>
+      <div class="field">
+        <label for="sch-cat">분류</label>
+        <select id="sch-cat">
+          <option value="meeting">회의</option>
+          <option value="focus">집중 업무</option>
+          <option value="personal">개인</option>
+          <option value="health">운동·건강</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="sch-place">장소</label>
+        <input id="sch-place" type="text" maxlength="60" placeholder="예: 12층 회의실">
+      </div>
+      <div class="field full">
+        <label for="sch-memo">메모</label>
+        <textarea id="sch-memo" rows="3" maxlength="1000" placeholder="준비할 것, 논의할 내용"></textarea>
+      </div>
+    </div>
+    <p class="form-error" id="sch-error" role="alert" hidden></p>
+    <div class="form-actions">
+      <button type="button" class="ghost-btn" data-close>취소</button>
+      <button type="submit" class="primary-btn" id="sch-submit">일정 추가</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 일정 상세 -->
+<dialog class="sheet" id="detail-dialog" aria-labelledby="dt-title">
+  <div class="sheet-body">
+    <header class="panel-head">
+      <div class="dt-head">
+        <span class="tl-tag" id="dt-cat"></span>
+        <h2 id="dt-title"></h2>
+        <p class="dt-meta" id="dt-meta"></p>
+      </div>
+      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
+    </header>
+    <div class="field">
+      <label for="dt-memo">메모</label>
+      <textarea id="dt-memo" rows="4" maxlength="1000" placeholder="회의 안건, 준비물, 회고를 적어 두세요"></textarea>
+      <p class="hint" id="dt-saved">입력하면 자동으로 저장돼요.</p>
+    </div>
+    <div class="cal-block">
+      <h3 class="sub-h">내 캘린더에 추가</h3>
+      <div class="cal-grid">
+        <a class="cal-btn" id="cal-google" target="_blank" rel="noopener"><b>Google 캘린더</b><span>웹·안드로이드</span></a>
+        <a class="cal-btn" id="cal-apple" href="#"><b>iPhone 캘린더</b><span>.ics 파일로 추가</span></a>
+        <a class="cal-btn" id="cal-outlook-work" target="_blank" rel="noopener"><b>Outlook (회사)</b><span>Microsoft 365</span></a>
+        <a class="cal-btn" id="cal-outlook" target="_blank" rel="noopener"><b>Outlook.com</b><span>개인 계정</span></a>
+        <a class="cal-btn" id="cal-ics" href="#"><b>.ics 파일</b><span>네이버·카카오 등 가져오기</span></a>
+        <button type="button" class="cal-btn" id="cal-copy"><b>텍스트 복사</b><span>메신저에 붙여넣기</span></button>
+      </div>
+    </div>
+    <div class="form-actions split">
+      <button type="button" class="ghost-btn danger" id="dt-delete">삭제</button>
+      <button type="button" class="primary-btn" id="dt-edit">수정</button>
+    </div>
+  </div>
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
