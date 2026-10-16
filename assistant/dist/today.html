@@ -604,6 +604,41 @@ body.on-news::before {
 }
 .sheet .seg { background: var(--surface-2); }
 
+/* 월간 캘린더 */
+.mc-nav { display: flex; align-items: center; gap: 6px; }
+.mc-nav h2 { min-width: 6.5em; text-align: center; font-variant-numeric: tabular-nums; }
+.mc-week, .mc-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.mc-week span { text-align: center; font-size: 12px; color: var(--ink-3); padding-bottom: 4px; }
+.mc-week span:first-child { color: var(--bad); } .mc-week span:last-child { color: var(--accent); }
+.mc-grid { gap: 2px; }
+.mc-cell {
+  all: unset; box-sizing: border-box; cursor: pointer; display: grid; justify-items: center; align-content: start; gap: 3px;
+  min-height: 48px; padding: 6px 0; border-radius: 10px; font-variant-numeric: tabular-nums;
+}
+.mc-cell:hover { background: var(--surface-2); }
+.mc-cell:focus-visible { outline: 2px solid var(--accent); }
+.mc-num { font-size: 14px; font-weight: 500; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; }
+.mc-cell.sun .mc-num { color: var(--bad); } .mc-cell.sat .mc-num { color: var(--accent); }
+.mc-cell.out { opacity: 0.35; }
+.mc-cell.today .mc-num { box-shadow: inset 0 0 0 1.5px var(--ink); font-weight: 700; }
+.mc-cell.sel { background: var(--accent-soft); }
+.mc-cell.sel .mc-num { background: var(--ink); color: var(--bg); font-weight: 700; }
+.mc-dots { display: flex; gap: 2px; height: 6px; }
+.mc-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--c); }
+.mc-dots i.imp { background: var(--bad); }
+.mc-day { display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+.mc-day .sub-h { margin: 0; color: var(--ink); font-size: 14px; }
+.mc-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.mc-item {
+  all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: flex; align-items: center; gap: 10px;
+  padding: 10px 6px; border-radius: 8px; font-size: 14.5px;
+}
+.mc-item:hover { background: var(--surface-2); }
+.mc-item:focus-visible { outline: 2px solid var(--accent); }
+.mc-item i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+.mc-item.imp span { color: var(--bad); font-weight: 600; }
+.mc-list li + li .mc-item { border-top: 1px solid var(--line); border-radius: 0; }
+
 </style>
 </head>
 <body>
@@ -664,7 +699,7 @@ body.on-news::before {
           <div class="head-tools">
             <div class="day-nav">
               <button type="button" class="ghost-btn sm" id="day-prev" aria-label="이전 날">‹</button>
-              <button type="button" class="ghost-btn sm day-label" id="day-today"></button>
+              <button type="button" class="ghost-btn sm day-label" id="day-today" aria-haspopup="dialog" aria-label="캘린더 열기"></button>
               <button type="button" class="ghost-btn sm" id="day-next" aria-label="다음 날">›</button>
             </div>
             <button type="button" class="add-icon" id="sch-add" aria-label="일정 추가">+</button>
@@ -806,6 +841,33 @@ body.on-news::before {
       <summary>숨긴 시즌 <span class="mono" id="sd-hidden-count"></span></summary>
       <ul class="sd-list" id="sd-hidden"></ul>
     </details>
+    </div>
+  </div>
+</dialog>
+
+<!-- 일정 캘린더 -->
+<dialog class="sheet" id="mcal-dialog" aria-labelledby="mc-h">
+  <div class="sheet-body">
+    <header class="panel-head">
+      <div class="mc-nav">
+        <button type="button" class="ghost-btn sm" id="mc-prev" aria-label="이전 달">‹</button>
+        <h2 id="mc-h"></h2>
+        <button type="button" class="ghost-btn sm" id="mc-next" aria-label="다음 달">›</button>
+        <button type="button" class="ghost-btn sm" id="mc-today">오늘</button>
+      </div>
+      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
+    </header>
+    <div class="mc-week" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+    <div class="mc-grid" id="mc-grid" role="grid"></div>
+    <div class="mc-day">
+      <div class="panel-head">
+        <h3 class="sub-h" id="mc-day-h"></h3>
+        <div class="head-tools">
+          <button type="button" class="ghost-btn sm" id="mc-go">이 날 시간표 보기</button>
+          <button type="button" class="add-icon" id="mc-add" aria-label="이 날 일정 추가">+</button>
+        </div>
+      </div>
+      <ul class="mc-list" id="mc-list"></ul>
     </div>
   </div>
 </dialog>
@@ -2155,6 +2217,36 @@ window.SAMPLE_NEWS = [
     }
   }
 
+  /* 월간 캘린더 팝업: 날짜를 고르면 그날 일정을 텍스트로 */
+  var mcMonth = new Date(), mcSel = ymd(new Date());
+  function openMonthCal() {
+    mcSel = ymd(viewDate);
+    mcMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+    renderMonthCal();
+    openDialog($('mcal-dialog'));
+  }
+  function renderMonthCal() {
+    var y = mcMonth.getFullYear(), m = mcMonth.getMonth(), todayKey = ymd(new Date());
+    $('mc-h').textContent = y + '년 ' + (m + 1) + '월';
+    var first = new Date(y, m, 1), start = new Date(y, m, 1 - first.getDay());
+    var weeks = Math.ceil((first.getDay() + new Date(y, m + 1, 0).getDate()) / 7);
+    var html = '';
+    for (var i = 0; i < weeks * 7; i++) {
+      var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i), key = ymd(d);
+      var items = (schedules[key] || []).slice().sort(function (a, b) { return a.start.localeCompare(b.start); });
+      var dots = items.slice(0, 4).map(function (s) { return '<i style="--c:' + catOf(s.cat).color + '"' + (s.important ? ' class="imp"' : '') + '></i>'; }).join('');
+      html += '<button type="button" class="mc-cell' + (d.getMonth() !== m ? ' out' : '') + (key === todayKey ? ' today' : '') + (key === mcSel ? ' sel' : '') +
+        (d.getDay() === 0 ? ' sun' : d.getDay() === 6 ? ' sat' : '') + '" data-day="' + key + '" aria-label="' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일, 일정 ' + items.length + '개"' + (key === mcSel ? ' aria-selected="true"' : '') + '>' +
+        '<span class="mc-num">' + d.getDate() + '</span><span class="mc-dots">' + dots + '</span></button>';
+    }
+    $('mc-grid').innerHTML = html;
+    var sd = parseYmd(mcSel), list = (schedules[mcSel] || []).slice().sort(function (a, b) { return a.start.localeCompare(b.start); });
+    $('mc-day-h').textContent = (sd.getMonth() + 1) + '월 ' + sd.getDate() + '일 ' + DAYS[sd.getDay()] + '요일' + (mcSel === todayKey ? ' · 오늘' : '');
+    $('mc-list').innerHTML = list.length ? list.map(function (s) {
+      return '<li><button type="button" class="mc-item' + (s.important ? ' imp' : '') + '" data-id="' + s.id + '" style="--c:' + catOf(s.cat).color + '"><i></i><span>' + esc(s.title) + '</span></button></li>';
+    }).join('') : '<li class="empty">이 날은 일정이 없어요.</li>';
+  }
+
   /* 추가·수정 팝업 */
   function openForm(item, dateKey) {
     var key = dateKey || ymd(viewDate);
@@ -2270,7 +2362,29 @@ window.SAMPLE_NEWS = [
   function initSchedule() {
     $('day-prev').onclick = function () { viewDate.setDate(viewDate.getDate() - 1); renderSchedule(); };
     $('day-next').onclick = function () { viewDate.setDate(viewDate.getDate() + 1); renderSchedule(); };
-    $('day-today').onclick = function () { viewDate = new Date(); renderSchedule(); };
+    $('day-today').onclick = function () { openMonthCal(); };
+    $('mc-prev').onclick = function () { mcMonth.setMonth(mcMonth.getMonth() - 1); renderMonthCal(); };
+    $('mc-next').onclick = function () { mcMonth.setMonth(mcMonth.getMonth() + 1); renderMonthCal(); };
+    $('mc-today').onclick = function () { mcSel = ymd(new Date()); mcMonth = new Date(); mcMonth.setDate(1); renderMonthCal(); };
+    $('mc-grid').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-day]'); if (!b) return;
+      mcSel = b.dataset.day;
+      var d = parseYmd(mcSel);
+      if (d.getMonth() !== mcMonth.getMonth()) { mcMonth = new Date(d.getFullYear(), d.getMonth(), 1); }
+      renderMonthCal();
+    });
+    $('mc-list').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-id]'); if (!b) return;
+      closeDialog($('mcal-dialog'));
+      viewDate = parseYmd(mcSel); renderSchedule();
+      openDetail(mcSel, b.dataset.id);
+    });
+    $('mc-go').onclick = function () {
+      closeDialog($('mcal-dialog'));
+      viewDate = parseYmd(mcSel); renderSchedule();
+      $('schedule-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    $('mc-add').onclick = function () { closeDialog($('mcal-dialog')); openForm(null, mcSel); };
     $('clear-samples').onclick = function () { clearSamples(); renderSchedule(); toast('예시 일정을 지웠어요'); };
     $('sch-add').onclick = function () { openForm(null); };
     $('nn').addEventListener('click', function (e) {

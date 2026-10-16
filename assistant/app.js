@@ -832,6 +832,36 @@
     }
   }
 
+  /* 월간 캘린더 팝업: 날짜를 고르면 그날 일정을 텍스트로 */
+  var mcMonth = new Date(), mcSel = ymd(new Date());
+  function openMonthCal() {
+    mcSel = ymd(viewDate);
+    mcMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+    renderMonthCal();
+    openDialog($('mcal-dialog'));
+  }
+  function renderMonthCal() {
+    var y = mcMonth.getFullYear(), m = mcMonth.getMonth(), todayKey = ymd(new Date());
+    $('mc-h').textContent = y + '년 ' + (m + 1) + '월';
+    var first = new Date(y, m, 1), start = new Date(y, m, 1 - first.getDay());
+    var weeks = Math.ceil((first.getDay() + new Date(y, m + 1, 0).getDate()) / 7);
+    var html = '';
+    for (var i = 0; i < weeks * 7; i++) {
+      var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i), key = ymd(d);
+      var items = (schedules[key] || []).slice().sort(function (a, b) { return a.start.localeCompare(b.start); });
+      var dots = items.slice(0, 4).map(function (s) { return '<i style="--c:' + catOf(s.cat).color + '"' + (s.important ? ' class="imp"' : '') + '></i>'; }).join('');
+      html += '<button type="button" class="mc-cell' + (d.getMonth() !== m ? ' out' : '') + (key === todayKey ? ' today' : '') + (key === mcSel ? ' sel' : '') +
+        (d.getDay() === 0 ? ' sun' : d.getDay() === 6 ? ' sat' : '') + '" data-day="' + key + '" aria-label="' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일, 일정 ' + items.length + '개"' + (key === mcSel ? ' aria-selected="true"' : '') + '>' +
+        '<span class="mc-num">' + d.getDate() + '</span><span class="mc-dots">' + dots + '</span></button>';
+    }
+    $('mc-grid').innerHTML = html;
+    var sd = parseYmd(mcSel), list = (schedules[mcSel] || []).slice().sort(function (a, b) { return a.start.localeCompare(b.start); });
+    $('mc-day-h').textContent = (sd.getMonth() + 1) + '월 ' + sd.getDate() + '일 ' + DAYS[sd.getDay()] + '요일' + (mcSel === todayKey ? ' · 오늘' : '');
+    $('mc-list').innerHTML = list.length ? list.map(function (s) {
+      return '<li><button type="button" class="mc-item' + (s.important ? ' imp' : '') + '" data-id="' + s.id + '" style="--c:' + catOf(s.cat).color + '"><i></i><span>' + esc(s.title) + '</span></button></li>';
+    }).join('') : '<li class="empty">이 날은 일정이 없어요.</li>';
+  }
+
   /* 추가·수정 팝업 */
   function openForm(item, dateKey) {
     var key = dateKey || ymd(viewDate);
@@ -947,7 +977,29 @@
   function initSchedule() {
     $('day-prev').onclick = function () { viewDate.setDate(viewDate.getDate() - 1); renderSchedule(); };
     $('day-next').onclick = function () { viewDate.setDate(viewDate.getDate() + 1); renderSchedule(); };
-    $('day-today').onclick = function () { viewDate = new Date(); renderSchedule(); };
+    $('day-today').onclick = function () { openMonthCal(); };
+    $('mc-prev').onclick = function () { mcMonth.setMonth(mcMonth.getMonth() - 1); renderMonthCal(); };
+    $('mc-next').onclick = function () { mcMonth.setMonth(mcMonth.getMonth() + 1); renderMonthCal(); };
+    $('mc-today').onclick = function () { mcSel = ymd(new Date()); mcMonth = new Date(); mcMonth.setDate(1); renderMonthCal(); };
+    $('mc-grid').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-day]'); if (!b) return;
+      mcSel = b.dataset.day;
+      var d = parseYmd(mcSel);
+      if (d.getMonth() !== mcMonth.getMonth()) { mcMonth = new Date(d.getFullYear(), d.getMonth(), 1); }
+      renderMonthCal();
+    });
+    $('mc-list').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-id]'); if (!b) return;
+      closeDialog($('mcal-dialog'));
+      viewDate = parseYmd(mcSel); renderSchedule();
+      openDetail(mcSel, b.dataset.id);
+    });
+    $('mc-go').onclick = function () {
+      closeDialog($('mcal-dialog'));
+      viewDate = parseYmd(mcSel); renderSchedule();
+      $('schedule-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    $('mc-add').onclick = function () { closeDialog($('mcal-dialog')); openForm(null, mcSel); };
     $('clear-samples').onclick = function () { clearSamples(); renderSchedule(); toast('예시 일정을 지웠어요'); };
     $('sch-add').onclick = function () { openForm(null); };
     $('nn').addEventListener('click', function (e) {

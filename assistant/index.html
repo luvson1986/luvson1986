@@ -70,7 +70,7 @@
           <div class="head-tools">
             <div class="day-nav">
               <button type="button" class="ghost-btn sm" id="day-prev" aria-label="이전 날">‹</button>
-              <button type="button" class="ghost-btn sm day-label" id="day-today"></button>
+              <button type="button" class="ghost-btn sm day-label" id="day-today" aria-haspopup="dialog" aria-label="캘린더 열기"></button>
               <button type="button" class="ghost-btn sm" id="day-next" aria-label="다음 날">›</button>
             </div>
             <button type="button" class="add-icon" id="sch-add" aria-label="일정 추가">+</button>
@@ -212,6 +212,33 @@
       <summary>숨긴 시즌 <span class="mono" id="sd-hidden-count"></span></summary>
       <ul class="sd-list" id="sd-hidden"></ul>
     </details>
+    </div>
+  </div>
+</dialog>
+
+<!-- 일정 캘린더 -->
+<dialog class="sheet" id="mcal-dialog" aria-labelledby="mc-h">
+  <div class="sheet-body">
+    <header class="panel-head">
+      <div class="mc-nav">
+        <button type="button" class="ghost-btn sm" id="mc-prev" aria-label="이전 달">‹</button>
+        <h2 id="mc-h"></h2>
+        <button type="button" class="ghost-btn sm" id="mc-next" aria-label="다음 달">›</button>
+        <button type="button" class="ghost-btn sm" id="mc-today">오늘</button>
+      </div>
+      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
+    </header>
+    <div class="mc-week" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+    <div class="mc-grid" id="mc-grid" role="grid"></div>
+    <div class="mc-day">
+      <div class="panel-head">
+        <h3 class="sub-h" id="mc-day-h"></h3>
+        <div class="head-tools">
+          <button type="button" class="ghost-btn sm" id="mc-go">이 날 시간표 보기</button>
+          <button type="button" class="add-icon" id="mc-add" aria-label="이 날 일정 추가">+</button>
+        </div>
+      </div>
+      <ul class="mc-list" id="mc-list"></ul>
     </div>
   </div>
 </dialog>
