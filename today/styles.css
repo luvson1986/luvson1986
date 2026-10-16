@@ -779,3 +779,11 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .tl-done:hover { border-color: var(--good); color: var(--good); }
 .tl-done[aria-pressed="true"] { background: var(--good); border-color: var(--good); color: #fff; }
 .tl-item.done .tl-title { text-decoration: line-through; }
+
+/* 상세: 앞·뒤 일정 */
+.dt-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: -4px; }
+.dt-nav .ghost-btn:disabled { opacity: 0.35; cursor: default; }
+.dt-pos { font-size: 12px; color: var(--ink-3); }
+/* 날짜를 넘겨 내용이 짧아져도 화면이 위로 끌려 올라가지 않게 아래 여유 공간 */
+#view-home::after { content: ""; display: block; height: 35vh; }
+.timeline, .board { overflow-anchor: none; }

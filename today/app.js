@@ -854,6 +854,12 @@
       window.scrollTo(0, lockY);
     }
   }
+  function resetModalScroll() {
+    if (document.body.classList.contains('modal-open') && window.scrollY !== 0) window.scrollTo(0, 0);
+  }
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', function () { setTimeout(resetModalScroll, 50); });
+  document.addEventListener('focusout', function () { setTimeout(resetModalScroll, 50); });
+  window.addEventListener('scroll', function () { if (document.body.classList.contains('modal-open') && !document.activeElement.matches('input, textarea, select')) resetModalScroll(); });
   function openDialog(d) { if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', ''); syncScrollLock(); }
   function closeDialog(d) { if (d.close) d.close(); else d.removeAttribute('open'); syncScrollLock(); }
   // Esc·폼 닫기 등 어떤 방식으로 닫혀도 고정 해제
@@ -989,10 +995,25 @@
     else html += idle('다음', '오늘 남은 일정이 없어요');
     $('nn').innerHTML = html;
   }
+  // 일정 섹션 머리를 화면 높이 10% 지점에 두고 즉시 이동 (애니메이션 없이 → 화면이 튀지 않게)
+  function placeSchedulePanel() {
+    var panel = $('schedule-panel');
+    requestAnimationFrame(function () {
+      var top = panel.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.1;
+      window.scrollTo(0, Math.max(0, top));
+    });
+  }
+  // 날짜를 바꿔도 일정 섹션 머리가 화면에서 제자리에 있도록
+  function keepScheduleInPlace(fn) {
+    var panel = $('schedule-panel'), before = panel.getBoundingClientRect().top;
+    fn();
+    var diff = panel.getBoundingClientRect().top - before;
+    if (Math.abs(diff) > 1) window.scrollBy(0, diff);
+  }
   function scrollToSchedule(id) {
     viewDate = new Date();
     renderSchedule();
-    $('schedule-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    placeSchedulePanel();
     if (id) {
       var card = document.querySelector('.tl-card[data-id="' + id + '"]');
       if (card) { card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); }
@@ -1044,12 +1065,29 @@
   /* 상세 팝업 */
   var detail = null; // { key, id }
   function findItem(key, id) { return (schedules[key] || []).find(function (s) { return s.id === id; }); }
+  // 모든 일정을 날짜 → (시간순, 시간 미정은 뒤) 순서로 이어 붙인 목록
+  function allEventsOrdered() {
+    var out = [];
+    Object.keys(schedules).sort().forEach(function (k) { orderDay(schedules[k] || []).forEach(function (s) { out.push({ key: k, id: s.id }); }); });
+    return out;
+  }
+  function stepDetail(dir) {
+    var list = allEventsOrdered(), i = list.findIndex(function (x) { return x.key === detail.key && x.id === detail.id; });
+    var t = list[i + dir]; if (!t) return;
+    if (t.key !== ymd(viewDate)) { viewDate = parseYmd(t.key); renderSchedule(); }
+    openDetail(t.key, t.id);
+  }
   function openDetail(key, id) {
     var s = findItem(key, id);
     if (!s) return;
     detail = { key: key, id: id };
     var d = parseYmd(key);
     renderDetailCat(s);
+    var order = allEventsOrdered(), pos = order.findIndex(function (x) { return x.key === key && x.id === id; });
+    $('dt-prev').disabled = pos <= 0;
+    $('dt-next').disabled = pos < 0 || pos >= order.length - 1;
+    var od = parseYmd(key);
+    $('dt-pos').textContent = (od.getMonth() + 1) + '/' + od.getDate() + ' ' + DAYS[od.getDay()];
     $('dt-imp').setAttribute('aria-pressed', String(!!s.important));
     $('dt-title').classList.toggle('imp', !!s.important);
     $('dt-title').textContent = s.title;
@@ -1140,14 +1178,14 @@
       scrollToSchedule(b && b.dataset.id);
     });
 
-    $('day-prev').onclick = function () { viewDate.setDate(viewDate.getDate() - 1); renderSchedule(); };
-    $('day-next').onclick = function () { viewDate.setDate(viewDate.getDate() + 1); renderSchedule(); };
+    $('day-prev').onclick = function () { keepScheduleInPlace(function () { viewDate.setDate(viewDate.getDate() - 1); renderSchedule(); }); };
+    $('day-next').onclick = function () { keepScheduleInPlace(function () { viewDate.setDate(viewDate.getDate() + 1); renderSchedule(); }); };
     $('day-today').onclick = function () { $('qa-date').value = ymd(viewDate); renderUpcoming(); openDialog($('up-dialog')); };
     $('uplist').addEventListener('click', function (e) {
       var b = e.target.closest('.dl-row'); if (!b) return;
-      closeDialog($('up-dialog'));
       viewDate = parseYmd(b.dataset.key); renderSchedule();
-      $('schedule-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      closeDialog($('up-dialog'));
+      placeSchedulePanel();
     });
     $('timeline').addEventListener('click', function (e) {
       var d = e.target.closest('[data-done]');
@@ -1233,6 +1271,8 @@
         $('cal-google').href = links.google;
       }, 400);
     });
+    $('dt-prev').onclick = function () { stepDetail(-1); };
+    $('dt-next').onclick = function () { stepDetail(1); };
     $('dt-cat').onclick = function () {
       var pop = $('dt-cat-pop'), open = pop.hidden;
       pop.hidden = !open;
