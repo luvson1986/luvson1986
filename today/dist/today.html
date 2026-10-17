@@ -1939,7 +1939,11 @@ window.FLAG_COLORS = {
     var motif = tops.length > 1 ? tops.slice(0, 2).map(function (x) { return x.s.scene.motif[0]; }) : s.scene.motif;
     $('hero-motif').innerHTML = motif.map(function (m) { return '<span>' + esc(m) + '</span>'; }).join('');
     $('hero-motif').classList.toggle('pair', tops.length > 1);
-    scene.start(s.scene);
+    var em = [];
+    tops.forEach(function (x) { (x.s.scene.motif || []).forEach(function (m) { if (em.indexOf(m) < 0) em.push(m); }); });
+    // 단풍은 이미 🍁🍂가 떨어져서 따로 안 띄워요
+    if (s.scene.type === 'leaves' && tops.length === 1) em = [];
+    scene.start(Object.assign({}, s.scene, { emojis: em }));
   }
   function initSeason() {
     var ranked = window.rankSeasons(new Date(), visibleSeasons());
@@ -2101,7 +2105,7 @@ window.FLAG_COLORS = {
   /* ---------- 계절 배경 장면 (canvas) ---------- */
   var scene = (function () {
     var canvas = $('hero-canvas'), ctx = canvas.getContext('2d');
-    var parts = [], type = 'petals', accent = '#fff', raf = 0, w = 0, h = 0, t0 = 0;
+    var parts = [], type = 'petals', accent = '#fff', raf = 0, w = 0, h = 0, t0 = 0, emojis = [], floats = [];
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var rnd = function (a, b) { return a + Math.random() * (b - a); };
     var PALETTE = {
@@ -2143,7 +2147,7 @@ window.FLAG_COLORS = {
       return type === 'grass' ? Math.round(w / 7) : type === 'leaves' ? Math.round(base * 0.45) : type === 'rain' ? base * 1.4 : type === 'lights' ? base * 0.5 : base;
     }
     function drawLeaf(p) {
-      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.globalAlpha = 0.92;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.globalAlpha = 0.92; ctx.fillStyle = '#000';
       ctx.font = Math.round(p.s * 2) + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(p.leaf, 0, 0); ctx.restore();
@@ -2211,16 +2215,36 @@ window.FLAG_COLORS = {
           if (type === 'lights' || type === 'fireflies' || type === 'sun') { parts[i].y = h + 10; if (type === 'fireflies') parts[i].y = rnd(h * 0.3, h); }
         }
       }
+      // 시즌 아이콘(꽃게·억새 등)이 작게 둥둥 떠다녀요
+      var fall = type === 'petals' || type === 'leaves' || type === 'snow' || type === 'rain';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (var j = 0; j < floats.length; j++) {
+        var f = floats[j];
+        f.y += fall ? f.v : -f.v;
+        f.x += Math.sin(tt * 0.7 + f.ph) * 0.35;
+        f.a = Math.sin(tt * 0.9 + f.ph) * 0.35;
+        if (f.y > h + 30) { f.y = -24; f.x = rnd(0, w); }
+        if (f.y < -30) { f.y = h + 24; f.x = rnd(0, w); }
+        // 컬러 이모지는 fillStyle의 투명도를 따라가서, 불투명한 색으로 지정해요
+        ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.a); ctx.globalAlpha = 0.9; ctx.fillStyle = '#000';
+        ctx.font = Math.round(f.s) + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+        ctx.fillText(f.e, 0, 0); ctx.restore();
+      }
       ctx.globalAlpha = 1;
     }
     function loop(time) { draw(time); raf = requestAnimationFrame(loop); }
     function start(cfg) {
-      type = cfg.type; accent = cfg.accent;
+      type = cfg.type; accent = cfg.accent; emojis = cfg.emojis || [];
       cancelAnimationFrame(raf);
       resize();
       parts = [];
       var n = count();
+      // 떠다니는 아이콘이 있으면 기본 효과는 조금 덜어내요
+      if (emojis.length && type !== 'leaves') n = Math.round(n * 0.6);
       for (var i = 0; i < n; i++) parts.push(make(true));
+      floats = [];
+      var fn = emojis.length ? Math.max(8, Math.min(16, Math.round(w / 32))) : 0;
+      for (var k = 0; k < fn; k++) floats.push({ e: emojis[k % emojis.length], x: rnd(0, w), y: rnd(0, h), s: rnd(15, 24), v: rnd(0.25, 0.6), ph: rnd(0, 6.28), a: 0 });
       t0 = performance.now();
       if (reduce) { draw(t0 + 1000); return; }
       raf = requestAnimationFrame(loop);
@@ -2228,7 +2252,7 @@ window.FLAG_COLORS = {
     var rt;
     window.addEventListener('resize', function () {
       clearTimeout(rt);
-      rt = setTimeout(function () { start({ type: type, accent: accent }); }, 200);
+      rt = setTimeout(function () { start({ type: type, accent: accent, emojis: emojis }); }, 200);
     });
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) cancelAnimationFrame(raf);
