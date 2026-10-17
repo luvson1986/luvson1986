@@ -601,7 +601,7 @@ html.modal-open body::after { content: ""; position: absolute; inset: 0; z-index
   position: fixed; left: 50%; transform: translateX(-50%);
   bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: 14px;
-  z-index: 20; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  z-index: 110; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
 
 @media (max-width: 420px) {
@@ -678,7 +678,7 @@ a.wk-row:active { background: var(--surface-2); }
   .qa #qa-text { grid-area: text; } .qa #qa-date { grid-area: date; width: 100%; } .qa button { grid-area: btn; }
 }
 
-.up-add { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.up-add { display: grid; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
 .up-add .sub-h { margin: 0; color: var(--ink); font-size: 14px; }
 .up-add .qa-hint { margin-top: 0; }
 
@@ -1085,8 +1085,6 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
       <h2 id="up-h">다가오는 일정</h2>
       <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
-    <ul class="daylist" id="uplist"></ul>
-    <p class="empty" id="up-empty" hidden>앞으로 예정된 일정이 없어요.</p>
     <div class="up-add">
       <h3 class="sub-h">빠르게 추가</h3>
     <form class="qa" id="qa-form">
@@ -1096,6 +1094,8 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
     </form>
     <p class="hint qa-hint">하이픈(-)으로 나누면 여러 개, 앞의 숫자 4자리는 시간, 끝에 !를 붙이면 중요 일정이에요.</p>
     </div>
+    <ul class="daylist" id="uplist"></ul>
+    <p class="empty" id="up-empty" hidden>앞으로 예정된 일정이 없어요.</p>
   </div>
 </dialog>
 
@@ -2824,17 +2824,21 @@ window.FLAG_COLORS = {
     if (document.documentElement.classList.contains('modal-open') && !typing() && window.scrollY !== lockY) window.scrollTo(0, lockY);
   }
   // 키보드가 올라오면 열린 팝업을 키보드 위 보이는 영역 안에 맞추고, 입력칸이 보이게 스크롤
+  var fullVH = 0;
+  window.addEventListener('orientationchange', function () { fullVH = 0; });
   function fitDialogToKeyboard() {
     var vv = window.visualViewport, d = document.querySelector('dialog[open]');
     if (!vv || !d) return;
-    var kbOpen = vv.height < window.innerHeight - 80;
+    // 아이폰 홈 화면 앱은 키보드가 떠도 innerHeight가 같이 줄어들 수 있어서, 지금까지 본 가장 큰 높이와 비교해요
+    fullVH = Math.max(fullVH, vv.height, typing() ? 0 : window.innerHeight);
+    var kbOpen = typing() && vv.height < fullVH - 80;
     if (kbOpen) {
       d.style.margin = '0 auto';
       d.style.top = (vv.offsetTop + 8) + 'px';
       d.style.bottom = 'auto';
       d.style.maxHeight = (vv.height - 16) + 'px';
       var a = document.activeElement;
-      if (a && d.contains(a)) setTimeout(function () { a.scrollIntoView({ block: 'center' }); }, 30);
+      if (a && d.contains(a)) setTimeout(function () { a.scrollIntoView({ block: 'nearest' }); }, 30);
     } else {
       d.style.margin = d.style.top = d.style.bottom = d.style.maxHeight = '';
     }
@@ -3905,7 +3909,7 @@ window.FLAG_COLORS = {
       $('set-wxapp').value = draft.weatherApp || 'apple';
       $('set-interest').value = ''; $('set-city').value = ''; $('city-results').innerHTML = '';
       renderTags();
-      if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+      openDialog(dlg);
     };
     $('set-tags').addEventListener('click', function (e) {
       var b = e.target.closest('button');

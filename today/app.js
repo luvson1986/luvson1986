@@ -995,17 +995,21 @@
     if (document.documentElement.classList.contains('modal-open') && !typing() && window.scrollY !== lockY) window.scrollTo(0, lockY);
   }
   // 키보드가 올라오면 열린 팝업을 키보드 위 보이는 영역 안에 맞추고, 입력칸이 보이게 스크롤
+  var fullVH = 0;
+  window.addEventListener('orientationchange', function () { fullVH = 0; });
   function fitDialogToKeyboard() {
     var vv = window.visualViewport, d = document.querySelector('dialog[open]');
     if (!vv || !d) return;
-    var kbOpen = vv.height < window.innerHeight - 80;
+    // 아이폰 홈 화면 앱은 키보드가 떠도 innerHeight가 같이 줄어들 수 있어서, 지금까지 본 가장 큰 높이와 비교해요
+    fullVH = Math.max(fullVH, vv.height, typing() ? 0 : window.innerHeight);
+    var kbOpen = typing() && vv.height < fullVH - 80;
     if (kbOpen) {
       d.style.margin = '0 auto';
       d.style.top = (vv.offsetTop + 8) + 'px';
       d.style.bottom = 'auto';
       d.style.maxHeight = (vv.height - 16) + 'px';
       var a = document.activeElement;
-      if (a && d.contains(a)) setTimeout(function () { a.scrollIntoView({ block: 'center' }); }, 30);
+      if (a && d.contains(a)) setTimeout(function () { a.scrollIntoView({ block: 'nearest' }); }, 30);
     } else {
       d.style.margin = d.style.top = d.style.bottom = d.style.maxHeight = '';
     }
@@ -2076,7 +2080,7 @@
       $('set-wxapp').value = draft.weatherApp || 'apple';
       $('set-interest').value = ''; $('set-city').value = ''; $('city-results').innerHTML = '';
       renderTags();
-      if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+      openDialog(dlg);
     };
     $('set-tags').addEventListener('click', function (e) {
       var b = e.target.closest('button');
