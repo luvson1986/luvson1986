@@ -1022,7 +1022,8 @@
     // 지금 실제로 보이는 영역의 아래 끝(페이지 좌표). 아이폰이 이 값을 조금 짧게 줄 때가 있어서
     // 시트 배경은 아래로 넉넉히 이어 그려요(CSS box-shadow).
     var vv = window.visualViewport;
-    var y = vv ? (vv.pageTop != null ? vv.pageTop : window.scrollY + vv.offsetTop) + vv.height : window.scrollY + window.innerHeight;
+    // (vv.pageTop은 아이폰에서 스크롤을 막은 상태면 0으로 나와서 쓰지 않아요)
+    var y = window.scrollY + (vv ? vv.offsetTop + vv.height : window.innerHeight);
     document.documentElement.style.setProperty('--sheet-y', Math.round(y) + 'px');
     document.documentElement.style.setProperty('--sheet-h', Math.round(vv ? vv.height : window.innerHeight) + 'px');
     document.body.style.minHeight = Math.round(y) + 'px';
