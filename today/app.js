@@ -123,7 +123,12 @@
   var hiddenSeasons = store.get('hiddenSeasons', []);
   var currentSeason = null;
   var allSeasons = function () { return window.SEASONS.concat(customSeasons); };
-  var visibleSeasons = function () { return allSeasons().filter(function (s) { return hiddenSeasons.indexOf(s.id) < 0; }); };
+  // 국내에선 현재 위치·올해 기온으로 날짜를 옮긴 시즌을 써요 (seasonCtx가 정해진 뒤부터)
+  var seasonCtx = null;
+  var visibleSeasons = function () {
+    return allSeasons().filter(function (s) { return hiddenSeasons.indexOf(s.id) < 0; })
+      .map(function (s) { return seasonCtx ? window.adaptSeason(s, seasonCtx) : s; });
+  };
   var findSeason = function (id) { return allSeasons().find(function (s) { return s.id === id; }); };
   var dots = function (w) { return '●●●'.slice(0, w); };
   var fmtMd = function (md) { var p = md.split('-'); return +p[0] + '.' + +p[1]; };
@@ -204,7 +209,14 @@
     Array.prototype.forEach.call($('sd-tabs').children, function (b) { b.setAttribute('aria-selected', String(b.dataset.view === v)); });
   }
   // 1년 시즌 캘린더 (행 = 시즌, 열 = 월)
+  function adaptNote() {
+    if (!seasonCtx) return '전국 기준 날짜예요. 위치를 받아오면 지역에 맞게 바뀌어요.';
+    var a = seasonCtx.anomaly;
+    return '📍 ' + (seasonCtx.place || '현재 위치') + ' 기준으로 꽃·단풍 날짜를 맞췄어요' +
+      (a != null ? ' · 최근 30일이 평년보다 ' + (a === 0 ? '비슷해요' : Math.abs(a) + '°C ' + (a > 0 ? '따뜻해요' : '추워요')) : '');
+  }
   function renderSeasonCal(focusId) {
+    $('sd-adapt').textContent = adaptNote();
     var today = new Date();
     var pct = function (d) { return (d / 365 * 100).toFixed(3) + '%'; };
     var seg = function (a, b, cls) {
@@ -512,7 +524,7 @@
         // 오늘 0~23시 기온 (출퇴근 시간 옷차림용)
         var day = d.current.time.slice(0, 10), today = [];
         d.hourly.time.forEach(function (t, i) { if (t.slice(0, 10) === day) today[+t.slice(11, 13)] = d.hourly.temperature_2m[i]; });
-        return { source: d.source || 'open-meteo', lat: loc.lat, lon: loc.lon, place: loc.name, cc: loc.cc || '', country: loc.country || '', current: d.current, daily: d.daily, hours: hours, today: today, air: res[1], sample: false };
+        return { elev: d.elevation, source: d.source || 'open-meteo', lat: loc.lat, lon: loc.lon, place: loc.name, cc: loc.cc || '', country: loc.country || '', current: d.current, daily: d.daily, hours: hours, today: today, air: res[1], sample: false };
       }).catch(function () { return sampleWeather(loc); });
     }).catch(function () { return sampleWeather(null); });
   }
@@ -553,12 +565,46 @@
     renderWeek(w);
     applyPlace(w);
   }
+  function loadAnomaly(lat, lon) {
+    var today = new Date(), key = ymd(today) + '@' + lat.toFixed(1) + ',' + lon.toFixed(1);
+    var cached = store.get('anomaly', null);
+    if (cached && cached.key === key) return Promise.resolve(cached.v);
+    var q = 'latitude=' + lat + '&longitude=' + lon + '&daily=temperature_2m_mean&timezone=auto';
+    var recent = getJSON('https://api.open-meteo.com/v1/forecast?' + q + '&past_days=30&forecast_days=1', 9000);
+    var y = today.getFullYear();
+    var past = getJSON('https://archive-api.open-meteo.com/v1/archive?' + q + '&start_date=' + (y - 10) + '-01-01&end_date=' + (y - 1) + '-12-31', 15000);
+    return Promise.all([recent, past]).then(function (r) {
+      var rd = r[0].daily, pd = r[1].daily;
+      var days = {}, vals = [];
+      rd.time.forEach(function (t, i) { if (t < ymd(today) && rd.temperature_2m_mean[i] != null) { days[t.slice(5)] = 1; vals.push(rd.temperature_2m_mean[i]); } });
+      var norm = [];
+      pd.time.forEach(function (t, i) { if (days[t.slice(5)] && pd.temperature_2m_mean[i] != null) norm.push(pd.temperature_2m_mean[i]); });
+      if (vals.length < 20 || norm.length < 100) return null;
+      var avg = function (a) { return a.reduce(function (x, v) { return x + v; }, 0) / a.length; };
+      var v = Math.round((avg(vals) - avg(norm)) * 10) / 10;
+      store.set('anomaly', { key: key, v: v });
+      return v;
+    }).catch(function () { return null; });
+  }
   /* 해외에 있으면 시즌 대신 도시 이름 + 국기 + 그 나라 여행 키워드 */
   var travelMode = false;
   function flagOf(cc) { return cc && cc.length === 2 ? String.fromCodePoint.apply(null, cc.toUpperCase().split('').map(function (c) { return 0x1F1E6 + c.charCodeAt(0) - 65; })) : '🌏'; }
   function applyPlace(w) {
     var cc = (w.cc || '').toUpperCase();
-    if (!cc || cc === 'KR') { if (travelMode) { travelMode = false; $('hero').classList.remove('travel'); initSeason(); } return; }
+    var inKorea = cc === 'KR' || (!cc && w.lat > 32.5 && w.lat < 39 && w.lon > 124 && w.lon < 132);
+    if (!cc || cc === 'KR') {
+      if (travelMode) { travelMode = false; $('hero').classList.remove('travel'); }
+      if (inKorea && !w.sample) {
+        seasonCtx = { lat: w.lat, elev: w.elev, anomaly: null, today: new Date(), place: w.place };
+        initSeason();
+        // 올해 기온 편차는 따로 받아서 오면 한 번 더 반영
+        loadAnomaly(w.lat, w.lon).then(function (an) {
+          if (an == null || !seasonCtx) return;
+          seasonCtx.anomaly = an; initSeason();
+        });
+      } else initSeason();
+      return;
+    }
     travelMode = true;
     var t = (window.TRAVEL || {})[cc] || { name: w.country || '해외', kw: ['현지 맛집', '로컬 시장', '기념품 쇼핑'] };
     // 가까운 인기 도시가 있으면 도시 키워드 우선
@@ -570,9 +616,11 @@
     });
     var kw = (city ? city.kw : t.kw).slice(0, 3), place = city ? city.name : w.place;
     var root = document.documentElement;
-    root.style.setProperty('--hero-a', '#1d4e89');
-    root.style.setProperty('--hero-b', '#7fb7e8');
-    root.style.setProperty('--season', '#e8f4ff');
+    var fc = (window.FLAG_COLORS || {})[cc] || ['#1d4e89', '#4f86c6', '#e8f4ff'];
+    root.style.setProperty('--hero-a', fc[0]);
+    root.style.setProperty('--hero-b', fc[1]);
+    root.style.setProperty('--season', fc[2]);
+    var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', fc[0]);
     $('hero').classList.add('travel');
     $('season-name').textContent = place;
     $('season-phase').textContent = flagOf(cc) + ' ' + t.name;
@@ -581,7 +629,7 @@
       return '<a class="kw-chip" href="https://www.google.com/maps/search/' + encodeURIComponent(k + ' ' + place) + '" target="_blank" rel="noopener">' + esc(k) + '</a>';
     }).join('');
     $('hero-motif').innerHTML = '<span>' + flagOf(cc) + '</span>';
-    scene.start({ type: 'sun', accent: '#e8f4ff' });
+    scene.start({ type: 'lights', accent: fc[2] });
   }
   // 향후 일주일 (오늘 포함 8일)
   // 날씨 앱 열기: 아이폰 기본 날씨(weather://) 또는 '날씨날씨' 단축어

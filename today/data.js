@@ -401,3 +401,62 @@ window.TRAVEL_CITIES = [
   { name: 'LA', lat: 34.05, lon: -118.24, r: 70, kw: ['그리피스 천문대', '산타모니카', '인앤아웃'] },
   { name: '시드니', lat: -33.87, lon: 151.21, r: 50, kw: ['본다이 해안 산책', '오페라하우스', '플랫화이트'] }
 ];
+
+/* 시즌 날짜 자동 보정 (국내)
+   기본 날짜는 기준 지점(refLat·refElev) 기준이고, 현재 위치와 올해 기온으로 옮겨요.
+   - latRate: 위도 1° 북쪽일 때 늦어지는 일수 (단풍처럼 북쪽이 빠르면 음수)
+   - elevRate: 해발 100m 높을 때 늦어지는 일수 (단풍은 음수)
+   - tempRate: 최근 30일이 평년보다 1°C 따뜻할 때 늦어지는 일수 (봄꽃은 음수 = 빨라짐)
+   - peakDays: 한 지역에서 절정이 이어지는 기간 (전국 범위였던 절정을 이 길이로 좁혀요)
+   경험식이라 며칠 정도 오차가 있을 수 있어요. */
+window.SEASON_ADAPT = {
+  maehwa:    { refLat: 35.0, refElev: 50, latRate: 4,    elevRate: 1.5,  tempRate: -3,  peakDays: 12 },
+  cherry:    { refLat: 36.5, refElev: 50, latRate: 3,    elevRate: 2,    tempRate: -3,  peakDays: 8 },
+  azalea:    { refLat: 36.5, refElev: 50, latRate: 3,    elevRate: 2,    tempRate: -2.5, peakDays: 14 },
+  rose:      { refLat: 36.5, refElev: 50, latRate: 2,    elevRate: 1,    tempRate: -2,  peakDays: 16 },
+  hydrangea: { refLat: 35.0, refElev: 50, latRate: 3,    elevRate: 1,    tempRate: -2,  peakDays: 16 },
+  cosmos:    { refLat: 36.5, refElev: 50, latRate: -1.5, elevRate: -1,   tempRate: 1,   peakDays: 14 },
+  pinkmuhly: { refLat: 36.5, refElev: 50, latRate: -1.5, elevRate: -1,   tempRate: 1,   peakDays: 16 },
+  eoksae:    { refLat: 36.5, refElev: 50, latRate: -2,   elevRate: -1.5, tempRate: 1,   peakDays: 18 },
+  foliage:   { refLat: 38.75, refElev: 50, latRate: -3.2, elevRate: -1.5, tempRate: 2.5, peakDays: 12 },
+  ginkgo:    { refLat: 37.5, refElev: 50, latRate: -3,   elevRate: -1,   tempRate: 2,   peakDays: 10 }
+};
+(function () {
+  function doy(md) { var p = md.split('-'); return Math.round((Date.UTC(2001, +p[0] - 1, +p[1]) - Date.UTC(2001, 0, 1)) / 864e5); }
+  function md(n) { var d = new Date(Date.UTC(2001, 0, 1) + (((Math.round(n) % 365) + 365) % 365) * 864e5); return String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0'); }
+  function lift(x, base) { return x < base ? x + 365 : x; }
+  // ctx: { lat, elev, anomaly(°C, 최근 30일 - 평년), today(Date) }
+  window.adaptSeason = function (s, ctx) {
+    var a = window.SEASON_ADAPT[s.id];
+    if (!a || !ctx || ctx.lat == null) return s;
+    var shift = (ctx.lat - a.refLat) * a.latRate + ((ctx.elev || 0) - a.refElev) / 100 * a.elevRate;
+    // 올해 기온은 시즌 직전·도중일 때만 의미가 있어요
+    var from = doy(s.from), to = lift(doy(s.to), from);
+    if (ctx.anomaly != null && ctx.today) {
+      var t = lift(Math.round((Date.UTC(2001, ctx.today.getMonth(), ctx.today.getDate()) - Date.UTC(2001, 0, 1)) / 864e5), from - 60);
+      if (t >= from - 60 && t <= to) shift += ctx.anomaly * a.tempRate;
+    }
+    shift = Math.max(-20, Math.min(20, shift));
+    var ps = lift(doy(s.peak[0]), from), pe = lift(doy(s.peak[1]), ps);
+    var center = (ps + pe) / 2 + shift, half = Math.min((pe - ps) / 2, a.peakDays / 2);
+    var copy = Object.assign({}, s);
+    copy.from = md(from + shift); copy.to = md(to + shift);
+    copy.peak = [md(center - half), md(center + half)];
+    copy.shift = Math.round(shift);
+    return copy;
+  };
+})();
+
+/* 해외: 나라 국기에 어울리는 배경 (흰 글씨가 읽히도록 짙은 톤) [위, 아래, 강조] */
+window.FLAG_COLORS = {
+  JP: ['#6e0a1b', '#bc002d', '#ffffff'], CN: ['#7a0a0a', '#de2910', '#ffde00'], TW: ['#0b1f6b', '#b5101f', '#ffffff'],
+  HK: ['#7f0d18', '#de2910', '#ffffff'], MO: ['#005c48', '#00876a', '#ffffff'], TH: ['#2d2a4a', '#a51931', '#f4f5f8'],
+  VN: ['#8a0d12', '#da251d', '#ffcd00'], PH: ['#0038a8', '#ce1126', '#fcd116'], SG: ['#8f0c18', '#ef3340', '#ffffff'],
+  MY: ['#010066', '#cc0001', '#ffcc00'], ID: ['#8a0a12', '#ce1126', '#ffffff'], US: ['#0a3161', '#b31942', '#ffffff'],
+  GU: ['#0e2a6b', '#2654a8', '#c8102e'], MP: ['#0a3c8c', '#2f6fd1', '#ffffff'], CA: ['#8f0d17', '#d80621', '#ffffff'],
+  GB: ['#012169', '#c8102e', '#ffffff'], FR: ['#002395', '#ed2939', '#ffffff'], IT: ['#00592f', '#cd212a', '#ffffff'],
+  ES: ['#aa151b', '#b8860b', '#f1bf00'], PT: ['#005500', '#c00000', '#ffe000'], DE: ['#1a1a1a', '#c00000', '#ffce00'],
+  CH: ['#9e0018', '#da291c', '#ffffff'], AT: ['#8a0d1f', '#c8102e', '#ffffff'], CZ: ['#11457e', '#d7141a', '#ffffff'],
+  NL: ['#21468b', '#ae1c28', '#ffffff'], TR: ['#8f0b16', '#e30a17', '#ffffff'], AE: ['#00602a', '#1a1a1a', '#ff0000'],
+  AU: ['#00006b', '#1b3fa0', '#e4002b'], NZ: ['#00247d', '#a8122a', '#ffffff']
+};
