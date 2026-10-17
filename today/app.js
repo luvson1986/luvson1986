@@ -792,13 +792,14 @@
     $('outfit-list').innerHTML = wear.concat(extra).map(chip).join('');
 
     var bring = [];
-    var codes = w.hours.map(function (h) { return h.code; }).concat([d.weather_code[0]]);
     var pop = Math.max(d.precipitation_probability_max[0] || 0, Math.max.apply(null, w.hours.map(function (h) { return h.pop || 0; })));
-    var snow = codes.some(isSnow) || (d.snowfall_sum && d.snowfall_sum[0] > 0);
+    // 날씨 코드는 기상청 모델 값이라 확률과 어긋날 때가 있어요 → 앞으로 남은 시간 중 확률도 20% 이상일 때만 믿어요
+    var likely = function (test) { return w.hours.some(function (h) { return test(h.code) && (h.pop || 0) >= 20; }); };
+    var snow = likely(isSnow) || (d.snowfall_sum && d.snowfall_sum[0] > 0 && pop >= 20);
     if (snow) {
       bring.push({ ico: '🥾', t: '미끄럼 방지 신발', lvl: 'high', why: '눈 소식이 있어요' });
       bring.push({ ico: '☂️', t: '장우산', lvl: 'mid' });
-    } else if (pop >= 60 || codes.some(isRain)) {
+    } else if (pop >= 60 || likely(isRain)) {
       bring.push({ ico: '☂️', t: '장우산', v: pop + '%', lvl: 'high' });
     } else if (pop >= 30) {
       bring.push({ ico: '🌂', t: '접이식 우산', v: pop + '%', lvl: 'mid' });
@@ -807,7 +808,7 @@
     if (air && (air.pm2_5 > 35 || air.pm10 > 80)) bring.push({ ico: '😷', t: 'KF94 마스크', v: '먼지 나쁨', lvl: 'high', why: '미세 ' + Math.round(air.pm10) + ' · 초미세 ' + Math.round(air.pm2_5) + '㎍/㎥' });
     else if (air && (air.pm2_5 > 15 || air.pm10 > 30)) bring.push({ ico: '😷', t: '마스크', v: '먼지 보통', why: '초미세 ' + Math.round(air.pm2_5) + '㎍/㎥' });
     var uv = d.uv_index_max[0];
-    var sunny = codes.slice(0, 8).filter(function (c) { return c <= 1; }).length >= 4;
+    var sunny = w.hours.slice(0, 8).map(function (h) { return h.code; }).filter(function (c) { return c <= 1; }).length >= 4;
     if (uv >= 6 || (uv >= 4 && sunny)) bring.push({ ico: '🕶️', t: '선글라스', v: 'UV ' + Math.round(uv), lvl: uv >= 8 ? 'high' : 'mid', why: '자외선이 강하거나 햇빛이 쨍해요' });
     if (uv >= 7 || d.temperature_2m_max[0] >= 30) bring.push({ ico: '🧢', t: '모자', v: uv >= 7 ? 'UV ' + Math.round(uv) : Math.round(d.temperature_2m_max[0]) + '°', lvl: 'mid' });
     if (w.current.wind_speed_10m >= 8) bring.push({ ico: '🌬️', t: '바람막이', v: Math.round(w.current.wind_speed_10m) + 'm/s', lvl: 'mid' });
