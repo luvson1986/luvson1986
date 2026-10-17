@@ -575,7 +575,18 @@ body.on-news::before {
 }
 .sheet::backdrop { background: transparent; }
 /* 아이폰 홈 화면 앱은 고정 레이어 높이가 화면보다 짧게 잡혀 가운데 정렬이 위로 쏠려요 → 실제 화면 높이(lvh) 기준으로 가운데 */
-.sheet[open] { margin: 0; inset: auto; top: 50%; top: 50lvh; left: 50%; transform: translate(-50%, -50%); }
+/* 모든 팝업은 바텀시트. 아이폰 홈 화면 앱은 고정 레이어·vh가 실제 화면보다 짧게 잡혀서
+   bottom: 0 대신 JS로 잰 실제 화면 높이(--screen-h)에 시트 아래 끝을 맞춰요. */
+.sheet[open] {
+  margin: 0; inset: auto; left: 50%; top: var(--screen-h, 100%); transform: translate(-50%, -100%);
+  width: min(560px, 100%); max-width: none; max-height: calc(var(--screen-h, 100vh) - env(safe-area-inset-top, 0px) - 16px);
+  border-radius: 22px 22px 0 0; box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.25);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  animation: sheet-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes sheet-up { from { transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .sheet[open] { animation: none; } }
+.sheet-body::before { content: ""; justify-self: center; width: 38px; height: 5px; border-radius: 3px; background: var(--line); margin: -8px 0 -6px; }
 /* 아이폰 홈 화면 앱은 화면 고정 레이어가 아래쪽까지 닿지 않아(::backdrop도 마찬가지) 밝은 띠가 남아요.
    그래서 어둡게 덮는 막을 화면이 아니라 페이지 전체에 깔아요. 팝업이 열린 동안은 스크롤이 막혀 있어요. */
 html.modal-open body { position: relative; min-height: 100lvh; }
@@ -2830,6 +2841,19 @@ window.FLAG_COLORS = {
     if (document.documentElement.classList.contains('modal-open') && !typing() && window.scrollY !== lockY) window.scrollTo(0, lockY);
   }
   // 키보드가 올라오면 열린 팝업을 키보드 위 보이는 영역 안에 맞추고, 입력칸이 보이게 스크롤
+  // 실제 화면 높이: 홈 화면 앱에서는 innerHeight·vh가 짧게 잡혀서 기기 화면 높이를 써요
+  function setScreenH() {
+    var standalone = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    var h = window.innerHeight;
+    if (standalone && window.screen) {
+      var land = window.innerWidth > window.innerHeight;
+      h = Math.max(h, land ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height));
+    }
+    document.documentElement.style.setProperty('--screen-h', h + 'px');
+  }
+  setScreenH();
+  window.addEventListener('resize', setScreenH);
+  window.addEventListener('orientationchange', function () { setTimeout(setScreenH, 300); });
   var fullVH = 0;
   window.addEventListener('orientationchange', function () { fullVH = 0; });
   function fitDialogToKeyboard() {
@@ -2839,14 +2863,13 @@ window.FLAG_COLORS = {
     fullVH = Math.max(fullVH, vv.height, typing() ? 0 : window.innerHeight);
     var kbOpen = typing() && vv.height < fullVH - 80;
     if (kbOpen) {
-      d.style.transform = 'translateX(-50%)';
-      d.style.top = (vv.offsetTop + 8) + 'px';
-      d.style.bottom = 'auto';
-      d.style.maxHeight = (vv.height - 16) + 'px';
+      // 시트 아래 끝을 키보드 바로 위에 붙여요
+      d.style.top = (vv.offsetTop + vv.height) + 'px';
+      d.style.maxHeight = (vv.height - 8) + 'px';
       var a = document.activeElement;
       if (a && d.contains(a)) setTimeout(function () { a.scrollIntoView({ block: 'nearest' }); }, 30);
     } else {
-      d.style.transform = d.style.top = d.style.bottom = d.style.maxHeight = '';
+      d.style.top = d.style.maxHeight = '';
     }
   }
   if (window.visualViewport) {

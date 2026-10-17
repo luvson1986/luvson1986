@@ -999,6 +999,19 @@
     if (document.documentElement.classList.contains('modal-open') && !typing() && window.scrollY !== lockY) window.scrollTo(0, lockY);
   }
   // 키보드가 올라오면 열린 팝업을 키보드 위 보이는 영역 안에 맞추고, 입력칸이 보이게 스크롤
+  // 실제 화면 높이: 홈 화면 앱에서는 innerHeight·vh가 짧게 잡혀서 기기 화면 높이를 써요
+  function setScreenH() {
+    var standalone = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    var h = window.innerHeight;
+    if (standalone && window.screen) {
+      var land = window.innerWidth > window.innerHeight;
+      h = Math.max(h, land ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height));
+    }
+    document.documentElement.style.setProperty('--screen-h', h + 'px');
+  }
+  setScreenH();
+  window.addEventListener('resize', setScreenH);
+  window.addEventListener('orientationchange', function () { setTimeout(setScreenH, 300); });
   var fullVH = 0;
   window.addEventListener('orientationchange', function () { fullVH = 0; });
   function fitDialogToKeyboard() {
@@ -1008,14 +1021,13 @@
     fullVH = Math.max(fullVH, vv.height, typing() ? 0 : window.innerHeight);
     var kbOpen = typing() && vv.height < fullVH - 80;
     if (kbOpen) {
-      d.style.transform = 'translateX(-50%)';
-      d.style.top = (vv.offsetTop + 8) + 'px';
-      d.style.bottom = 'auto';
-      d.style.maxHeight = (vv.height - 16) + 'px';
+      // 시트 아래 끝을 키보드 바로 위에 붙여요
+      d.style.top = (vv.offsetTop + vv.height) + 'px';
+      d.style.maxHeight = (vv.height - 8) + 'px';
       var a = document.activeElement;
       if (a && d.contains(a)) setTimeout(function () { a.scrollIntoView({ block: 'nearest' }); }, 30);
     } else {
-      d.style.transform = d.style.top = d.style.bottom = d.style.maxHeight = '';
+      d.style.top = d.style.maxHeight = '';
     }
   }
   if (window.visualViewport) {
