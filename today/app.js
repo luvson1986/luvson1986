@@ -1082,7 +1082,14 @@
     document.addEventListener('touchend', end);
     document.addEventListener('touchcancel', end);
   })();
-  function openDialog(d) { if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', ''); syncScrollLock(); }
+  // 시트를 열 때 첫 입력칸에 자동으로 포커스가 가서 키보드가 뜨지 않도록, 시트 자체에 포커스를 줘요
+  Array.prototype.forEach.call(document.querySelectorAll('dialog.sheet'), function (d) { d.setAttribute('tabindex', '-1'); d.setAttribute('autofocus', ''); });
+  function openDialog(d) {
+    if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+    var a = document.activeElement;
+    if (a && a !== d && d.contains(a) && typing()) { a.blur(); d.focus({ preventScroll: true }); }
+    syncScrollLock();
+  }
   function closeDialog(d) { if (d.close) d.close(); else d.removeAttribute('open'); syncScrollLock(); }
   // Esc·폼 닫기 등 어떤 방식으로 닫혀도 고정 해제
   Array.prototype.forEach.call(document.querySelectorAll('dialog'), function (d) {
@@ -1298,7 +1305,6 @@
     $('sch-submit').textContent = item ? '수정 저장' : '일정 추가';
     $('sch-error').hidden = true;
     openDialog($('sch-dialog'));
-    setTimeout(function () { $('sch-title').focus(); }, 30);
   }
 
   /* 상세 팝업 */
