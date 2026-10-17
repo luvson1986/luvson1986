@@ -588,9 +588,9 @@ body.on-news::before {
 @media (prefers-reduced-motion: reduce) { .sheet[open] { animation: none; } }
 /* 다가오는 일정: 빠른 추가는 위에 고정, 아래 일정 목록만 스크롤 */
 #up-dialog[open] { display: flex; flex-direction: column; overflow: hidden; }
-#up-dialog .sheet-body { display: flex; flex-direction: column; min-height: 0; flex: 1; padding-bottom: 0; }
+#up-dialog .sheet-body { display: flex; flex-direction: column; min-height: 0; flex: 0 1 auto; padding-bottom: 0; }
 #up-dialog .up-add { flex: none; }
-#up-dialog .up-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 -20px; padding: 0 20px 20px; }
+#up-dialog .up-scroll { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 -20px; padding: 0 20px 20px; }
 .sheet-body::before { content: ""; justify-self: center; align-self: center; flex: none; width: 38px; height: 5px; border-radius: 3px; background: var(--line); margin: -8px 0 -6px; }
 /* 아이폰 홈 화면 앱은 화면 고정 레이어가 아래쪽까지 닿지 않아(::backdrop도 마찬가지) 밝은 띠가 남아요.
    그래서 어둡게 덮는 막을 화면이 아니라 페이지 전체에 깔아요. 팝업이 열린 동안은 스크롤이 막혀 있어요. */
