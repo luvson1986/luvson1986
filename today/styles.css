@@ -295,7 +295,7 @@ a { color: var(--accent); }
 .cal-box { overflow-x: auto; }
 .ycal { display: grid; }
 .yc-row {
-  all: unset; box-sizing: border-box; display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center;
+  all: unset; box-sizing: border-box; display: grid; grid-template-columns: 118px minmax(0, 1fr); align-items: center;
   min-height: 30px; border-radius: 6px; cursor: pointer;
 }
 .yc-row:not(.yc-head):hover { background: var(--surface-2); }

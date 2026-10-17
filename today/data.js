@@ -178,11 +178,18 @@ window.SEASONS = [
     scene: { type: 'leaves', colors: ['#7a2a14', '#f0a040'], accent: '#ffe2b0', motif: ['🍁'] }
   },
   {
-    id: 'chestnut', name: '군밤·군고구마', from: '10-15', to: '12-31', peak: ['11-01', '12-15'], w: 1,
+    id: 'chestnut', name: '군밤·군고구마', from: '10-15', to: '02-28', peak: ['11-15', '01-31'], w: 1,
     headline: '따끈한 군고구마와 군밤',
     desc: '꿀고구마는 수확 후 2~3주 숙성하면 더 달아져요. 에어프라이어 200도 40분이면 충분해요.',
     todo: ['군고구마', '군밤', '따뜻한 유자차'],
     scene: { type: 'lights', colors: ['#3a2416', '#b8743a'], accent: '#ffd8a0', motif: ['🍠', '🌰'] }
+  },
+  {
+    id: 'bungeoppang', name: '붕어빵', from: '10-25', to: '02-28', peak: ['12-01', '01-31'], w: 1,
+    headline: '골목마다 붕어빵 냄새',
+    desc: '날이 추워지면 노점이 하나둘 생겨요. 팥·슈크림 반반이 국룰, 위치는 앱 \'가슴속 3천원\'으로 찾아요.',
+    todo: ['동네 붕어빵 노점 찾기', '팥 vs 슈크림', '현금 3천원 챙기기'],
+    scene: { type: 'lights', colors: ['#4a2a12', '#d08a3a'], accent: '#ffe0b0', motif: ['🐟'] }
   },
   {
     id: 'ginkgo', name: '은행나무길', from: '10-20', to: '11-25', peak: ['10-30', '11-15'], w: 2,
