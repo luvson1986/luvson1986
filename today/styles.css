@@ -560,8 +560,8 @@ body.on-news::before {
 .sheet[open] {
   position: absolute; z-index: 102;
   margin: 0; inset: auto; left: 50%; top: var(--sheet-y, 100%); transform: translate(-50%, -100%);
-  width: min(560px, 100%); max-width: none; max-height: calc(var(--screen-h, 100vh) - env(safe-area-inset-top, 0px) - 16px);
-  border-radius: 22px 22px 0 0; box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.25);
+  width: min(560px, 100%); max-width: none; max-height: calc(var(--sheet-h, 100vh) - env(safe-area-inset-top, 0px) - 16px);
+  border-radius: 22px 22px 0 0; box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.25), 0 240px 0 0 var(--surface);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   animation: sheet-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
 }

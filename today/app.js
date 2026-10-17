@@ -1019,9 +1019,12 @@
   // (홈 화면 앱에서 고정 레이어는 키보드·스크롤 뒤에 높이가 틀어지고 아래가 잘려서)
   // 열릴 때 '지금 화면의 아래 끝'을 페이지 좌표로 한 번 재서 거기에 붙이고, 그 뒤로는 움직이지 않아요.
   function anchorSheets() {
-    var screenH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--screen-h')) || window.innerHeight;
-    var y = window.scrollY + screenH;
+    // 지금 실제로 보이는 영역의 아래 끝(페이지 좌표). 아이폰이 이 값을 조금 짧게 줄 때가 있어서
+    // 시트 배경은 아래로 넉넉히 이어 그려요(CSS box-shadow).
+    var vv = window.visualViewport;
+    var y = vv ? (vv.pageTop != null ? vv.pageTop : window.scrollY + vv.offsetTop) + vv.height : window.scrollY + window.innerHeight;
     document.documentElement.style.setProperty('--sheet-y', Math.round(y) + 'px');
+    document.documentElement.style.setProperty('--sheet-h', Math.round(vv ? vv.height : window.innerHeight) + 'px');
     document.body.style.minHeight = Math.round(y) + 'px';
   }
   // 키보드가 올라와도 시트는 그대로. 입력칸이 키보드에 가리면 시트 안 내용만 올려요.
