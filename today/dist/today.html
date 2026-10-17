@@ -2941,7 +2941,6 @@ window.FLAG_COLORS = {
     document.addEventListener('touchcancel', end);
   })();
   // 시트를 열 때 첫 입력칸에 자동으로 포커스가 가서 키보드가 뜨지 않도록, 시트 자체에 포커스를 줘요
-  Array.prototype.forEach.call(document.querySelectorAll('dialog.sheet'), function (d) { d.setAttribute('tabindex', '-1'); d.setAttribute('autofocus', ''); });
   // 임시 확인용: 시트를 열면 위치 계산에 쓰는 값들을 화면 위쪽에 잠깐 띄워요
   function showSheetDebug(d) {
     var el = document.getElementById('sheet-debug');
@@ -2959,7 +2958,7 @@ window.FLAG_COLORS = {
     el.hidden = false;
     clearTimeout(showSheetDebug.t); showSheetDebug.t = setTimeout(function () { el.hidden = true; }, 15000);
   }
-  var APP_VER = 64;
+  var APP_VER = 65;
   var sheetZ = 0;
   function topSheet() {
     var best = null;
@@ -2971,17 +2970,18 @@ window.FLAG_COLORS = {
     // 시트 위에 시트를 열면 새 것이 위로 와요
     var others = Array.prototype.some.call(document.querySelectorAll('dialog[open]'), function (o) { return o !== d; });
     if (!others) {
-      // 첫 시트: 지금 스크롤 위치로 다시 잡아요 (이전 값이 남아 있으면 엉뚱한 곳에 붙었어요)
+      // 첫 시트: 스크롤을 고정하고 지금 화면 아래 끝 자리를 먼저 잡은 다음에 열어요
       document.documentElement.classList.remove('modal-open');
       sheetZ = 0;
+      lockY = window.scrollY;
+      anchorSheets();
+      document.documentElement.classList.add('modal-open');
     }
     d.style.zIndex = 102 + (++sheetZ);
-    syncScrollLock();
-    if (!d.open) { if (d.show) d.show(); else d.setAttribute('open', ''); }
+    // show()는 안쪽에 포커스를 주면서 페이지를 그쪽으로 스크롤해 버려서, 속성만 켜서 열어요
+    if (!d.open) d.setAttribute('open', '');
     var a = document.activeElement;
-    if (a && a !== d && d.contains(a) && typing()) a.blur();
-    d.focus({ preventScroll: true });
-    syncScrollLock();
+    if (a && a !== d && !d.contains(a) && typing()) a.blur();
     setTimeout(function () { showSheetDebug(d); }, 450);
   }
   function closeDialog(d) { if (d.close) d.close(); else d.removeAttribute('open'); syncScrollLock(); }
