@@ -1028,7 +1028,11 @@
       if (a && d.contains(a)) setTimeout(function () { a.scrollIntoView({ block: 'nearest' }); }, 30);
     } else {
       d.style.top = d.style.maxHeight = '';
+      // 키보드가 내려간 뒤 아이폰이 화면을 밀어 둔 채로 두는 경우가 있어서 되돌려요
+      if (vv.offsetTop > 0) window.scrollTo(0, document.documentElement.classList.contains('modal-open') ? lockY : window.scrollY);
     }
+    // 그래도 밀려 있으면 시트 아래 끝을 그만큼 내려서 화면 끝에 붙여요
+    document.documentElement.style.setProperty('--vv-top', (kbOpen ? 0 : Math.max(0, vv.offsetTop)) + 'px');
   }
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', fitDialogToKeyboard);
