@@ -975,8 +975,10 @@
       lockY = window.scrollY;
       document.body.style.top = -lockY + 'px';
       document.body.classList.add('modal-open');
+      document.documentElement.classList.add('modal-open');
     } else if (!anyOpen && locked) {
       document.body.classList.remove('modal-open');
+      document.documentElement.classList.remove('modal-open');
       document.body.style.top = '';
       window.scrollTo(0, lockY);
     }
@@ -1071,7 +1073,6 @@
       var state = s.done || diff < 0 ? 'past' : diff > 0 ? '' : en != null && en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
       var rel = '';
       if (s.done) rel = ' · 완료';
-      else if (state === 'current') rel = ' · 진행 중';
       html += card(s, state, s.start, rel, k);
       if (!nowPlaced && state === 'current') { html += nowRow(now); nowPlaced = true; }
     });

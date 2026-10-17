@@ -573,7 +573,10 @@ body.on-news::before {
   background: var(--surface); color: var(--ink);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
 }
-.sheet::backdrop { background: rgba(8, 12, 20, 0.5); }
+.sheet::backdrop { background: rgba(8, 12, 20, 0.5); inset: -25vh 0; }
+/* iOS 홈 화면 앱에서 화면을 고정하면 맨 아래에 어둡게 덮이지 않는 띠가 생겨요 → 바탕도 같은 톤으로 */
+html.modal-open { background: color-mix(in srgb, var(--bg) 50%, rgb(8, 12, 20)); }
+html.modal-open body { background: var(--bg); }
 .sheet-body { display: grid; gap: 16px; padding: 20px; }
 .tag-input { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; }
 .tag-input input { border: 0; padding: 4px 6px; flex: 1 1 140px; width: auto; outline: none; }
@@ -2800,8 +2803,10 @@ window.FLAG_COLORS = {
       lockY = window.scrollY;
       document.body.style.top = -lockY + 'px';
       document.body.classList.add('modal-open');
+      document.documentElement.classList.add('modal-open');
     } else if (!anyOpen && locked) {
       document.body.classList.remove('modal-open');
+      document.documentElement.classList.remove('modal-open');
       document.body.style.top = '';
       window.scrollTo(0, lockY);
     }
@@ -2896,7 +2901,6 @@ window.FLAG_COLORS = {
       var state = s.done || diff < 0 ? 'past' : diff > 0 ? '' : en != null && en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
       var rel = '';
       if (s.done) rel = ' · 완료';
-      else if (state === 'current') rel = ' · 진행 중';
       html += card(s, state, s.start, rel, k);
       if (!nowPlaced && state === 'current') { html += nowRow(now); nowPlaced = true; }
     });
