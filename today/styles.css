@@ -559,7 +559,7 @@ body.on-news::before {
    bottom: 0 대신 JS로 잰 실제 화면 높이(--screen-h)에 시트 아래 끝을 맞춰요. */
 .sheet[open] {
   margin: 0; inset: auto; left: 50%; top: var(--screen-h, 100%); transform: translate(-50%, -100%);
-  width: min(560px, 100%); max-width: none; max-height: calc(var(--screen-h, 100vh) - env(safe-area-inset-top, 0px) - 16px);
+  width: min(560px, 100%); max-width: none; max-height: calc(var(--vis-h, 100vh) - env(safe-area-inset-top, 0px) - 16px);
   border-radius: 22px 22px 0 0; box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.25);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   animation: sheet-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -571,6 +571,8 @@ body.on-news::before {
 #up-dialog .sheet-body { display: flex; flex-direction: column; min-height: 0; flex: 0 1 auto; padding-bottom: 0; }
 #up-dialog .up-add { flex: none; }
 #up-dialog .up-scroll { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; max-width: none; margin-right: -16px; padding: 0 16px 20px 0; }
+.sheet-fill { position: absolute; z-index: 101; background: var(--surface); pointer-events: none; }
+.sheet-fill[hidden] { display: none; }
 .sheet-body::before { content: ""; justify-self: center; align-self: center; flex: none; width: 38px; height: 5px; border-radius: 3px; background: var(--line); margin: -8px 0 -6px; }
 /* 아이폰 홈 화면 앱은 화면 고정 레이어가 아래쪽까지 닿지 않아(::backdrop도 마찬가지) 밝은 띠가 남아요.
    그래서 어둡게 덮는 막을 화면이 아니라 페이지 전체에 깔아요. 팝업이 열린 동안은 스크롤이 막혀 있어요. */

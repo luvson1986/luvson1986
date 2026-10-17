@@ -1018,20 +1018,37 @@
   // 아이폰은 키보드가 내려간 뒤에도 몇 초간 화면 기준점이 어긋나 있어서, 이벤트만으로는 따라가지 못해요.
   function placeSheet() {
     var vv = window.visualViewport, d = document.querySelector('dialog.sheet[open]');
-    if (!d) { placing = 0; return; }
+    if (!d) { placing = 0; sheetFill().hidden = true; return; }
     if (vv) {
       fullVH = Math.max(fullVH, vv.height, typing() ? 0 : window.innerHeight);
       var kbOpen = typing() && vv.height < fullVH - 80;
       var screenH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--screen-h')) || window.innerHeight;
-      var top = Math.round(vv.offsetTop + (kbOpen ? vv.height : Math.max(vv.height, screenH))) + 'px';
+      // 아이폰은 상황에 따라 시트가 그려지는 층을 화면보다 짧게 잘라요(아래 띠 부분이 안 그려짐).
+      // 그래서 시트는 '보이는 영역' 아래 끝에 붙이고, 잘리는 아래 띠는 페이지 쪽에 같은 색 판을 깔아 이어 보이게 해요.
+      var visBottom = vv.offsetTop + vv.height;
+      var top = Math.round(visBottom) + 'px';
       var mh = kbOpen ? Math.round(vv.height - 8) + 'px' : '';
+      var visH = Math.round(visBottom) + 'px';
+      if (document.documentElement.style.getPropertyValue('--vis-h') !== visH) document.documentElement.style.setProperty('--vis-h', visH);
       if (d.style.top !== top) d.style.top = top;
       if (d.style.maxHeight !== mh) d.style.maxHeight = mh;
+      var gap = kbOpen ? 0 : Math.round(screenH - visBottom);
+      var fill = sheetFill();
+      if (gap > 1 && !d.style.translate) {
+        var r = d.getBoundingClientRect();
+        fill.style.cssText = 'top:' + Math.round(window.scrollY + visBottom - 1) + 'px;height:' + (gap + 40) + 'px;left:' + Math.round(r.left) + 'px;width:' + Math.round(r.width) + 'px';
+        fill.hidden = false;
+      } else if (!fill.hidden) fill.hidden = true;
       if (wasKb && !kbOpen && window.scrollY !== lockY) window.scrollTo(0, lockY);
       if (kbOpen && !wasKb) revealFocused(d);
       wasKb = kbOpen;
     }
     placing = requestAnimationFrame(placeSheet);
+  }
+  var fillEl = null;
+  function sheetFill() {
+    if (!fillEl) { fillEl = document.createElement('div'); fillEl.className = 'sheet-fill'; fillEl.hidden = true; document.body.appendChild(fillEl); }
+    return fillEl;
   }
   function startPlacing() { if (!placing) placing = requestAnimationFrame(placeSheet); }
   // 키보드가 올라오면 포커스된 입력칸이 시트 안에서 보이게 (scrollIntoView는 뒤 페이지까지 밀어서 안 써요)
