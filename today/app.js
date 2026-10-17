@@ -1008,14 +1008,14 @@
     fullVH = Math.max(fullVH, vv.height, typing() ? 0 : window.innerHeight);
     var kbOpen = typing() && vv.height < fullVH - 80;
     if (kbOpen) {
-      d.style.margin = '0 auto';
+      d.style.transform = 'translateX(-50%)';
       d.style.top = (vv.offsetTop + 8) + 'px';
       d.style.bottom = 'auto';
       d.style.maxHeight = (vv.height - 16) + 'px';
       var a = document.activeElement;
       if (a && d.contains(a)) setTimeout(function () { a.scrollIntoView({ block: 'nearest' }); }, 30);
     } else {
-      d.style.margin = d.style.top = d.style.bottom = d.style.maxHeight = '';
+      d.style.transform = d.style.top = d.style.bottom = d.style.maxHeight = '';
     }
   }
   if (window.visualViewport) {

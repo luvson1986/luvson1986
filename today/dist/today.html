@@ -574,6 +574,8 @@ body.on-news::before {
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
 }
 .sheet::backdrop { background: transparent; }
+/* 아이폰 홈 화면 앱은 고정 레이어 높이가 화면보다 짧게 잡혀 가운데 정렬이 위로 쏠려요 → 실제 화면 높이(lvh) 기준으로 가운데 */
+.sheet[open] { margin: 0; inset: auto; top: 50%; top: 50lvh; left: 50%; transform: translate(-50%, -50%); }
 /* 아이폰 홈 화면 앱은 화면 고정 레이어가 아래쪽까지 닿지 않아(::backdrop도 마찬가지) 밝은 띠가 남아요.
    그래서 어둡게 덮는 막을 화면이 아니라 페이지 전체에 깔아요. 팝업이 열린 동안은 스크롤이 막혀 있어요. */
 html.modal-open body { position: relative; min-height: 100lvh; }
@@ -694,7 +696,7 @@ a.wk-row:active { background: var(--surface-2); }
   /* 상태바 높이만큼 내려간 기온·시즌 줄과 같이 내려가도록 */
   .hero-motif { top: calc(64px + env(safe-area-inset-top, 0px) - 4px); }
   .board { padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
-  .sheet { max-height: calc(100% - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+  .sheet { max-height: calc(100lvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
 }
 
 /* 섹션 순서 */
@@ -2837,14 +2839,14 @@ window.FLAG_COLORS = {
     fullVH = Math.max(fullVH, vv.height, typing() ? 0 : window.innerHeight);
     var kbOpen = typing() && vv.height < fullVH - 80;
     if (kbOpen) {
-      d.style.margin = '0 auto';
+      d.style.transform = 'translateX(-50%)';
       d.style.top = (vv.offsetTop + 8) + 'px';
       d.style.bottom = 'auto';
       d.style.maxHeight = (vv.height - 16) + 'px';
       var a = document.activeElement;
       if (a && d.contains(a)) setTimeout(function () { a.scrollIntoView({ block: 'nearest' }); }, 30);
     } else {
-      d.style.margin = d.style.top = d.style.bottom = d.style.maxHeight = '';
+      d.style.transform = d.style.top = d.style.bottom = d.style.maxHeight = '';
     }
   }
   if (window.visualViewport) {
