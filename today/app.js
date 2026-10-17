@@ -1093,24 +1093,6 @@
     document.addEventListener('touchcancel', end);
   })();
   // 시트를 열 때 첫 입력칸에 자동으로 포커스가 가서 키보드가 뜨지 않도록, 시트 자체에 포커스를 줘요
-  // 임시 확인용: 시트를 열면 위치 계산에 쓰는 값들을 화면 위쪽에 잠깐 띄워요
-  function showSheetDebug(d) {
-    var el = document.getElementById('sheet-debug');
-    if (!el) {
-      el = document.createElement('div'); el.id = 'sheet-debug';
-      el.style.cssText = 'position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 4px);z-index:2147483647;background:#ff0;color:#000;font:11px/1.35 ui-monospace,monospace;padding:6px 8px;border-radius:8px;pointer-events:none;white-space:pre-wrap';
-      document.documentElement.appendChild(el);
-    }
-    var vv = window.visualViewport || {}, r = d.getBoundingClientRect(), cs = getComputedStyle(d), root = document.documentElement;
-    el.textContent = 'v' + APP_VER + ' sY=' + Math.round(window.scrollY) + ' lock=' + Math.round(lockY) + ' iH=' + window.innerHeight + ' scr=' + screen.height +
-      '\nvv h=' + Math.round(vv.height) + ' oT=' + Math.round(vv.offsetTop) + ' pT=' + Math.round(vv.pageTop) +
-      '\nsheetY=' + root.style.getPropertyValue('--sheet-y') + ' pos=' + cs.position + ' top=' + cs.top +
-      '\nrect t=' + Math.round(r.top) + ' b=' + Math.round(r.bottom) + ' op=' + (d.offsetParent ? d.offsetParent.tagName : '-') + ' cls=' + root.className +
-      '\nhtmlST=' + root.scrollTop + ' bodyST=' + document.body.scrollTop + ' docH=' + root.scrollHeight;
-    el.hidden = false;
-    clearTimeout(showSheetDebug.t); showSheetDebug.t = setTimeout(function () { el.hidden = true; }, 15000);
-  }
-  var APP_VER = 65;
   var sheetZ = 0;
   function topSheet() {
     var best = null;
@@ -1134,7 +1116,6 @@
     if (!d.open) d.setAttribute('open', '');
     var a = document.activeElement;
     if (a && a !== d && !d.contains(a) && typing()) a.blur();
-    setTimeout(function () { showSheetDebug(d); }, 450);
   }
   function closeDialog(d) { if (d.close) d.close(); else d.removeAttribute('open'); syncScrollLock(); }
   // Esc·폼 닫기 등 어떤 방식으로 닫혀도 고정 해제
