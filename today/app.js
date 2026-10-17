@@ -1138,7 +1138,7 @@
         })() +
         (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
         '</button>' +
-        (openEnded ? '<button type="button" class="tl-done" data-done="' + s.id + '" aria-pressed="' + !!s.done + '" aria-label="' + esc(s.title) + (s.done ? ' 완료 취소' : ' 완료') + '"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' : '') +
+        (openEnded ? '<button type="button" class="tl-done" data-done="' + s.id + '" aria-pressed="' + !!s.done + '" aria-label="' + esc(s.title) + (s.done ? ' 완료 취소' : ' 완료') + '">' + (s.done ? '✓ 완료' : '완료') + '</button>' : '') +
         '</li>';
     };
     var html = '';

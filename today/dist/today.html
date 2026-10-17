@@ -815,10 +815,10 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .wk-loc .city-results button { background: var(--surface); }
 
 /* 시간 미정·종료 시간 없는 일정의 완료 버튼 */
-.tl-item.has-done .tl-card { padding-right: 52px; }
+.tl-item.has-done .tl-card { padding-right: 70px; }
 .tl-done {
-  position: absolute; right: 8px; top: 10px; width: 32px; height: 32px; display: grid; place-items: center; padding: 0;
-  border: 1.5px solid var(--line); background: var(--surface); color: var(--ink-3); border-radius: 50%; cursor: pointer;
+  position: absolute; right: 8px; top: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+  border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; cursor: pointer;
 }
 .tl-done:hover { border-color: var(--good); color: var(--good); }
 .tl-done[aria-pressed="true"] { background: var(--good); border-color: var(--good); color: #fff; }
@@ -2978,7 +2978,7 @@ window.FLAG_COLORS = {
         })() +
         (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
         '</button>' +
-        (openEnded ? '<button type="button" class="tl-done" data-done="' + s.id + '" aria-pressed="' + !!s.done + '" aria-label="' + esc(s.title) + (s.done ? ' 완료 취소' : ' 완료') + '"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' : '') +
+        (openEnded ? '<button type="button" class="tl-done" data-done="' + s.id + '" aria-pressed="' + !!s.done + '" aria-label="' + esc(s.title) + (s.done ? ' 완료 취소' : ' 완료') + '">' + (s.done ? '✓ 완료' : '완료') + '</button>' : '') +
         '</li>';
     };
     var html = '';

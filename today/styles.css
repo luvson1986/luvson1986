@@ -795,10 +795,10 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .wk-loc .city-results button { background: var(--surface); }
 
 /* 시간 미정·종료 시간 없는 일정의 완료 버튼 */
-.tl-item.has-done .tl-card { padding-right: 52px; }
+.tl-item.has-done .tl-card { padding-right: 70px; }
 .tl-done {
-  position: absolute; right: 8px; top: 10px; width: 32px; height: 32px; display: grid; place-items: center; padding: 0;
-  border: 1.5px solid var(--line); background: var(--surface); color: var(--ink-3); border-radius: 50%; cursor: pointer;
+  position: absolute; right: 8px; top: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+  border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; cursor: pointer;
 }
 .tl-done:hover { border-color: var(--good); color: var(--good); }
 .tl-done[aria-pressed="true"] { background: var(--good); border-color: var(--good); color: #fff; }
