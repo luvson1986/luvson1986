@@ -968,25 +968,31 @@
 
   // 팝업이 열려 있는 동안 뒤 화면이 스크롤되지 않게 고정 (iOS는 body를 fixed로 묶어야 확실해요)
   var lockY = 0;
+  // 아이폰 홈 화면 앱에서 body를 position:fixed로 고정하면 화면 아래에 빈 띠가 생겨서,
+  // 페이지는 그대로 두고 overflow로만 막고, 팝업 밖에서 생기는 터치 스크롤은 직접 막아요.
   function syncScrollLock() {
     var anyOpen = !!document.querySelector('dialog[open]');
-    var locked = document.body.classList.contains('modal-open');
+    var locked = document.documentElement.classList.contains('modal-open');
     if (anyOpen && !locked) {
       lockY = window.scrollY;
-      document.body.style.top = -lockY + 'px';
-      document.body.classList.add('modal-open');
       document.documentElement.classList.add('modal-open');
     } else if (!anyOpen && locked) {
-      document.body.classList.remove('modal-open');
       document.documentElement.classList.remove('modal-open');
-      document.body.style.top = '';
-      window.scrollTo(0, lockY);
+      if (window.scrollY !== lockY) window.scrollTo(0, lockY);
     }
   }
+  document.addEventListener('touchmove', function (e) {
+    if (!document.documentElement.classList.contains('modal-open')) return;
+    var d = e.target.closest && e.target.closest('dialog[open]');
+    for (var el = e.target; d && el && el !== d.parentNode; el = el.parentNode) {
+      if (el.scrollHeight > el.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(el).overflowY)) return;
+    }
+    e.preventDefault();
+  }, { passive: false });
   var typing = function () { var a = document.activeElement; return a && a.matches && a.matches('input:not([type=checkbox]), textarea, select'); };
   // 키보드가 닫힌 뒤 iOS가 남긴 화면 밀림만 되돌려요 (입력 중에는 건드리지 않음)
   function resetModalScroll() {
-    if (document.body.classList.contains('modal-open') && !typing() && window.scrollY !== 0) window.scrollTo(0, 0);
+    if (document.documentElement.classList.contains('modal-open') && !typing() && window.scrollY !== lockY) window.scrollTo(0, lockY);
   }
   // 키보드가 올라오면 열린 팝업을 키보드 위 보이는 영역 안에 맞추고, 입력칸이 보이게 스크롤
   function fitDialogToKeyboard() {

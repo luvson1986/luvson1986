@@ -554,9 +554,6 @@ body.on-news::before {
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
 }
 .sheet::backdrop { background: rgba(8, 12, 20, 0.5); inset: -25vh 0; }
-/* iOS 홈 화면 앱에서 화면을 고정하면 맨 아래에 어둡게 덮이지 않는 띠가 생겨요 → 바탕도 같은 톤으로 */
-html.modal-open { background: color-mix(in srgb, var(--bg) 50%, rgb(8, 12, 20)); }
-html.modal-open body { background: var(--bg); }
 .sheet-body { display: grid; gap: 16px; padding: 20px; }
 .tag-input { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; }
 .tag-input input { border: 0; padding: 4px 6px; flex: 1 1 140px; width: auto; outline: none; }
@@ -694,7 +691,7 @@ a.kw-chip { text-decoration: none; }
 .imp-check b.plain { color: var(--ink); }
 
 /* 팝업 열림: 뒤 화면 고정 */
-body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
+html.modal-open, html.modal-open body { overflow: hidden; }
 
 /* 팝업 안 가로 넘침 방지 (iOS 날짜·시간 입력칸은 기본 폭이 커서 줄여요) */
 .sheet-body, .sheet-body > *, .form-grid > *, .field, .city-row, .cat-pick, .backup-row, .tag-input { min-width: 0; max-width: 100%; }
