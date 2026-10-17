@@ -604,7 +604,9 @@ body.on-news::before {
 #wk-h { display: flex; align-items: center; gap: 8px; }
 .wk-list { list-style: none; margin: 0; padding: 0; display: grid; }
 .wk-row { display: grid; grid-template-columns: 64px 34px 40px 1fr; align-items: center; gap: 8px; padding-block: 10px; }
-.wk-row + .wk-row { border-top: 1px solid var(--line); }
+.wk-list li + li { border-top: 1px solid var(--line); }
+a.wk-row { text-decoration: none; color: var(--ink); border-radius: 8px; }
+a.wk-row:active { background: var(--surface-2); }
 .wk-day { display: grid; line-height: 1.25; }
 .wk-day b { font-size: 14px; }
 .wk-day span { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
@@ -795,3 +797,20 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .news-cards { gap: 0; }
 .news-cards li + li { border-top: 1px solid var(--line); }
 .news-cards .news-card { padding-block: 10px; }
+
+/* 드래그 정렬 */
+.grip { display: inline-grid; place-items: center; width: 32px; height: 32px; color: var(--ink-3); cursor: grab; touch-action: none; flex: none; border-radius: 6px; }
+.grip:active { cursor: grabbing; color: var(--ink); }
+.sorting { -webkit-user-select: none; user-select: none; }
+.dragging { opacity: 0.92; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); position: relative; z-index: 3; background: var(--surface); border-radius: var(--r-s); transform: scale(1.01); }
+.order-list li { padding: 4px 4px 4px 14px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.order-list .on-no, .order-list button { display: none; }
+.cl-grip { width: 26px; height: 26px; }
+.cl-group.dragging { padding: 6px; }
+/* 시간 미정 일정: 손잡이로 끌어서 사이에 끼워 넣기 */
+.tl-item.movable .tl-time { padding-top: 4px; display: flex; justify-content: flex-end; }
+.tl-grip { display: inline-grid; place-items: center; width: 30px; height: 30px; color: var(--ink-3); cursor: grab; touch-action: none; border-radius: 6px; }
+.tl-item.movable { -webkit-touch-callout: none; }
+.tl-item.movable .tl-card { -webkit-user-select: none; user-select: none; }
+.tl-item.dragging .tl-card { background: var(--accent-soft); }
+.nn-item.all-done .nn-title { white-space: normal; }

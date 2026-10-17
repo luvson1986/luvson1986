@@ -2,6 +2,51 @@
   'use strict';
 
   /* ---------- 공통 ---------- */
+  // 드래그로 순서 바꾸기: 손잡이(≡)를 잡거나 항목을 길게 눌러 끌어요
+  function makeSortable(list, opts) {
+    var drag = null, timer = null, startY = 0, justDragged = false;
+    function begin(item) {
+      drag = { item: item };
+      item.classList.add('dragging'); list.classList.add('sorting');
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
+    list.addEventListener('pointerdown', function (e) {
+      var item = e.target.closest(opts.item);
+      if (!item || !list.contains(item) || (opts.canDrag && !opts.canDrag(item))) return;
+      startY = e.clientY;
+      if (opts.handle && e.target.closest(opts.handle)) { e.preventDefault(); begin(item); return; }
+      if (opts.longPress && !e.target.closest('input, textarea, select')) timer = setTimeout(function () { timer = null; begin(item); }, 380);
+    });
+    document.addEventListener('pointermove', function (e) {
+      if (timer && Math.abs(e.clientY - startY) > 8) { clearTimeout(timer); timer = null; }
+      if (!drag) return;
+      e.preventDefault();
+      var items = Array.prototype.filter.call(list.querySelectorAll(opts.item), function (x) { return x !== drag.item && x.parentNode === drag.item.parentNode; });
+      var target = null;
+      for (var i = 0; i < items.length; i++) {
+        var r = items[i].getBoundingClientRect();
+        if (e.clientY < r.top + r.height / 2) { target = items[i]; break; }
+      }
+      if (target) { if (target.previousElementSibling !== drag.item) target.parentNode.insertBefore(drag.item, target); }
+      else if (items.length) { var last = items[items.length - 1]; if (last.nextElementSibling !== drag.item) last.after(drag.item); }
+    }, { passive: false });
+    // iOS: 드래그 중에는 화면 스크롤 막기
+    document.addEventListener('touchmove', function (e) { if (drag) e.preventDefault(); }, { passive: false });
+    function end() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (!drag) return;
+      var it = drag.item;
+      it.classList.remove('dragging'); list.classList.remove('sorting');
+      drag = null; justDragged = true; setTimeout(function () { justDragged = false; }, 50);
+      opts.onEnd(it);
+    }
+    document.addEventListener('pointerup', end);
+    document.addEventListener('pointercancel', end);
+    list.addEventListener('click', function (e) { if (justDragged) { e.preventDefault(); e.stopPropagation(); } }, true);
+    list.addEventListener('contextmenu', function (e) { if (e.target.closest(opts.item)) e.preventDefault(); });
+  }
+  var GRIP = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 7h16v2H4zM4 11h16v2H4zM4 15h16v2H4z"/></svg>';
+
   var $ = function (id) { return document.getElementById(id); };
   var store = {
     get: function (k, d) { try { var v = localStorage.getItem('pa:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -539,6 +584,12 @@
     scene.start({ type: 'sun', accent: '#e8f4ff' });
   }
   // 향후 일주일 (오늘 포함 8일)
+  // 날씨 앱 열기: 아이폰 기본 날씨(weather://) 또는 '날씨날씨' 단축어
+  function weatherAppUrl() {
+    return settings.weatherApp === 'shortcut'
+      ? 'shortcuts://run-shortcut?name=' + encodeURIComponent('날씨날씨')
+      : 'weather://';
+  }
   function renderWeek(w) {
     var d = w.daily, n = d.temperature_2m_max.length;
     var lo = Math.min.apply(null, d.temperature_2m_min), hi = Math.max.apply(null, d.temperature_2m_max), span = Math.max(1, hi - lo);
@@ -549,15 +600,16 @@
       var info = wmo(d.weather_code[i]), mn = Math.round(d.temperature_2m_min[i]), mx = Math.round(d.temperature_2m_max[i]);
       var label = i === 0 ? '오늘' : i === 1 ? '내일' : DAYS[day.getDay()] + '요일';
       var pop = d.precipitation_probability_max[i] || 0;
-      rows.push('<li class="wk-row' + (day.getDay() === 0 ? ' sun' : day.getDay() === 6 ? ' sat' : '') + '">' +
+      rows.push('<li><a class="wk-row' + (day.getDay() === 0 ? ' sun' : day.getDay() === 6 ? ' sat' : '') + '">' +
         '<span class="wk-day"><b>' + label + '</b><span>' + (day.getMonth() + 1) + '/' + day.getDate() + '</span></span>' +
         '<span class="wk-ico" title="' + esc(info[0]) + '" aria-label="' + esc(info[0]) + '">' + info[1] + '</span>' +
         '<span class="wk-pop">' + (pop >= 20 ? pop + '%' : '') + '</span>' +
         '<span class="wk-temp mono"><span class="lo">' + mn + '°</span>' +
         '<span class="wk-bar"><i style="left:' + ((mn - lo) / span * 100) + '%;right:' + ((hi - mx) / span * 100) + '%"></i></span>' +
-        '<span class="hi">' + mx + '°</span></span></li>');
+        '<span class="hi">' + mx + '°</span></span></a></li>');
     }
     $('wk-list').innerHTML = rows.join('');
+    Array.prototype.forEach.call($('wk-list').querySelectorAll('a.wk-row'), function (a) { a.href = weatherAppUrl(); });
     $('wk-place').textContent = w.sample ? '예시 날씨' : w.place;
   }
 
@@ -913,12 +965,13 @@
     $('timeline-empty').hidden = all.length > 0;
 
     var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
-    var card = function (s, state, timeLabel, rel) {
+    var card = function (s, state, timeLabel, rel, k) {
       var openEnded = !s.end; // 시간 미정·종료 시간 없는 일정은 직접 완료 처리
-      return '<li class="tl-item ' + state + (s.important ? ' imp' : '') + (s.done ? ' done' : '') + (openEnded ? ' has-done' : '') + '" style="--c: ' + catOf(s.cat).color + '">' +
-        '<span class="tl-time">' + timeLabel + '</span><span class="tl-dot"></span>' +
+      var movable = !s.start;  // 시간 미정 일정은 끌어서 사이에 끼워 넣을 수 있어요
+      return '<li class="tl-item ' + state + (s.important ? ' imp' : '') + (s.done ? ' done' : '') + (openEnded ? ' has-done' : '') + (movable ? ' movable' : '') + '" data-id="' + s.id + '" data-min="' + k + '" style="--c: ' + catOf(s.cat).color + '">' +
+        '<span class="tl-time">' + (movable ? '<span class="tl-grip" aria-label="끌어서 옮기기">' + GRIP + '</span>' : timeLabel) + '</span><span class="tl-dot"></span>' +
         '<button type="button" class="tl-card" data-id="' + s.id + '">' +
-        '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
+        '<span class="tl-title">' + esc(s.title) + (movable ? ' <span class="tl-tag">시간 미정</span>' : '') + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
         (function () {
           var meta = [s.start ? s.start + (s.end ? '–' + s.end : '') : '', s.place ? esc(s.place) : ''].filter(Boolean).join(' · ') + (rel || '');
           return meta ? '<span class="tl-meta">' + meta.replace(/^ · /, '') + '</span>' : '';
@@ -930,7 +983,13 @@
     };
     var html = '';
     var nowPlaced = diff !== 0;
-    list.forEach(function (s) {
+    orderDay(all).forEach(function (s) {
+      var k = seqMin(s, all.indexOf(s));
+      if (!s.start) {
+        if (!nowPlaced && s.pos != null && nowMin < k && list.length) { html += nowRow(now); nowPlaced = true; }
+        html += card(s, diff < 0 || s.done ? 'past' : '', '미정', '', k);
+        return;
+      }
       var st = toMin(s.start), en = s.end ? toMin(s.end) : null;
       if (!nowPlaced && nowMin < st) { html += nowRow(now); nowPlaced = true; }
       // 종료 시간이 없으면 '완료'를 누를 때까지 진행 중
@@ -939,11 +998,9 @@
       if (s.done) rel = ' · 완료';
       else if (state === 'current') rel = ' · 진행 중';
       else if (diff === 0 && !state) { var m = st - nowMin; rel = m < 60 ? ' · ' + m + '분 후' : ''; }
-      html += card(s, state, s.start, rel);
+      html += card(s, state, s.start, rel, k);
       if (!nowPlaced && state === 'current') { html += nowRow(now); nowPlaced = true; }
     });
-    if (!nowPlaced && list.length) html += nowRow(now);
-    html += untimed.map(function (s) { return card(s, diff < 0 || s.done ? 'past' : '', '미정'); }).join('');
     $('timeline').innerHTML = html;
     renderNowNext();
   }
@@ -955,9 +1012,12 @@
   var hhmm = function (t) { return t ? t.replace(':', '') : ''; };
   function weekKey(d) { var m = new Date(d); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return ymd(m); }
   // 시간 있는 일정은 시간순, 시간 없는 일정은 적은 순서대로 맨 뒤
+  // 시간 있는 일정은 시작 시각, 시간 미정 일정은 끌어다 놓은 자리(pos) 기준. 자리가 없으면 맨 뒤
+  function seqMin(s, i) { return s.start ? toMin(s.start) : (s.pos != null ? s.pos : 10000 + i); }
   function orderDay(list) {
-    var timed = list.filter(function (s) { return s.start; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
-    return timed.concat(list.filter(function (s) { return !s.start; }));
+    return list.map(function (s, i) { return { s: s, k: seqMin(s, i), i: i }; })
+      .sort(function (a, b) { return a.k - b.k || a.i - b.i; })
+      .map(function (x) { return x.s; });
   }
   function renderUpcoming() {
     var now = new Date(), todayKey = ymd(now);
@@ -983,18 +1043,18 @@
   /* 지금 · 다음 (홈 상단 요약) */
   function relLabel(m) { return m < 60 ? m + '분 후' : Math.floor(m / 60) + '시간' + (m % 60 ? ' ' + (m % 60) + '분' : '') + ' 후'; }
   // 시간 있는 일정 우선, 비는 시간에는 시간 미정 일정을 쌓인 순서대로 보여줘요
+  // 지금: 진행 중인 일정 → 없으면 자리가 이미 지난 시간 미정 일정. 지금이 비면 다음 할 일 두 개.
   function renderNowNext() {
     var key = ymd(new Date()), now = new Date(), nm = now.getHours() * 60 + now.getMinutes();
-    var all = (schedules[key] || []).filter(function (s) { return !s.done; }); // 완료한 일정은 빼요
-    var list = all.filter(function (s) { return s.start; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
-    var todo = all.filter(function (s) { return !s.start; });
-    // 종료 시간 없는 일정은 시작 뒤 완료 전까지 진행 중 (가장 최근에 시작한 것)
-    var running = list.filter(function (s) { return toMin(s.start) <= nm && (s.end ? nm < toMin(s.end) : true); });
-    var cur = running[running.length - 1];
-    var next = list.find(function (s) { return toMin(s.start) > nm; });
-    var curTodo = null, nextTodo = null;
-    if (!cur) curTodo = todo[0] || null;
-    if (!next) nextTodo = todo[curTodo ? 1 : 0] || null;
+    var raw = schedules[key] || [];
+    var seq = orderDay(raw).filter(function (s) { return !s.done; });
+    var running = seq.filter(function (s) { return s.start && toMin(s.start) <= nm && (s.end ? nm < toMin(s.end) : true); });
+    var cur = running[running.length - 1] || seq.find(function (s) { return !s.start && seqMin(s, raw.indexOf(s)) <= nm; }) || null;
+    var upcoming = seq.filter(function (s) {
+      if (s === cur) return false;
+      if (s.start) return toMin(s.start) > nm;
+      return true; // 끝내지 않은 시간 미정 일정은 아직 할 일
+    });
     var item = function (s, kind, label, bar) {
       return '<button type="button" class="nn-item ' + kind + (s.important ? ' imp' : '') + '" data-id="' + s.id + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="nn-label">' + label + '</span>' +
@@ -1002,18 +1062,19 @@
         '<span class="nn-meta">' + (s.start ? s.start + (s.end ? '–' + s.end : '') : '시간 미정') + (s.place ? ' · ' + esc(s.place) : '') + '</span>' +
         (bar != null ? '<span class="nn-bar"><i style="width:' + bar + '%"></i></span>' : '') + '</button>';
     };
-    var idle = function (label, text) { return '<div class="nn-item idle"><span class="nn-label">' + label + '</span><span class="nn-title">' + text + '</span></div>'; };
+    var nextLabel = function (s) { return s.start ? '다음 · ' + relLabel(toMin(s.start) - nm) : '다음 할 일'; };
     var html = '';
-    if (cur && !cur.end) {
-      html += item(cur, 'current', '진행 중 · ' + (nm - toMin(cur.start)) + '분째');
-    } else if (cur) {
+    if (cur && cur.start && cur.end) {
       var st = toMin(cur.start), en = toMin(cur.end);
       html += item(cur, 'current', '진행 중 · ' + (en - nm) + '분 남음', Math.round((nm - st) / (en - st) * 100));
-    } else if (curTodo) html += item(curTodo, 'current', '지금 할 일');
-    else html += idle('지금', '비어 있는 시간이에요');
-    if (next) html += item(next, 'next', '다음 · ' + relLabel(toMin(next.start) - nm));
-    else if (nextTodo) html += item(nextTodo, 'next', '다음 할 일');
-    else html += idle('다음', '오늘 남은 일정이 없어요');
+    } else if (cur && cur.start) html += item(cur, 'current', '진행 중 · ' + (nm - toMin(cur.start)) + '분째');
+    else if (cur) html += item(cur, 'current', '지금 할 일');
+    var nexts = upcoming.slice(0, cur ? 1 : 2);
+    html += nexts.map(function (s) { return item(s, 'next', nextLabel(s)); }).join('');
+    if (!cur && !nexts.length) {
+      html = raw.length ? '<div class="nn-item idle all-done"><span class="nn-label">오늘</span><span class="nn-title">오늘 할 일을 모두 마쳤어요. 수고했어요! 🎉</span></div>'
+        : '<div class="nn-item idle all-done"><span class="nn-label">오늘</span><span class="nn-title">오늘은 예정된 일정이 없어요. 여유로운 하루 보내세요</span></div>';
+    }
     $('nn').innerHTML = html;
   }
   // 일정 섹션 머리를 화면 높이 10% 지점에 두고 즉시 이동 (애니메이션 없이 → 화면이 튀지 않게)
@@ -1218,6 +1279,18 @@
       closeDialog($('up-dialog'));
       placeSchedulePanel();
     });
+    makeSortable($('timeline'), {
+      item: '.tl-item', handle: '.tl-grip', longPress: true,
+      canDrag: function (li) { return li.classList.contains('movable'); },
+      onEnd: function (li) {
+        var key = ymd(viewDate), it = findItem(key, li.dataset.id); if (!it) return;
+        var sib = function (el, dir) { do { el = dir < 0 ? el.previousElementSibling : el.nextElementSibling; } while (el && !el.classList.contains('tl-item')); return el; };
+        var p = sib(li, -1), n = sib(li, 1);
+        var pm = p ? +p.dataset.min : null, nm = n ? +n.dataset.min : null;
+        it.pos = pm != null && nm != null ? (pm + nm) / 2 : pm != null ? pm + 1 : nm != null ? nm - 1 : 0;
+        saveSchedules(); renderSchedule();
+      }
+    });
     $('timeline').addEventListener('click', function (e) {
       var d = e.target.closest('[data-done]');
       if (d) {
@@ -1378,9 +1451,7 @@
           '<button type="button" class="cl-fold" data-act="fold" aria-expanded="' + !g.collapsed + '" aria-label="' + esc(g.title) + (g.collapsed ? ' 펼치기' : ' 접기') + '"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg></button>' +
           '<input class="cl-title" value="' + esc(g.title) + '" maxlength="30" aria-label="목록 제목">' +
           '<span class="cl-count mono">' + done + '/' + total + '</span>' +
-          (lists.length > 1 ? '<span class="cl-move">' +
-            '<button type="button" data-act="move-up" aria-label="' + esc(g.title) + ' 위로"' + (gi === 0 ? ' disabled' : '') + '>↑</button>' +
-            '<button type="button" data-act="move-down" aria-label="' + esc(g.title) + ' 아래로"' + (gi === lists.length - 1 ? ' disabled' : '') + '>↓</button></span>' : '') +
+          (lists.length > 1 ? '<span class="grip cl-grip" aria-label="' + esc(g.title) + ' 끌어서 순서 바꾸기">' + GRIP + '</span>' : '') +
           '<button type="button" class="icon-mini" data-act="del-group" aria-label="' + esc(g.title) + ' 목록 삭제">✕</button>' +
         '</div>' +
         '<span class="cl-bar"><i style="width:' + (total ? Math.round(done / total * 100) : 0) + '%"></i></span>' +
@@ -1461,6 +1532,14 @@
         if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = '삭제?'; b.classList.add('armed'); return; }
         lists = lists.filter(function (x) { return x !== g; });
         saveLists(); renderLists(); toast('“' + g.title + '” 목록을 삭제했어요');
+      }
+    });
+    makeSortable(root, {
+      item: '.cl-group', handle: '.cl-grip',
+      onEnd: function () {
+        var ids = Array.prototype.map.call(root.querySelectorAll('.cl-group'), function (el) { return el.dataset.g; });
+        lists.sort(function (a, b) { return ids.indexOf(a.id) - ids.indexOf(b.id); });
+        saveLists();
       }
     });
     $('cl-add-group').onclick = function () {
@@ -1764,6 +1843,7 @@
       draft = JSON.parse(JSON.stringify(settings));
       $('set-name').value = draft.name;
       $('set-ytkey').value = draft.ytKey || '';
+      $('set-wxapp').value = draft.weatherApp || 'apple';
       $('set-interest').value = ''; $('set-city').value = ''; $('city-results').innerHTML = '';
       renderTags();
       if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
@@ -1807,6 +1887,7 @@
       if (pending && draft.interests.indexOf(pending) < 0) draft.interests.push(pending);
       draft.name = $('set-name').value.trim();
       draft.ytKey = $('set-ytkey').value.trim();
+      draft.weatherApp = $('set-wxapp').value;
       var interestsChanged = draft.interests.join('|') !== settings.interests.join('|') || draft.ytKey !== (settings.ytKey || '');
       var locChanged = JSON.stringify(draft.location) !== JSON.stringify(settings.location);
       settings = draft;
@@ -1840,25 +1921,21 @@
     });
   }
   function renderOrderList() {
-    var order = sectionOrder();
-    $('order-list').innerHTML = order.map(function (id, i) {
+    $('order-list').innerHTML = sectionOrder().map(function (id) {
       var name = SECTIONS.find(function (x) { return x.id === id; }).name;
-      return '<li data-id="' + id + '"><span class="on-no">' + (i + 1) + '</span><span class="on-name">' + name + '</span>' +
-        '<button type="button" data-move="-1" aria-label="' + name + ' 위로"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
-        '<button type="button" data-move="1" aria-label="' + name + ' 아래로"' + (i === order.length - 1 ? ' disabled' : '') + '>↓</button></li>';
+      return '<li data-id="' + id + '"><span class="on-name">' + name + '</span><span class="grip" aria-label="' + name + ' 끌어서 순서 바꾸기">' + GRIP + '</span></li>';
     }).join('');
   }
   function initSectionOrder() {
     applySectionOrder();
     renderOrderList();
-    $('order-list').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-move]'); if (!b || b.disabled) return;
-      var order = sectionOrder(), id = b.closest('li').dataset.id, i = order.indexOf(id), j = i + +b.dataset.move;
-      order.splice(i, 1); order.splice(j, 0, id);
-      store.set('sectionOrder', order);
-      applySectionOrder(); renderOrderList();
-      var again = document.querySelector('#order-list li[data-id="' + id + '"] [data-move="' + b.dataset.move + '"]');
-      (again && !again.disabled ? again : document.querySelector('#order-list li[data-id="' + id + '"] button:not([disabled])')).focus();
+    makeSortable($('order-list'), {
+      item: 'li', handle: '.grip', longPress: true,
+      onEnd: function () {
+        var order = Array.prototype.map.call($('order-list').children, function (li) { return li.dataset.id; });
+        store.set('sectionOrder', order);
+        applySectionOrder();
+      }
     });
   }
 
