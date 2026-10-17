@@ -835,6 +835,12 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .tl-item.dragging .tl-card { background: var(--accent-soft); }
 .nn-item.all-done .nn-title { white-space: normal; }
 
+/* 절정 시즌이 둘이면 같은 크기로 살짝 겹쳐서 */
+.hero-motif.pair { font-size: clamp(80px, 17vw, 150px); }
+.hero-motif.pair span { display: inline-block; }
+.hero-motif.pair span:nth-child(1) { transform: rotate(-6deg); position: relative; z-index: 1; }
+.hero-motif.pair span:nth-child(2) { font-size: 1em; align-self: center; margin-left: -0.6em; margin-top: 0.3em; transform: rotate(14deg); }
+
 </style>
 </head>
 <body>
@@ -1932,6 +1938,7 @@ window.FLAG_COLORS = {
     }).join('');
     var motif = tops.length > 1 ? tops.slice(0, 2).map(function (x) { return x.s.scene.motif[0]; }) : s.scene.motif;
     $('hero-motif').innerHTML = motif.map(function (m) { return '<span>' + esc(m) + '</span>'; }).join('');
+    $('hero-motif').classList.toggle('pair', tops.length > 1);
     scene.start(s.scene);
   }
   function initSeason() {

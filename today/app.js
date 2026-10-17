@@ -163,6 +163,7 @@
     }).join('');
     var motif = tops.length > 1 ? tops.slice(0, 2).map(function (x) { return x.s.scene.motif[0]; }) : s.scene.motif;
     $('hero-motif').innerHTML = motif.map(function (m) { return '<span>' + esc(m) + '</span>'; }).join('');
+    $('hero-motif').classList.toggle('pair', tops.length > 1);
     scene.start(s.scene);
   }
   function initSeason() {
