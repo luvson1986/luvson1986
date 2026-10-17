@@ -451,7 +451,7 @@
         if (f.y > h + 30) { f.y = -24; f.x = rnd(0, w); }
         if (f.y < -30) { f.y = h + 24; f.x = rnd(0, w); }
         // 컬러 이모지는 fillStyle의 투명도를 따라가서, 불투명한 색으로 지정해요
-        ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.a); ctx.globalAlpha = 0.9; ctx.fillStyle = '#000';
+        ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.a); ctx.globalAlpha = 0.6; ctx.fillStyle = '#000';
         ctx.font = Math.round(f.s) + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
         ctx.fillText(f.e, 0, 0); ctx.restore();
       }
@@ -466,6 +466,7 @@
       var n = count();
       // 떠다니는 아이콘이 있으면 기본 효과는 조금 덜어내요
       if (emojis.length && type !== 'leaves') n = Math.round(n * 0.6);
+      if (type === 'sea') n = 0; // 물방울(동그라미)은 그리지 않아요. 물결만
       for (var i = 0; i < n; i++) parts.push(make(true));
       floats = [];
       var fn = emojis.length ? Math.max(8, Math.min(16, Math.round(w / 32))) : 0;
