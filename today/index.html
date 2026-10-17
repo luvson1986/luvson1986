@@ -20,6 +20,10 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<!-- 스플래시: CSS를 불러오기 전에도 바로 보이도록 인라인 스타일 -->
+<div id="splash" aria-hidden="true" style="position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:#e7e1dd;transition:opacity .35s ease">
+  <img src="icons/source.png" alt="" style="width:50vmin;height:50vmin;object-fit:contain" onerror="this.style.display='none'">
+</div>
 
 <!-- 홈 -->
 <main id="view-home" class="view">

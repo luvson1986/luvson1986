@@ -2006,7 +2006,18 @@
   initSettings();
   initSectionOrder();
   initBackup();
-  loadWeather().then(renderWeather);
+  // 스플래시: 날씨를 다 불러오면 사라져요 (최소 0.6초, 최대 8초)
+  var splashStart = Date.now();
+  function hideSplash() {
+    var sp = $('splash'); if (!sp || sp.dataset.out) return;
+    sp.dataset.out = '1';
+    setTimeout(function () {
+      sp.style.opacity = '0';
+      setTimeout(function () { sp.remove(); }, 400);
+    }, Math.max(0, 600 - (Date.now() - splashStart)));
+  }
+  setTimeout(hideSplash, 8000);
+  loadWeather().then(renderWeather).then(hideSplash, hideSplash);
   initNews();
 
   setInterval(function () { renderGreeting(); if (ymd(viewDate) === ymd(new Date())) renderSchedule(); else renderNowNext(); }, 60 * 1000);
