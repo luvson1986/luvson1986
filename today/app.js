@@ -974,6 +974,9 @@
   var lockY = 0;
   // 아이폰 홈 화면 앱에서 body를 position:fixed로 고정하면 화면 아래에 빈 띠가 생겨서,
   // 페이지는 그대로 두고 overflow로만 막고, 팝업 밖에서 생기는 터치 스크롤은 직접 막아요.
+  window.addEventListener('scroll', function () {
+    if (document.documentElement.classList.contains('modal-open') && !document.querySelector('dialog[open]')) syncScrollLock();
+  }, { passive: true });
   function syncScrollLock() {
     var anyOpen = !!document.querySelector('dialog[open]');
     var locked = document.documentElement.classList.contains('modal-open');
@@ -1108,7 +1111,7 @@
     el.hidden = false;
     clearTimeout(showSheetDebug.t); showSheetDebug.t = setTimeout(function () { el.hidden = true; }, 15000);
   }
-  var APP_VER = 63;
+  var APP_VER = 64;
   var sheetZ = 0;
   function topSheet() {
     var best = null;
@@ -1118,6 +1121,12 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var t = topSheet(); if (t) { e.preventDefault(); closeDialog(t); } } });
   function openDialog(d) {
     // 시트 위에 시트를 열면 새 것이 위로 와요
+    var others = Array.prototype.some.call(document.querySelectorAll('dialog[open]'), function (o) { return o !== d; });
+    if (!others) {
+      // 첫 시트: 지금 스크롤 위치로 다시 잡아요 (이전 값이 남아 있으면 엉뚱한 곳에 붙었어요)
+      document.documentElement.classList.remove('modal-open');
+      sheetZ = 0;
+    }
     d.style.zIndex = 102 + (++sheetZ);
     syncScrollLock();
     if (!d.open) { if (d.show) d.show(); else d.setAttribute('open', ''); }
