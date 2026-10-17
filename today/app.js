@@ -1072,7 +1072,6 @@
       var rel = '';
       if (s.done) rel = ' · 완료';
       else if (state === 'current') rel = ' · 진행 중';
-      else if (diff === 0 && !state) { var m = st - nowMin; rel = m < 60 ? ' · ' + m + '분 후' : ''; }
       html += card(s, state, s.start, rel, k);
       if (!nowPlaced && state === 'current') { html += nowRow(now); nowPlaced = true; }
     });
@@ -1260,8 +1259,8 @@
     $('dt-title').classList.toggle('imp', !!s.important);
     $('dt-title').textContent = s.title;
     $('dt-meta').textContent = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 (' + DAYS[d.getDay()] + ')' + (s.start ? ' ' + s.start + (s.end ? '–' + s.end : '') : ' · 시간 미정');
-    $('dt-place').hidden = !s.place;
-    if (s.place) { var mp = mapOf(s.place, s.abroad); $('dt-place').href = mp.href; $('dt-place').classList.toggle('google', !!s.abroad); $('dt-place').innerHTML = '<span aria-hidden="true">📍</span>' + esc(s.place) + '<em>' + mp.label + ' ›</em>'; }
+    closeInlineEdits();
+    renderDetailPlace(s);
     $('dt-memo').value = s.memo || '';
     setTimeout(function () { fitText($('dt-memo')); }, 0);
     $('dt-saved').textContent = '입력하면 자동으로 저장돼요.';
@@ -1285,16 +1284,103 @@
     }).join('');
   }
 
+  /* 상세: 누른 곳만 그 자리에서 고치기 */
+  function closeInlineEdits() {
+    $('dt-title').hidden = false; $('dt-title-in').hidden = true;
+    $('dt-meta').hidden = false; $('dt-when').hidden = true;
+    $('dt-place-edit').hidden = true; document.querySelector('.dt-place-row').hidden = false;
+  }
+  function renderDetailPlace(s) {
+    $('dt-place-text').innerHTML = s.place ? '<span aria-hidden="true">📍</span>' + esc(s.place) : '<span aria-hidden="true">📍</span><span class="ph-add">장소 추가</span>';
+    $('dt-place').hidden = !s.place;
+    if (s.place) { var mp = mapOf(s.place, s.abroad); $('dt-place').href = mp.href; $('dt-place').classList.toggle('google', !!s.abroad); $('dt-place').innerHTML = mp.label + ' ›'; }
+  }
+  function detailItem() { return detail && findItem(detail.key, detail.id); }
+  function afterDetailEdit(s, msg) {
+    s.rev = (s.rev || 0) + 1;
+    saveSchedules(); renderSchedule();
+    openDetail(detail.key, detail.id);
+    if (msg) toast(msg);
+  }
+  function initInlineEdit() {
+    // 제목
+    var editTitle = function () {
+      var s = detailItem(); if (!s) return;
+      $('dt-title').hidden = true; $('dt-title-in').hidden = false;
+      $('dt-title-in').value = s.title; $('dt-title-in').focus(); $('dt-title-in').select();
+    };
+    $('dt-title').addEventListener('click', editTitle);
+    $('dt-title').addEventListener('keydown', function (e) { if (e.key === 'Enter') editTitle(); });
+    var saveTitle = function () {
+      var s = detailItem(); if (!s || $('dt-title-in').hidden) return;
+      var v = $('dt-title-in').value.trim();
+      if (v && v !== s.title) { s.title = v; afterDetailEdit(s, '제목을 고쳤어요'); } else closeInlineEdits();
+    };
+    $('dt-title-in').addEventListener('blur', saveTitle);
+    $('dt-title-in').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); $('dt-title-in').blur(); }
+      if (e.key === 'Escape') { e.preventDefault(); $('dt-title-in').value = detailItem().title; $('dt-title-in').blur(); }
+    });
+    // 날짜·시간
+    var syncTimes = function () { $('dt-times').hidden = !$('dt-timed').checked; };
+    var editWhen = function () {
+      var s = detailItem(); if (!s) return;
+      $('dt-meta').hidden = true; $('dt-when').hidden = false;
+      $('dt-date').value = detail.key;
+      $('dt-timed').checked = !!s.start;
+      $('dt-start').value = s.start || ''; $('dt-end').value = s.end || '';
+      syncTimes();
+    };
+    $('dt-meta').addEventListener('click', editWhen);
+    $('dt-meta').addEventListener('keydown', function (e) { if (e.key === 'Enter') editWhen(); });
+    $('dt-timed').addEventListener('change', function () {
+      syncTimes();
+      if ($('dt-timed').checked && !$('dt-start').value) $('dt-start').value = pad(Math.min(new Date().getHours() + 1, 23)) + ':00';
+    });
+    $('dt-when-done').onclick = function () {
+      var s = detailItem(); if (!s) return;
+      var date = $('dt-date').value || detail.key, timed = $('dt-timed').checked;
+      var start = timed ? $('dt-start').value : '', end = timed ? $('dt-end').value : '';
+      if (timed && !start) { toast('시작 시간을 입력하거나 "시간 정하기"를 꺼 주세요'); return; }
+      if (start && end && toMin(end) <= toMin(start)) { toast('종료 시간은 시작 시간보다 늦어야 해요'); return; }
+      s.start = start; s.end = end;
+      if (start) delete s.pos;
+      if (date !== detail.key) {
+        schedules[detail.key] = (schedules[detail.key] || []).filter(function (x) { return x.id !== s.id; });
+        if (!schedules[detail.key].length) delete schedules[detail.key];
+        (schedules[date] || (schedules[date] = [])).push(s);
+        detail.key = date; viewDate = parseYmd(date);
+      }
+      afterDetailEdit(s, '날짜·시간을 고쳤어요');
+    };
+    // 장소
+    var editPlace = function () {
+      var s = detailItem(); if (!s) return;
+      document.querySelector('.dt-place-row').hidden = true; $('dt-place-edit').hidden = false;
+      $('dt-place-in').value = s.place || ''; $('dt-abroad').checked = !!s.abroad;
+      $('dt-place-in').focus();
+    };
+    $('dt-place-text').addEventListener('click', editPlace);
+    var savePlace = function () {
+      var s = detailItem(); if (!s) return;
+      s.place = $('dt-place-in').value.trim(); s.abroad = $('dt-abroad').checked;
+      afterDetailEdit(s, s.place ? '장소를 고쳤어요' : '장소를 지웠어요');
+    };
+    $('dt-place-done').onclick = savePlace;
+    $('dt-place-in').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); savePlace(); } });
+  }
+
   /* ---------- 일정 알림 ----------
      시간 있는 일정은 기본 30분 전. 앱이 켜져 있거나 최근에 열려 있으면 알림을 띄우고,
      아이폰 캘린더로 보낸 일정에는 같은 시간의 캘린더 알림이 들어가요(앱이 꺼져 있어도 울려요). */
-  function remindOf(s) { if (!s || !s.start) return 0; return s.remind == null ? 30 : s.remind; }
+  function remindOf(s) { if (!s || !s.start) return 0; return s.remind || 0; }
   function renderRemind(s) {
     var r = remindOf(s), timed = !!s.start;
     $('dt-remind').hidden = !timed;
     Array.prototype.forEach.call($('dt-remind').children, function (b) { b.setAttribute('aria-checked', String(+b.dataset.r === r)); });
     var perm = 'Notification' in window ? Notification.permission : 'unsupported';
     $('dt-remind-hint').textContent = !timed ? '시간을 정하면 알림을 받을 수 있어요.'
+      : !r ? ''
       : perm === 'denied' ? '알림이 꺼져 있어요. 아이폰 설정 → 알림 → 오늘에서 허용해 주세요.'
       : perm === 'unsupported' ? '이 브라우저는 알림을 지원하지 않아요. 홈 화면에 추가한 앱에서 써 주세요.'
       : r ? '앱이 꺼져 있으면 울리지 않을 수 있어요. 확실하게 받으려면 아래 iPhone 캘린더로도 추가하세요.' : '';
@@ -1539,11 +1625,6 @@
       $('dt-title').classList.toggle('imp', s.important);
       saveSchedules(); renderSchedule();
       toast(s.important ? '중요 일정으로 표시했어요' : '중요 표시를 뺐어요');
-    };
-    $('dt-edit').onclick = function () {
-      var s = findItem(detail.key, detail.id);
-      closeDialog($('detail-dialog'));
-      openForm(s, detail.key);
     };
     $('dt-delete').onclick = function () {
       var b = $('dt-delete');
@@ -2143,6 +2224,7 @@
   initWeatherLocation();
   initPhrase();
   initCats();
+  initInlineEdit();
   initSchedule();
   initChecklist();
   initSettings();

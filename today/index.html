@@ -453,9 +453,28 @@
         <span class="dt-tags"><button type="button" class="tl-tag cat-btn" id="dt-cat" aria-haspopup="true" aria-expanded="false"></button>
           <button type="button" class="imp-toggle" id="dt-imp" aria-pressed="false">중요 표시</button></span>
         <div class="cat-pop" id="dt-cat-pop" role="listbox" aria-label="카테고리 선택" hidden></div>
-        <h2 id="dt-title"></h2>
-        <p class="dt-meta" id="dt-meta"></p>
-        <a class="map-link" id="dt-place" target="_blank" rel="noopener" hidden></a>
+        <h2 class="dt-editable" id="dt-title" tabindex="0" role="button" aria-label="제목 고치기"></h2>
+        <input class="dt-title-in" id="dt-title-in" maxlength="60" aria-label="제목" hidden>
+        <p class="dt-meta dt-editable" id="dt-meta" tabindex="0" role="button" aria-label="날짜·시간 고치기"></p>
+        <div class="dt-when" id="dt-when" hidden>
+          <input type="date" id="dt-date" aria-label="날짜">
+          <label class="abroad-check" for="dt-timed"><input type="checkbox" id="dt-timed"> 시간 정하기</label>
+          <div class="dt-times" id="dt-times">
+            <input type="time" id="dt-start" aria-label="시작">
+            <span>–</span>
+            <input type="time" id="dt-end" aria-label="종료 (선택)">
+          </div>
+          <button type="button" class="primary-btn sm" id="dt-when-done">완료</button>
+        </div>
+        <div class="dt-place-row">
+          <button type="button" class="dt-place-text" id="dt-place-text"></button>
+          <a class="map-link" id="dt-place" target="_blank" rel="noopener" hidden></a>
+        </div>
+        <div class="dt-place-edit" id="dt-place-edit" hidden>
+          <input id="dt-place-in" maxlength="80" placeholder="예: 강남역 스타벅스" aria-label="장소">
+          <label class="abroad-check" for="dt-abroad"><input type="checkbox" id="dt-abroad"> 해외 <span>장소, 도시(영문)</span></label>
+          <button type="button" class="primary-btn sm" id="dt-place-done">완료</button>
+        </div>
       </div>
       <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
@@ -485,7 +504,7 @@
     </div>
     <div class="form-actions split">
       <button type="button" class="ghost-btn danger" id="dt-delete">삭제</button>
-      <button type="button" class="primary-btn" id="dt-edit">수정</button>
+      <span class="hint">글자를 누르면 바로 고칠 수 있어요</span>
     </div>
   </div>
 </dialog>

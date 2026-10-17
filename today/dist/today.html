@@ -847,6 +847,21 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .remind-opts button { border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 6px 11px; font-size: 13px; cursor: pointer; }
 .remind-opts button[aria-checked="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); font-weight: 700; }
 
+/* 상세: 제자리 편집 */
+.dt-editable { cursor: text; border-radius: 6px; margin-left: -4px; padding: 1px 4px; }
+.dt-editable:hover, .dt-editable:focus-visible { background: var(--surface-2); outline: none; }
+.dt-title-in { font: 700 19px/1.3 var(--f-body); width: 100%; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--accent); background: var(--surface); color: var(--ink); }
+.dt-when, .dt-place-edit { display: grid; gap: 8px; padding: 10px; border-radius: var(--r-s); background: var(--surface-2); }
+.dt-when input[type="date"], .dt-when input[type="time"], .dt-place-edit input:not([type]) { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); width: 100%; min-width: 0; }
+.dt-times { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; align-items: center; }
+.dt-when .primary-btn, .dt-place-edit .primary-btn { justify-self: end; }
+.dt-place-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 2px; }
+.dt-place-text { border: 0; background: none; padding: 4px 4px; margin-left: -4px; border-radius: 6px; cursor: text; font-size: 14px; font-weight: 600; color: var(--ink); display: inline-flex; gap: 4px; }
+.dt-place-text:hover { background: var(--surface-2); }
+.dt-place-text .ph-add { color: var(--ink-3); font-weight: 500; }
+.dt-place-row .map-link { margin-top: 0; padding: 4px 10px; font-size: 12.5px; color: #03a64b; }
+.dt-place-row .map-link.google { color: #1a73e8; }
+
 </style>
 </head>
 <body>
@@ -1283,9 +1298,28 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
         <span class="dt-tags"><button type="button" class="tl-tag cat-btn" id="dt-cat" aria-haspopup="true" aria-expanded="false"></button>
           <button type="button" class="imp-toggle" id="dt-imp" aria-pressed="false">중요 표시</button></span>
         <div class="cat-pop" id="dt-cat-pop" role="listbox" aria-label="카테고리 선택" hidden></div>
-        <h2 id="dt-title"></h2>
-        <p class="dt-meta" id="dt-meta"></p>
-        <a class="map-link" id="dt-place" target="_blank" rel="noopener" hidden></a>
+        <h2 class="dt-editable" id="dt-title" tabindex="0" role="button" aria-label="제목 고치기"></h2>
+        <input class="dt-title-in" id="dt-title-in" maxlength="60" aria-label="제목" hidden>
+        <p class="dt-meta dt-editable" id="dt-meta" tabindex="0" role="button" aria-label="날짜·시간 고치기"></p>
+        <div class="dt-when" id="dt-when" hidden>
+          <input type="date" id="dt-date" aria-label="날짜">
+          <label class="abroad-check" for="dt-timed"><input type="checkbox" id="dt-timed"> 시간 정하기</label>
+          <div class="dt-times" id="dt-times">
+            <input type="time" id="dt-start" aria-label="시작">
+            <span>–</span>
+            <input type="time" id="dt-end" aria-label="종료 (선택)">
+          </div>
+          <button type="button" class="primary-btn sm" id="dt-when-done">완료</button>
+        </div>
+        <div class="dt-place-row">
+          <button type="button" class="dt-place-text" id="dt-place-text"></button>
+          <a class="map-link" id="dt-place" target="_blank" rel="noopener" hidden></a>
+        </div>
+        <div class="dt-place-edit" id="dt-place-edit" hidden>
+          <input id="dt-place-in" maxlength="80" placeholder="예: 강남역 스타벅스" aria-label="장소">
+          <label class="abroad-check" for="dt-abroad"><input type="checkbox" id="dt-abroad"> 해외 <span>장소, 도시(영문)</span></label>
+          <button type="button" class="primary-btn sm" id="dt-place-done">완료</button>
+        </div>
       </div>
       <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
@@ -1315,7 +1349,7 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
     </div>
     <div class="form-actions split">
       <button type="button" class="ghost-btn danger" id="dt-delete">삭제</button>
-      <button type="button" class="primary-btn" id="dt-edit">수정</button>
+      <span class="hint">글자를 누르면 바로 고칠 수 있어요</span>
     </div>
   </div>
 </dialog>
@@ -2864,7 +2898,6 @@ window.FLAG_COLORS = {
       var rel = '';
       if (s.done) rel = ' · 완료';
       else if (state === 'current') rel = ' · 진행 중';
-      else if (diff === 0 && !state) { var m = st - nowMin; rel = m < 60 ? ' · ' + m + '분 후' : ''; }
       html += card(s, state, s.start, rel, k);
       if (!nowPlaced && state === 'current') { html += nowRow(now); nowPlaced = true; }
     });
@@ -3052,8 +3085,8 @@ window.FLAG_COLORS = {
     $('dt-title').classList.toggle('imp', !!s.important);
     $('dt-title').textContent = s.title;
     $('dt-meta').textContent = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 (' + DAYS[d.getDay()] + ')' + (s.start ? ' ' + s.start + (s.end ? '–' + s.end : '') : ' · 시간 미정');
-    $('dt-place').hidden = !s.place;
-    if (s.place) { var mp = mapOf(s.place, s.abroad); $('dt-place').href = mp.href; $('dt-place').classList.toggle('google', !!s.abroad); $('dt-place').innerHTML = '<span aria-hidden="true">📍</span>' + esc(s.place) + '<em>' + mp.label + ' ›</em>'; }
+    closeInlineEdits();
+    renderDetailPlace(s);
     $('dt-memo').value = s.memo || '';
     setTimeout(function () { fitText($('dt-memo')); }, 0);
     $('dt-saved').textContent = '입력하면 자동으로 저장돼요.';
@@ -3077,16 +3110,103 @@ window.FLAG_COLORS = {
     }).join('');
   }
 
+  /* 상세: 누른 곳만 그 자리에서 고치기 */
+  function closeInlineEdits() {
+    $('dt-title').hidden = false; $('dt-title-in').hidden = true;
+    $('dt-meta').hidden = false; $('dt-when').hidden = true;
+    $('dt-place-edit').hidden = true; document.querySelector('.dt-place-row').hidden = false;
+  }
+  function renderDetailPlace(s) {
+    $('dt-place-text').innerHTML = s.place ? '<span aria-hidden="true">📍</span>' + esc(s.place) : '<span aria-hidden="true">📍</span><span class="ph-add">장소 추가</span>';
+    $('dt-place').hidden = !s.place;
+    if (s.place) { var mp = mapOf(s.place, s.abroad); $('dt-place').href = mp.href; $('dt-place').classList.toggle('google', !!s.abroad); $('dt-place').innerHTML = mp.label + ' ›'; }
+  }
+  function detailItem() { return detail && findItem(detail.key, detail.id); }
+  function afterDetailEdit(s, msg) {
+    s.rev = (s.rev || 0) + 1;
+    saveSchedules(); renderSchedule();
+    openDetail(detail.key, detail.id);
+    if (msg) toast(msg);
+  }
+  function initInlineEdit() {
+    // 제목
+    var editTitle = function () {
+      var s = detailItem(); if (!s) return;
+      $('dt-title').hidden = true; $('dt-title-in').hidden = false;
+      $('dt-title-in').value = s.title; $('dt-title-in').focus(); $('dt-title-in').select();
+    };
+    $('dt-title').addEventListener('click', editTitle);
+    $('dt-title').addEventListener('keydown', function (e) { if (e.key === 'Enter') editTitle(); });
+    var saveTitle = function () {
+      var s = detailItem(); if (!s || $('dt-title-in').hidden) return;
+      var v = $('dt-title-in').value.trim();
+      if (v && v !== s.title) { s.title = v; afterDetailEdit(s, '제목을 고쳤어요'); } else closeInlineEdits();
+    };
+    $('dt-title-in').addEventListener('blur', saveTitle);
+    $('dt-title-in').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); $('dt-title-in').blur(); }
+      if (e.key === 'Escape') { e.preventDefault(); $('dt-title-in').value = detailItem().title; $('dt-title-in').blur(); }
+    });
+    // 날짜·시간
+    var syncTimes = function () { $('dt-times').hidden = !$('dt-timed').checked; };
+    var editWhen = function () {
+      var s = detailItem(); if (!s) return;
+      $('dt-meta').hidden = true; $('dt-when').hidden = false;
+      $('dt-date').value = detail.key;
+      $('dt-timed').checked = !!s.start;
+      $('dt-start').value = s.start || ''; $('dt-end').value = s.end || '';
+      syncTimes();
+    };
+    $('dt-meta').addEventListener('click', editWhen);
+    $('dt-meta').addEventListener('keydown', function (e) { if (e.key === 'Enter') editWhen(); });
+    $('dt-timed').addEventListener('change', function () {
+      syncTimes();
+      if ($('dt-timed').checked && !$('dt-start').value) $('dt-start').value = pad(Math.min(new Date().getHours() + 1, 23)) + ':00';
+    });
+    $('dt-when-done').onclick = function () {
+      var s = detailItem(); if (!s) return;
+      var date = $('dt-date').value || detail.key, timed = $('dt-timed').checked;
+      var start = timed ? $('dt-start').value : '', end = timed ? $('dt-end').value : '';
+      if (timed && !start) { toast('시작 시간을 입력하거나 "시간 정하기"를 꺼 주세요'); return; }
+      if (start && end && toMin(end) <= toMin(start)) { toast('종료 시간은 시작 시간보다 늦어야 해요'); return; }
+      s.start = start; s.end = end;
+      if (start) delete s.pos;
+      if (date !== detail.key) {
+        schedules[detail.key] = (schedules[detail.key] || []).filter(function (x) { return x.id !== s.id; });
+        if (!schedules[detail.key].length) delete schedules[detail.key];
+        (schedules[date] || (schedules[date] = [])).push(s);
+        detail.key = date; viewDate = parseYmd(date);
+      }
+      afterDetailEdit(s, '날짜·시간을 고쳤어요');
+    };
+    // 장소
+    var editPlace = function () {
+      var s = detailItem(); if (!s) return;
+      document.querySelector('.dt-place-row').hidden = true; $('dt-place-edit').hidden = false;
+      $('dt-place-in').value = s.place || ''; $('dt-abroad').checked = !!s.abroad;
+      $('dt-place-in').focus();
+    };
+    $('dt-place-text').addEventListener('click', editPlace);
+    var savePlace = function () {
+      var s = detailItem(); if (!s) return;
+      s.place = $('dt-place-in').value.trim(); s.abroad = $('dt-abroad').checked;
+      afterDetailEdit(s, s.place ? '장소를 고쳤어요' : '장소를 지웠어요');
+    };
+    $('dt-place-done').onclick = savePlace;
+    $('dt-place-in').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); savePlace(); } });
+  }
+
   /* ---------- 일정 알림 ----------
      시간 있는 일정은 기본 30분 전. 앱이 켜져 있거나 최근에 열려 있으면 알림을 띄우고,
      아이폰 캘린더로 보낸 일정에는 같은 시간의 캘린더 알림이 들어가요(앱이 꺼져 있어도 울려요). */
-  function remindOf(s) { if (!s || !s.start) return 0; return s.remind == null ? 30 : s.remind; }
+  function remindOf(s) { if (!s || !s.start) return 0; return s.remind || 0; }
   function renderRemind(s) {
     var r = remindOf(s), timed = !!s.start;
     $('dt-remind').hidden = !timed;
     Array.prototype.forEach.call($('dt-remind').children, function (b) { b.setAttribute('aria-checked', String(+b.dataset.r === r)); });
     var perm = 'Notification' in window ? Notification.permission : 'unsupported';
     $('dt-remind-hint').textContent = !timed ? '시간을 정하면 알림을 받을 수 있어요.'
+      : !r ? ''
       : perm === 'denied' ? '알림이 꺼져 있어요. 아이폰 설정 → 알림 → 오늘에서 허용해 주세요.'
       : perm === 'unsupported' ? '이 브라우저는 알림을 지원하지 않아요. 홈 화면에 추가한 앱에서 써 주세요.'
       : r ? '앱이 꺼져 있으면 울리지 않을 수 있어요. 확실하게 받으려면 아래 iPhone 캘린더로도 추가하세요.' : '';
@@ -3331,11 +3451,6 @@ window.FLAG_COLORS = {
       $('dt-title').classList.toggle('imp', s.important);
       saveSchedules(); renderSchedule();
       toast(s.important ? '중요 일정으로 표시했어요' : '중요 표시를 뺐어요');
-    };
-    $('dt-edit').onclick = function () {
-      var s = findItem(detail.key, detail.id);
-      closeDialog($('detail-dialog'));
-      openForm(s, detail.key);
     };
     $('dt-delete').onclick = function () {
       var b = $('dt-delete');
@@ -3935,6 +4050,7 @@ window.FLAG_COLORS = {
   initWeatherLocation();
   initPhrase();
   initCats();
+  initInlineEdit();
   initSchedule();
   initChecklist();
   initSettings();
