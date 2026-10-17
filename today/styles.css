@@ -127,7 +127,7 @@ a { color: var(--accent); }
 .season-box { display: grid; gap: 8px; justify-items: start; padding-right: 80px; }
 .season-main { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-radius: 8px; }
 .season-main:focus-visible, .kw-chip:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-.season-name { font: 500 clamp(22px, calc(6vw - 4px), 30px)/1.15 var(--f-body); text-shadow: 0 1px 10px rgba(0, 0, 0, 0.18); }
+.season-name { font: 500 clamp(20px, calc(6vw - 6px), 28px)/1.15 var(--f-body); text-shadow: 0 1px 10px rgba(0, 0, 0, 0.18); }
 .season-main:hover .season-name { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
 .phase {
   display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700;
