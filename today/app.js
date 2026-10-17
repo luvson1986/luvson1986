@@ -1036,6 +1036,52 @@
   }
   document.addEventListener('focusin', function () { setTimeout(fitDialogToKeyboard, 300); });
   document.addEventListener('focusout', function () { setTimeout(function () { fitDialogToKeyboard(); resetModalScroll(); }, 120); });
+  // 바텀시트를 아래로 끌어내리면 닫혀요 (안쪽 목록이 맨 위일 때만, 아니면 평소처럼 스크롤)
+  (function () {
+    var st = null;
+    var scroller = function (el, d) {
+      for (; el && el !== d.parentNode; el = el.parentNode) {
+        if (el.scrollHeight > el.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(el).overflowY)) return el;
+      }
+      return null;
+    };
+    document.addEventListener('touchstart', function (e) {
+      st = null;
+      var d = e.target.closest && e.target.closest('dialog.sheet[open]');
+      if (!d || e.touches.length !== 1) return;
+      if (e.target.closest('input, textarea, select, .tl-grip, .grip, [data-nodrag]')) return;
+      st = { d: d, sc: scroller(e.target, d), x: e.touches[0].clientX, y: e.touches[0].clientY, dy: 0, on: false, t: 0 };
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (!st) return;
+      var x = e.touches[0].clientX, y = e.touches[0].clientY;
+      if (!st.on) {
+        var dx = x - st.x, dy0 = y - st.y;
+        if (Math.abs(dy0) < 6 && Math.abs(dx) < 6) return;
+        if (dy0 <= 0 || Math.abs(dx) > Math.abs(dy0) || (st.sc && st.sc.scrollTop > 0)) { st = null; return; }
+        st.on = true; st.y = y; st.t = Date.now();
+        st.d.style.transition = 'none';
+      }
+      e.preventDefault();
+      st.dy = Math.max(0, y - st.y);
+      st.d.style.translate = '0 ' + st.dy + 'px';
+    }, { passive: false });
+    var end = function () {
+      if (!st || !st.on) { st = null; return; }
+      var d = st.d, fast = st.dy > 40 && st.dy / Math.max(1, Date.now() - st.t) > 0.5;
+      d.style.transition = 'translate 0.2s ease';
+      if (st.dy > 110 || fast) {
+        d.style.translate = '0 100%';
+        setTimeout(function () { closeDialog(d); d.style.transition = d.style.translate = ''; }, 190);
+      } else {
+        d.style.translate = '0 0';
+        setTimeout(function () { d.style.transition = d.style.translate = ''; }, 210);
+      }
+      st = null;
+    };
+    document.addEventListener('touchend', end);
+    document.addEventListener('touchcancel', end);
+  })();
   function openDialog(d) { if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', ''); syncScrollLock(); }
   function closeDialog(d) { if (d.close) d.close(); else d.removeAttribute('open'); syncScrollLock(); }
   // Esc·폼 닫기 등 어떤 방식으로 닫혀도 고정 해제

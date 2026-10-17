@@ -155,7 +155,6 @@
   <div class="sheet-body">
     <header class="panel-head">
       <h2 id="nd-h">오늘의 관심 소식</h2>
-      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
     <div class="seg" role="tablist" aria-label="소식 종류">
       <button type="button" role="tab" class="seg-btn" data-kind="news" aria-selected="true">뉴스</button>
@@ -177,7 +176,6 @@
       <h2 id="sd-h">시즌 캘린더</h2>
       <div class="head-tools">
         <button type="button" class="add-icon" id="sd-add" aria-label="시즌 추가">+</button>
-        <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
       </div>
     </header>
 
@@ -234,7 +232,6 @@
   <div class="sheet-body">
     <header class="panel-head">
       <h2 id="up-h">다가오는 일정</h2>
-      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
     <div class="up-add">
       <h3 class="sub-h">빠르게 추가</h3>
@@ -245,8 +242,10 @@
     </form>
     <p class="hint qa-hint">하이픈(-)으로 나누면 여러 개, 앞의 숫자 4자리는 시간, 끝에 !를 붙이면 중요 일정이에요.</p>
     </div>
-    <ul class="daylist" id="uplist"></ul>
-    <p class="empty" id="up-empty" hidden>앞으로 예정된 일정이 없어요.</p>
+    <div class="up-scroll">
+      <ul class="daylist" id="uplist"></ul>
+      <p class="empty" id="up-empty" hidden>앞으로 예정된 일정이 없어요.</p>
+    </div>
   </div>
 </dialog>
 
@@ -255,7 +254,6 @@
   <div class="sheet-body">
     <header class="panel-head">
       <h2 id="wk-h">일주일 날씨 <span class="pill" id="wk-place"></span></h2>
-      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
     <div class="wk-loc">
       <div class="wk-loc-row">
@@ -279,7 +277,6 @@
   <div class="sheet-body">
     <header class="panel-head">
       <h2 id="eh-h">공부한 표현 <span class="pill mono" id="en-hist-count"></span></h2>
-      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
     <input type="search" class="eh-search" id="en-search" placeholder="영어나 한글로 검색 (예: feedback, 일정)" aria-label="표현 검색" autocomplete="off">
     <ul class="eh-list" id="en-hist"></ul>
@@ -291,7 +288,6 @@
   <div class="sheet-body">
     <header class="panel-head">
       <h2 id="cat-h">일정 카테고리</h2>
-      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
     <p class="hint">색을 눌러 바꾸고, 이름을 눌러 고칠 수 있어요. ↑↓로 순서를 바꾸면 범례와 선택 목록에 그대로 반영돼요. 맨 위 카테고리는 빠른 추가의 기본값이에요. 삭제한 카테고리의 일정은 '기타'(회색)로 보여요.</p>
     <ul class="cat-list" id="cat-list"></ul>
@@ -308,7 +304,6 @@
   <form class="sheet-body" id="rule-form" novalidate>
     <header class="panel-head">
       <h2 id="rule-h">옷차림 룰</h2>
-      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
     <p class="hint">출근(10시) 기온이 기준 이상인 첫 구간의 옷과 + 아이템을 보여줘요. 퇴근(20시)이 더 추운 구간이면 그 구간의 + 아이템을 방한템으로, 낮이 많이 더우면 쿨링템을 더해요. 쉼표로 구분해요.</p>
     <ol class="rule-list" id="rule-list"></ol>
@@ -325,7 +320,6 @@
   <form method="dialog" class="sheet-body" id="settings-form">
     <header class="panel-head">
       <h2>내 설정</h2>
-      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
     <div class="field">
       <label for="set-name">이름</label>
@@ -386,7 +380,6 @@
   <form class="sheet-body" id="sch-form" novalidate>
     <header class="panel-head">
       <h2 id="sch-dialog-h">일정 추가</h2>
-      <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
     <input type="hidden" id="sch-id">
     <div class="form-grid">
@@ -503,7 +496,6 @@
     </div>
     <div class="form-actions split">
       <button type="button" class="ghost-btn danger" id="dt-delete">삭제</button>
-      <button type="button" class="ghost-btn" data-close>닫기</button>
     </div>
   </div>
 </dialog>
