@@ -172,8 +172,9 @@
       showSeason([{ s: f, p: null }]);
       return;
     }
-    var top = ranked[0].p.score;
-    showSeason(ranked.filter(function (x) { return top - x.p.score < 0.001; }));
+    // 가장 절정인 시즌이 메인. 같은 단계·같은 점수면 함께 보여줘요
+    var first = ranked[0];
+    showSeason(ranked.filter(function (x) { return x.p.phase === first.p.phase && first.p.score - x.p.score < 0.001; }));
   }
 
   /* 시즌 목록 팝업: 보기 / 숨기기 / 직접 추가·삭제 */

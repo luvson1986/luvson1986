@@ -249,8 +249,10 @@ window.SEASONS = [
     return (list || window.SEASONS)
       .map(function (s) { var p = window.seasonPhase(s, date); return p && { s: s, p: p }; })
       .filter(Boolean)
-      .sort(function (a, b) { return b.p.score - a.p.score; });
+      // 절정인 시즌이 항상 먼저 → 다가오는 중 → 끝물. 같은 단계 안에서는 점수(관심도·가까움) 순
+      .sort(function (a, b) { return (PHASE_RANK[a.p.phase] - PHASE_RANK[b.p.phase]) || (b.p.score - a.p.score); });
   };
+  var PHASE_RANK = { peak: 0, rising: 1, fading: 2 };
 })();
 
 /*
