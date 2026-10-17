@@ -558,7 +558,7 @@ body.on-news::before {
 /* 모든 팝업은 바텀시트. 아이폰 홈 화면 앱은 고정 레이어·vh가 실제 화면보다 짧게 잡혀서
    bottom: 0 대신 JS로 잰 실제 화면 높이(--screen-h)에 시트 아래 끝을 맞춰요. */
 .sheet[open] {
-  margin: 0; inset: auto; left: 50%; top: calc(var(--screen-h, 100%) + var(--vv-top, 0px)); transform: translate(-50%, -100%);
+  margin: 0; inset: auto; left: 50%; top: var(--screen-h, 100%); transform: translate(-50%, -100%);
   width: min(560px, 100%); max-width: none; max-height: calc(var(--screen-h, 100vh) - env(safe-area-inset-top, 0px) - 16px);
   border-radius: 22px 22px 0 0; box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.25);
   padding-bottom: env(safe-area-inset-bottom, 0px);

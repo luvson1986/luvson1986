@@ -1012,44 +1012,43 @@
   setScreenH();
   window.addEventListener('resize', setScreenH);
   window.addEventListener('orientationchange', function () { setTimeout(setScreenH, 300); });
-  var fullVH = 0, wasKb = false;
-  function snapBack() {
-    if (!document.documentElement.classList.contains('modal-open')) return;
-    window.scrollTo(0, lockY);
-    var vv = window.visualViewport;
-    document.documentElement.style.setProperty('--vv-top', (vv && !typing() ? Math.max(0, vv.offsetTop) : 0) + 'px');
-  }
+  var fullVH = 0, wasKb = false, placing = 0;
   window.addEventListener('orientationchange', function () { fullVH = 0; });
-  function fitDialogToKeyboard() {
-    var vv = window.visualViewport, d = document.querySelector('dialog[open]');
-    if (!vv || !d) return;
-    // 아이폰 홈 화면 앱은 키보드가 떠도 innerHeight가 같이 줄어들 수 있어서, 지금까지 본 가장 큰 높이와 비교해요
-    fullVH = Math.max(fullVH, vv.height, typing() ? 0 : window.innerHeight);
-    var kbOpen = typing() && vv.height < fullVH - 80;
-    if (kbOpen) {
-      // 시트 아래 끝을 키보드 바로 위에 붙여요
-      d.style.top = (vv.offsetTop + vv.height) + 'px';
-      d.style.maxHeight = (vv.height - 8) + 'px';
-      var a = document.activeElement;
-      // scrollIntoView는 뒤 페이지까지 스크롤해서 시트가 밀려요 → 시트 안 스크롤만 움직여요
-      if (a && d.contains(a)) setTimeout(function () {
-        for (var sc = a.parentNode; sc && sc !== d.parentNode; sc = sc.parentNode) {
-          if (sc.scrollHeight > sc.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(sc).overflowY)) break;
-        }
-        if (!sc || sc === d.parentNode) return;
-        var r = a.getBoundingClientRect(), b = sc.getBoundingClientRect();
-        if (r.bottom > b.bottom - 8) sc.scrollTop += r.bottom - b.bottom + 8;
-        else if (r.top < b.top + 8) sc.scrollTop -= b.top + 8 - r.top;
-      }, 30);
-    } else {
-      d.style.top = d.style.maxHeight = '';
-      // 키보드가 내려간 뒤 아이폰이 화면을 밀어 둔 채로 두는 경우가 있어서, 내려가는 애니메이션이 끝날 때까지 몇 번 되돌려요
-      if (wasKb) [0, 250, 600].forEach(function (t) { setTimeout(snapBack, t); });
+  // 열린 시트의 아래 끝을 '지금 실제로 보이는 영역'의 아래 끝에 매 프레임 맞춰요.
+  // 아이폰은 키보드가 내려간 뒤에도 몇 초간 화면 기준점이 어긋나 있어서, 이벤트만으로는 따라가지 못해요.
+  function placeSheet() {
+    var vv = window.visualViewport, d = document.querySelector('dialog.sheet[open]');
+    if (!d) { placing = 0; return; }
+    if (vv) {
+      fullVH = Math.max(fullVH, vv.height, typing() ? 0 : window.innerHeight);
+      var kbOpen = typing() && vv.height < fullVH - 80;
+      var screenH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--screen-h')) || window.innerHeight;
+      var top = Math.round(vv.offsetTop + (kbOpen ? vv.height : Math.max(vv.height, screenH))) + 'px';
+      var mh = kbOpen ? Math.round(vv.height - 8) + 'px' : '';
+      if (d.style.top !== top) d.style.top = top;
+      if (d.style.maxHeight !== mh) d.style.maxHeight = mh;
+      if (wasKb && !kbOpen && window.scrollY !== lockY) window.scrollTo(0, lockY);
+      if (kbOpen && !wasKb) revealFocused(d);
+      wasKb = kbOpen;
     }
-    wasKb = kbOpen;
-    // 그래도 밀려 있으면 시트 아래 끝을 그만큼 내려서 화면 끝에 붙여요
-    document.documentElement.style.setProperty('--vv-top', (kbOpen ? 0 : Math.max(0, vv.offsetTop)) + 'px');
+    placing = requestAnimationFrame(placeSheet);
   }
+  function startPlacing() { if (!placing) placing = requestAnimationFrame(placeSheet); }
+  // 키보드가 올라오면 포커스된 입력칸이 시트 안에서 보이게 (scrollIntoView는 뒤 페이지까지 밀어서 안 써요)
+  function revealFocused(d) {
+    setTimeout(function () {
+      var a = document.activeElement;
+      if (!a || !d.contains(a)) return;
+      for (var sc = a.parentNode; sc && sc !== d.parentNode; sc = sc.parentNode) {
+        if (sc.scrollHeight > sc.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(sc).overflowY)) break;
+      }
+      if (!sc || sc === d.parentNode) return;
+      var r = a.getBoundingClientRect(), b = sc.getBoundingClientRect();
+      if (r.bottom > b.bottom - 8) sc.scrollTop += r.bottom - b.bottom + 8;
+      else if (r.top < b.top + 8) sc.scrollTop -= b.top + 8 - r.top;
+    }, 60);
+  }
+  function fitDialogToKeyboard() { startPlacing(); }
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', fitDialogToKeyboard);
     window.visualViewport.addEventListener('scroll', fitDialogToKeyboard);
@@ -1109,6 +1108,7 @@
     var a = document.activeElement;
     if (a && a !== d && d.contains(a) && typing()) { a.blur(); d.focus({ preventScroll: true }); }
     syncScrollLock();
+    startPlacing();
   }
   function closeDialog(d) { if (d.close) d.close(); else d.removeAttribute('open'); syncScrollLock(); }
   // Esc·폼 닫기 등 어떤 방식으로 닫혀도 고정 해제
