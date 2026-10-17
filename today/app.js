@@ -971,7 +971,7 @@
       return '<li class="tl-item ' + state + (s.important ? ' imp' : '') + (s.done ? ' done' : '') + (openEnded ? ' has-done' : '') + (movable ? ' movable' : '') + '" data-id="' + s.id + '" data-min="' + k + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="tl-time">' + (movable ? '<span class="tl-grip" aria-label="끌어서 옮기기">' + GRIP + '</span>' : timeLabel) + '</span><span class="tl-dot"></span>' +
         '<button type="button" class="tl-card" data-id="' + s.id + '">' +
-        '<span class="tl-title">' + esc(s.title) + (movable ? ' <span class="tl-tag">시간 미정</span>' : '') + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
+        '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
         (function () {
           var meta = [s.start ? s.start + (s.end ? '–' + s.end : '') : '', s.place ? esc(s.place) : ''].filter(Boolean).join(' · ') + (rel || '');
           return meta ? '<span class="tl-meta">' + meta.replace(/^ · /, '') + '</span>' : '';
