@@ -979,9 +979,12 @@
     var locked = document.documentElement.classList.contains('modal-open');
     if (anyOpen && !locked) {
       lockY = window.scrollY;
+      anchorSheets();
       document.documentElement.classList.add('modal-open');
     } else if (!anyOpen && locked) {
       document.documentElement.classList.remove('modal-open');
+      document.body.style.minHeight = '';
+      sheetZ = 0;
       if (window.scrollY !== lockY) window.scrollTo(0, lockY);
     }
   }
@@ -1012,66 +1015,30 @@
   setScreenH();
   window.addEventListener('resize', setScreenH);
   window.addEventListener('orientationchange', function () { setTimeout(setScreenH, 300); });
-  var fullVH = 0, wasKb = false, placing = 0;
-  window.addEventListener('orientationchange', function () { fullVH = 0; });
-  // 열린 시트의 아래 끝을 '지금 실제로 보이는 영역'의 아래 끝에 매 프레임 맞춰요.
-  // 아이폰은 키보드가 내려간 뒤에도 몇 초간 화면 기준점이 어긋나 있어서, 이벤트만으로는 따라가지 못해요.
-  function placeSheet() {
-    var vv = window.visualViewport, d = document.querySelector('dialog.sheet[open]');
-    if (!d) { placing = 0; sheetFill().hidden = true; return; }
-    if (vv) {
-      fullVH = Math.max(fullVH, vv.height, typing() ? 0 : window.innerHeight);
-      var kbOpen = typing() && vv.height < fullVH - 80;
-      var screenH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--screen-h')) || window.innerHeight;
-      // 아이폰은 상황에 따라 시트가 그려지는 층을 화면보다 짧게 잘라요(아래 띠 부분이 안 그려짐).
-      // 그래서 시트는 '보이는 영역' 아래 끝에 붙이고, 잘리는 아래 띠는 페이지 쪽에 같은 색 판을 깔아 이어 보이게 해요.
-      var visBottom = vv.offsetTop + vv.height;
-      var top = Math.round(visBottom) + 'px';
-      var mh = kbOpen ? Math.round(vv.height - 8) + 'px' : '';
-      var visH = Math.round(visBottom) + 'px';
-      if (document.documentElement.style.getPropertyValue('--vis-h') !== visH) document.documentElement.style.setProperty('--vis-h', visH);
-      if (d.style.top !== top) d.style.top = top;
-      if (d.style.maxHeight !== mh) d.style.maxHeight = mh;
-      var gap = kbOpen ? 0 : Math.round(screenH - visBottom);
-      var fill = sheetFill();
-      if (gap > 1 && !d.style.translate) {
-        var r = d.getBoundingClientRect();
-        fill.style.cssText = 'top:' + Math.round(window.scrollY + visBottom - 1) + 'px;height:' + (gap + 40) + 'px;left:' + Math.round(r.left) + 'px;width:' + Math.round(r.width) + 'px';
-        fill.hidden = false;
-      } else if (!fill.hidden) fill.hidden = true;
-      if (wasKb && !kbOpen && window.scrollY !== lockY) window.scrollTo(0, lockY);
-      if (kbOpen && !wasKb) revealFocused(d);
-      wasKb = kbOpen;
+  // 시트는 아이폰의 '화면 고정 레이어'를 쓰지 않고 페이지 위에 직접 얹어요.
+  // (홈 화면 앱에서 고정 레이어는 키보드·스크롤 뒤에 높이가 틀어지고 아래가 잘려서)
+  // 열릴 때 '지금 화면의 아래 끝'을 페이지 좌표로 한 번 재서 거기에 붙이고, 그 뒤로는 움직이지 않아요.
+  function anchorSheets() {
+    var screenH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--screen-h')) || window.innerHeight;
+    var y = window.scrollY + screenH;
+    document.documentElement.style.setProperty('--sheet-y', Math.round(y) + 'px');
+    document.body.style.minHeight = Math.round(y) + 'px';
+  }
+  // 키보드가 올라와도 시트는 그대로. 입력칸이 키보드에 가리면 시트 안 내용만 올려요.
+  function revealFocused() {
+    var a = document.activeElement, d = a && a.closest && a.closest('dialog.sheet[open]'), vv = window.visualViewport;
+    if (!d || !typing() || !vv) return;
+    var r = a.getBoundingClientRect(), limit = vv.offsetTop + vv.height - 12;
+    if (r.bottom <= limit) return;
+    for (var sc = a.parentNode; sc && sc !== d.parentNode; sc = sc.parentNode) {
+      if (sc.scrollHeight > sc.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(sc).overflowY)) break;
     }
-    placing = requestAnimationFrame(placeSheet);
+    if (sc && sc !== d.parentNode) sc.scrollTop += r.bottom - limit;
   }
-  var fillEl = null;
-  function sheetFill() {
-    if (!fillEl) { fillEl = document.createElement('div'); fillEl.className = 'sheet-fill'; fillEl.hidden = true; document.body.appendChild(fillEl); }
-    return fillEl;
-  }
-  function startPlacing() { if (!placing) placing = requestAnimationFrame(placeSheet); }
-  // 키보드가 올라오면 포커스된 입력칸이 시트 안에서 보이게 (scrollIntoView는 뒤 페이지까지 밀어서 안 써요)
-  function revealFocused(d) {
-    setTimeout(function () {
-      var a = document.activeElement;
-      if (!a || !d.contains(a)) return;
-      for (var sc = a.parentNode; sc && sc !== d.parentNode; sc = sc.parentNode) {
-        if (sc.scrollHeight > sc.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(sc).overflowY)) break;
-      }
-      if (!sc || sc === d.parentNode) return;
-      var r = a.getBoundingClientRect(), b = sc.getBoundingClientRect();
-      if (r.bottom > b.bottom - 8) sc.scrollTop += r.bottom - b.bottom + 8;
-      else if (r.top < b.top + 8) sc.scrollTop -= b.top + 8 - r.top;
-    }, 60);
-  }
-  function fitDialogToKeyboard() { startPlacing(); }
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', fitDialogToKeyboard);
-    window.visualViewport.addEventListener('scroll', fitDialogToKeyboard);
-  }
-  document.addEventListener('focusin', function () { setTimeout(fitDialogToKeyboard, 300); });
-  document.addEventListener('focusout', function () { setTimeout(function () { fitDialogToKeyboard(); resetModalScroll(); }, 120); });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', function () { setTimeout(revealFocused, 50); });
+  document.addEventListener('focusin', function () { setTimeout(revealFocused, 350); });
+  // 키보드가 내려가면 아이폰이 밀어 둔 페이지 위치만 되돌려요
+  document.addEventListener('focusout', function () { setTimeout(resetModalScroll, 150); });
   // 바텀시트를 아래로 끌어내리면 닫혀요 (안쪽 목록이 맨 위일 때만, 아니면 평소처럼 스크롤)
   (function () {
     var st = null;
@@ -1120,12 +1087,22 @@
   })();
   // 시트를 열 때 첫 입력칸에 자동으로 포커스가 가서 키보드가 뜨지 않도록, 시트 자체에 포커스를 줘요
   Array.prototype.forEach.call(document.querySelectorAll('dialog.sheet'), function (d) { d.setAttribute('tabindex', '-1'); d.setAttribute('autofocus', ''); });
+  var sheetZ = 0;
+  function topSheet() {
+    var best = null;
+    Array.prototype.forEach.call(document.querySelectorAll('dialog.sheet[open]'), function (o) { if (!best || (+o.style.zIndex || 0) >= (+best.style.zIndex || 0)) best = o; });
+    return best;
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var t = topSheet(); if (t) { e.preventDefault(); closeDialog(t); } } });
   function openDialog(d) {
-    if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
-    var a = document.activeElement;
-    if (a && a !== d && d.contains(a) && typing()) { a.blur(); d.focus({ preventScroll: true }); }
+    // 시트 위에 시트를 열면 새 것이 위로 와요
+    d.style.zIndex = 102 + (++sheetZ);
     syncScrollLock();
-    startPlacing();
+    if (!d.open) { if (d.show) d.show(); else d.setAttribute('open', ''); }
+    var a = document.activeElement;
+    if (a && a !== d && d.contains(a) && typing()) a.blur();
+    d.focus({ preventScroll: true });
+    syncScrollLock();
   }
   function closeDialog(d) { if (d.close) d.close(); else d.removeAttribute('open'); syncScrollLock(); }
   // Esc·폼 닫기 등 어떤 방식으로 닫혀도 고정 해제
@@ -1135,7 +1112,12 @@
   document.addEventListener('click', function (e) {
     var c = e.target.closest('[data-close]');
     if (c) closeDialog(c.closest('dialog'));
-    // 바깥(배경) 클릭으로 닫기
+    // 바깥(어두운 배경) 터치로 닫기: 배경 막은 body 위에 있어서 대상이 body로 잡혀요
+    if ((e.target === document.body || e.target === document.documentElement) && document.documentElement.classList.contains('modal-open')) {
+      var top = topSheet();
+      if (top) closeDialog(top);
+      return;
+    }
     if (e.target.tagName === 'DIALOG' && e.target.classList.contains('sheet')) {
       var r = e.target.getBoundingClientRect();
       if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeDialog(e.target);
