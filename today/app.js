@@ -1012,7 +1012,13 @@
   setScreenH();
   window.addEventListener('resize', setScreenH);
   window.addEventListener('orientationchange', function () { setTimeout(setScreenH, 300); });
-  var fullVH = 0;
+  var fullVH = 0, wasKb = false;
+  function snapBack() {
+    if (!document.documentElement.classList.contains('modal-open')) return;
+    window.scrollTo(0, lockY);
+    var vv = window.visualViewport;
+    document.documentElement.style.setProperty('--vv-top', (vv && !typing() ? Math.max(0, vv.offsetTop) : 0) + 'px');
+  }
   window.addEventListener('orientationchange', function () { fullVH = 0; });
   function fitDialogToKeyboard() {
     var vv = window.visualViewport, d = document.querySelector('dialog[open]');
@@ -1025,12 +1031,22 @@
       d.style.top = (vv.offsetTop + vv.height) + 'px';
       d.style.maxHeight = (vv.height - 8) + 'px';
       var a = document.activeElement;
-      if (a && d.contains(a)) setTimeout(function () { a.scrollIntoView({ block: 'nearest' }); }, 30);
+      // scrollIntoView는 뒤 페이지까지 스크롤해서 시트가 밀려요 → 시트 안 스크롤만 움직여요
+      if (a && d.contains(a)) setTimeout(function () {
+        for (var sc = a.parentNode; sc && sc !== d.parentNode; sc = sc.parentNode) {
+          if (sc.scrollHeight > sc.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(sc).overflowY)) break;
+        }
+        if (!sc || sc === d.parentNode) return;
+        var r = a.getBoundingClientRect(), b = sc.getBoundingClientRect();
+        if (r.bottom > b.bottom - 8) sc.scrollTop += r.bottom - b.bottom + 8;
+        else if (r.top < b.top + 8) sc.scrollTop -= b.top + 8 - r.top;
+      }, 30);
     } else {
       d.style.top = d.style.maxHeight = '';
-      // 키보드가 내려간 뒤 아이폰이 화면을 밀어 둔 채로 두는 경우가 있어서 되돌려요
-      if (vv.offsetTop > 0) window.scrollTo(0, document.documentElement.classList.contains('modal-open') ? lockY : window.scrollY);
+      // 키보드가 내려간 뒤 아이폰이 화면을 밀어 둔 채로 두는 경우가 있어서, 내려가는 애니메이션이 끝날 때까지 몇 번 되돌려요
+      if (wasKb) [0, 250, 600].forEach(function (t) { setTimeout(snapBack, t); });
     }
+    wasKb = kbOpen;
     // 그래도 밀려 있으면 시트 아래 끝을 그만큼 내려서 화면 끝에 붙여요
     document.documentElement.style.setProperty('--vv-top', (kbOpen ? 0 : Math.max(0, vv.offsetTop)) + 'px');
   }
