@@ -147,7 +147,7 @@ a { color: var(--accent); }
 .season-box { display: grid; gap: 8px; justify-items: start; padding-right: 80px; }
 .season-main { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-radius: 8px; }
 .season-main:focus-visible, .kw-chip:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-.season-name { font: 700 clamp(26px, 6vw, 34px)/1.1 var(--f-display); text-shadow: 0 2px 16px rgba(0, 0, 0, 0.25); }
+.season-name { font: 700 clamp(22px, calc(6vw - 4px), 30px)/1.15 var(--f-body); text-shadow: 0 2px 16px rgba(0, 0, 0, 0.25); }
 .season-main:hover .season-name { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
 .phase {
   display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700;
@@ -551,7 +551,7 @@ body.on-news::before {
 .form-grid .full { grid-column: 1 / -1; }
 .field textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
 .dt-head { display: grid; gap: 4px; min-width: 0; flex: 1; }
-.dt-head h2 { font-size: 19px; }
+.dt-head h2 { font-size: 21px; line-height: 1.3; margin: 6px 0 6px -4px; }
 .dt-head .tl-tag { justify-self: start; background: var(--surface-2); }
 .dt-meta { margin: 0; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .cal-block { display: grid; gap: 8px; }
@@ -807,7 +807,7 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .tl-item.done .tl-title { text-decoration: line-through; }
 
 /* 상세: 앞·뒤 일정 */
-.dt-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: -4px; }
+.dt-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .dt-nav .ghost-btn:disabled { opacity: 0.35; cursor: default; }
 .dt-pos { font-size: 12px; color: var(--ink-3); }
 /* 날짜를 넘겨 내용이 짧아져도 화면이 위로 끌려 올라가지 않게 아래 여유 공간 */
@@ -854,7 +854,7 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 /* 상세: 제자리 편집 */
 .dt-editable { cursor: text; border-radius: 6px; margin-left: -4px; padding: 1px 4px; }
 .dt-editable:hover, .dt-editable:focus-visible { background: var(--surface-2); outline: none; }
-.dt-title-in { font: 700 19px/1.3 var(--f-body); width: 100%; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--accent); background: var(--surface); color: var(--ink); }
+.dt-title-in { margin: 6px 0; font: 700 21px/1.3 var(--f-body); width: 100%; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--accent); background: var(--surface); color: var(--ink); }
 .dt-when, .dt-place-edit { display: grid; gap: 8px; padding: 10px; border-radius: var(--r-s); background: var(--surface-2); }
 .dt-when input[type="date"], .dt-when input[type="time"], .dt-place-edit input:not([type]) { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); width: 100%; min-width: 0; }
 .dt-times { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; align-items: center; }
