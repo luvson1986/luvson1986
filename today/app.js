@@ -1138,7 +1138,7 @@
         })() +
         (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
         '</button>' +
-        (openEnded ? '<button type="button" class="tl-done" data-done="' + s.id + '" aria-pressed="' + !!s.done + '" aria-label="' + esc(s.title) + (s.done ? ' 완료 취소' : ' 완료') + '">' + (s.done ? '✓ 완료' : '완료') + '</button>' : '') +
+        (openEnded ? '<button type="button" class="tl-done" data-done="' + s.id + '" aria-pressed="' + !!s.done + '" aria-label="' + esc(s.title) + (s.done ? ' 완료 취소' : ' 완료') + '"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' : '') +
         '</li>';
     };
     var html = '';
@@ -1154,9 +1154,7 @@
       if (!nowPlaced && nowMin < st) { html += nowRow(now); nowPlaced = true; }
       // 종료 시간이 없으면 '완료'를 누를 때까지 진행 중
       var state = s.done || diff < 0 ? 'past' : diff > 0 ? '' : en != null && en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
-      var rel = '';
-      if (s.done) rel = ' · 완료';
-      html += card(s, state, s.start, rel, k);
+      html += card(s, state, s.start, '', k);
       if (!nowPlaced && state === 'current') { html += nowRow(now); nowPlaced = true; }
     });
     $('timeline').innerHTML = html;
