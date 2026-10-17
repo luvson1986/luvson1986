@@ -553,7 +553,11 @@ body.on-news::before {
   background: var(--surface); color: var(--ink);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
 }
-.sheet::backdrop { background: rgba(8, 12, 20, 0.5); inset: -25vh 0; }
+.sheet::backdrop { background: transparent; }
+/* 아이폰 홈 화면 앱은 화면 고정 레이어가 아래쪽까지 닿지 않아(::backdrop도 마찬가지) 밝은 띠가 남아요.
+   그래서 어둡게 덮는 막을 화면이 아니라 페이지 전체에 깔아요. 팝업이 열린 동안은 스크롤이 막혀 있어요. */
+html.modal-open body { position: relative; min-height: 100lvh; }
+html.modal-open body::after { content: ""; position: absolute; inset: 0; z-index: 100; background: rgba(8, 12, 20, 0.5); }
 .sheet-body { display: grid; gap: 16px; padding: 20px; }
 .tag-input { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; }
 .tag-input input { border: 0; padding: 4px 6px; flex: 1 1 140px; width: auto; outline: none; }
