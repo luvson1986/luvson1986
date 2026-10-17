@@ -962,7 +962,7 @@
     schedules[plus(2)] = [ex('s8', '', '세탁소', 'personal'), ex('s9', '', '공과금 납부', 'personal'), ex('s10', '18:00', '영화', 'personal', { important: true })];
     schedules[plus(4)] = [ex('s11', '', '조식', 'personal'), ex('s12', '', '출근', 'focus'), ex('s13', '', '마사지', 'health')];
   }
-  var saveSchedules = function () { store.set('schedules', schedules); };
+  var saveSchedules = function () { store.set('schedules', schedules); if (typeof scheduleReminders === 'function') setTimeout(scheduleReminders, 0); };
   var toMin = function (hm) { if (!hm) return -1; var p = hm.split(':'); return +p[0] * 60 + +p[1]; };
   var parseYmd = function (k) { var p = k.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); };
 
@@ -1250,6 +1250,7 @@
     detail = { key: key, id: id };
     var d = parseYmd(key);
     renderDetailCat(s);
+    renderRemind(s);
     var order = allEventsOrdered(), pos = order.findIndex(function (x) { return x.key === key && x.id === id; });
     $('dt-prev').disabled = pos <= 0;
     $('dt-next').disabled = pos < 0 || pos >= order.length - 1;
@@ -1284,6 +1285,64 @@
     }).join('');
   }
 
+  /* ---------- 일정 알림 ----------
+     시간 있는 일정은 기본 30분 전. 앱이 켜져 있거나 최근에 열려 있으면 알림을 띄우고,
+     아이폰 캘린더로 보낸 일정에는 같은 시간의 캘린더 알림이 들어가요(앱이 꺼져 있어도 울려요). */
+  function remindOf(s) { if (!s || !s.start) return 0; return s.remind == null ? 30 : s.remind; }
+  function renderRemind(s) {
+    var r = remindOf(s), timed = !!s.start;
+    $('dt-remind').hidden = !timed;
+    Array.prototype.forEach.call($('dt-remind').children, function (b) { b.setAttribute('aria-checked', String(+b.dataset.r === r)); });
+    var perm = 'Notification' in window ? Notification.permission : 'unsupported';
+    $('dt-remind-hint').textContent = !timed ? '시간을 정하면 알림을 받을 수 있어요.'
+      : perm === 'denied' ? '알림이 꺼져 있어요. 아이폰 설정 → 알림 → 오늘에서 허용해 주세요.'
+      : perm === 'unsupported' ? '이 브라우저는 알림을 지원하지 않아요. 홈 화면에 추가한 앱에서 써 주세요.'
+      : r ? '앱이 꺼져 있으면 울리지 않을 수 있어요. 확실하게 받으려면 아래 iPhone 캘린더로도 추가하세요.' : '';
+    if (timed && r && perm === 'default') {
+      $('dt-remind-hint').innerHTML = '알림을 받으려면 먼저 허용해 주세요. <button type="button" class="link-btn" id="dt-perm">알림 허용하기</button>';
+      $('dt-perm').onclick = function () { askNotifyPermission().then(function () { renderRemind(s); scheduleReminders(); }); };
+    }
+  }
+  var remindTimers = [];
+  function notify(s, key) {
+    var mins = Math.max(0, Math.round((startDate(key, s) - Date.now()) / 60000));
+    var body = (mins ? mins + '분 후 시작' : '곧 시작') + ' · ' + s.start + (s.place ? ' · ' + s.place : '');
+    var opts = { body: body, tag: 'remind-' + s.id + '-' + key, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { url: './' } };
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then(function (reg) { reg.showNotification(s.title, opts); });
+    } else if ('Notification' in window && Notification.permission === 'granted') {
+      try { new Notification(s.title, opts); } catch (e) { /* 무시 */ }
+    }
+    toast('🔔 ' + s.title + ' · ' + body);
+  }
+  function startDate(key, s) { var d = parseYmd(key), p = s.start.split(':'); d.setHours(+p[0], +p[1], 0, 0); return d.getTime(); }
+  function scheduleReminders() {
+    remindTimers.forEach(clearTimeout); remindTimers = [];
+    var fired = store.get('fired', {}), now = Date.now(), changed = false;
+    var keys = [ymd(new Date()), ymd(new Date(now + 864e5))];
+    keys.forEach(function (key) {
+      (schedules[key] || []).forEach(function (s) {
+        var r = remindOf(s); if (!r || s.done) return;
+        var at = startDate(key, s) - r * 60000, id = s.id + '@' + key + '@' + s.start + '@' + r;
+        if (fired[id]) return;
+        if (at <= now) {
+          // 알림 시각이 지났지만 아직 시작 전이면 지금이라도 알려줘요
+          if (startDate(key, s) > now && now - at < 60 * 60000) { notify(s, key); fired[id] = 1; changed = true; }
+          return;
+        }
+        if (at - now < 864e5) remindTimers.push(setTimeout(function () {
+          var f = store.get('fired', {}); if (f[id]) return;
+          f[id] = 1; store.set('fired', f); notify(s, key);
+        }, at - now));
+      });
+    });
+    if (changed) store.set('fired', fired);
+  }
+  function askNotifyPermission() {
+    if (!('Notification' in window) || Notification.permission !== 'default') return Promise.resolve();
+    return Notification.requestPermission().catch(function () {});
+  }
+
   /* 캘린더 연동 */
   function stamp(key, hm) { return key.replace(/-/g, '') + 'T' + hm.replace(':', '') + '00'; }
   function nextDayKey(key) { var d = parseYmd(key); d.setDate(d.getDate() + 1); return ymd(d); }
@@ -1316,7 +1375,7 @@
       'SUMMARY:' + escI(s.title),
       s.place ? 'LOCATION:' + escI(s.place) : '',
       s.memo ? 'DESCRIPTION:' + escI(s.memo) : '',
-      'BEGIN:VALARM', 'TRIGGER:-PT10M', 'ACTION:DISPLAY', 'DESCRIPTION:' + escI(s.title), 'END:VALARM',
+      remindOf(s) ? ['BEGIN:VALARM', 'TRIGGER:-PT' + remindOf(s) + 'M', 'ACTION:DISPLAY', 'DESCRIPTION:' + escI(s.title), 'END:VALARM'].join('\r\n') : '',
       'END:VEVENT', 'END:VCALENDAR'
     ].filter(Boolean).join('\r\n');
   }
@@ -1449,6 +1508,14 @@
         var links = calendarLinks(detail.key, s);
         $('cal-google').href = links.google;
       }, 400);
+    });
+    $('dt-remind').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-r]'); if (!b) return;
+      var s = findItem(detail.key, detail.id); if (!s) return;
+      s.remind = +b.dataset.r; s.rev = (s.rev || 0) + 1;
+      saveSchedules();
+      var after = function () { renderRemind(s); scheduleReminders(); toast(s.remind ? '시작 ' + (s.remind === 60 ? '1시간' : s.remind + '분') + ' 전에 알려드릴게요' : '알림을 껐어요'); };
+      if (s.remind) askNotifyPermission().then(after); else after();
     });
     $('dt-prev').onclick = function () { stepDetail(-1); };
     $('dt-next').onclick = function () { stepDetail(1); };
@@ -2095,5 +2162,7 @@
   loadWeather().then(renderWeather).then(hideSplash, hideSplash);
   initNews();
 
+  scheduleReminders();
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) scheduleReminders(); });
   setInterval(function () { renderGreeting(); if (ymd(viewDate) === ymd(new Date())) renderSchedule(); else renderNowNext(); }, 60 * 1000);
 })();

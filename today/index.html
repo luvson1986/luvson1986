@@ -459,6 +459,17 @@
       </div>
       <button type="button" class="icon-btn plain" data-close aria-label="닫기">✕</button>
     </header>
+    <div class="remind" id="dt-remind-wrap">
+      <span class="field-label">알림</span>
+      <div class="remind-opts" id="dt-remind" role="radiogroup" aria-label="알림">
+        <button type="button" role="radio" data-r="0">끄기</button>
+        <button type="button" role="radio" data-r="5">5분 전</button>
+        <button type="button" role="radio" data-r="10">10분 전</button>
+        <button type="button" role="radio" data-r="30">30분 전</button>
+        <button type="button" role="radio" data-r="60">1시간 전</button>
+      </div>
+      <p class="hint" id="dt-remind-hint"></p>
+    </div>
     <div class="field">
       <label for="dt-memo">메모</label>
       <textarea id="dt-memo" rows="4" maxlength="1000" placeholder="회의 안건, 준비물, 회고를 적어 두세요"></textarea>

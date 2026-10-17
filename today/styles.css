@@ -820,3 +820,9 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .hero-motif.pair span { display: inline-block; }
 .hero-motif.pair span:nth-child(1) { transform: rotate(-6deg); position: relative; z-index: 1; }
 .hero-motif.pair span:nth-child(2) { font-size: 1em; align-self: center; margin-left: -0.6em; margin-top: 0.3em; transform: rotate(14deg); }
+
+/* 일정 알림 */
+.remind { display: grid; gap: 6px; }
+.remind-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.remind-opts button { border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 6px 11px; font-size: 13px; cursor: pointer; }
+.remind-opts button[aria-checked="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); font-weight: 700; }
