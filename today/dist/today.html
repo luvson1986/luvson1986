@@ -3491,19 +3491,17 @@ window.FLAG_COLORS = {
   function nextDayKey(key) { var d = parseYmd(key); d.setDate(d.getDate() + 1); return ymd(d); }
   function endOf(s) { if (s.end) return s.end; if (!s.start) return ''; var m = Math.min(toMin(s.start) + 60, 23 * 60 + 59); return pad(Math.floor(m / 60)) + ':' + pad(m % 60); }
   function calendarLinks(key, s) {
-    var tz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || 'Asia/Seoul';
+    // 시간대를 붙이지 않아요: 어느 나라에 있든 적어 둔 시각 그대로(현지 시각) 보이게
     var end = endOf(s);
     var details = s.memo || '';
     var g = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
       '&text=' + encodeURIComponent(s.title) +
       '&dates=' + (s.start ? stamp(key, s.start) + '/' + stamp(key, end) : key.replace(/-/g, '') + '/' + nextDayKey(key).replace(/-/g, '')) +
-      '&ctz=' + encodeURIComponent(tz) +
       (details ? '&details=' + encodeURIComponent(details) : '') +
       (s.place ? '&location=' + encodeURIComponent(s.place) : '');
     return { google: g };
   }
   function icsText(key, s) {
-    var tz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || 'Asia/Seoul';
     var escI = function (v) { return String(v || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1'); };
     var nowUtc = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
     return [
@@ -3513,8 +3511,9 @@ window.FLAG_COLORS = {
       'SEQUENCE:' + (s.rev || 0),
       'DTSTAMP:' + nowUtc,
       'LAST-MODIFIED:' + nowUtc,
-      s.start ? 'DTSTART;TZID=' + tz + ':' + stamp(key, s.start) : 'DTSTART;VALUE=DATE:' + key.replace(/-/g, ''),
-      s.start ? 'DTEND;TZID=' + tz + ':' + stamp(key, endOf(s)) : 'DTEND;VALUE=DATE:' + nextDayKey(key).replace(/-/g, ''),
+      // 시간대 없는 '떠 있는 시각': 해외에 가도 8시는 8시로 보여요
+      s.start ? 'DTSTART:' + stamp(key, s.start) : 'DTSTART;VALUE=DATE:' + key.replace(/-/g, ''),
+      s.start ? 'DTEND:' + stamp(key, endOf(s)) : 'DTEND;VALUE=DATE:' + nextDayKey(key).replace(/-/g, ''),
       'SUMMARY:' + escI(s.title),
       s.place ? 'LOCATION:' + escI(s.place) : '',
       s.memo ? 'DESCRIPTION:' + escI(s.memo) : '',
