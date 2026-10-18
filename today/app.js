@@ -1541,7 +1541,12 @@
         }
         if (at - now < 864e5) remindTimers.push(setTimeout(function () {
           var f = store.get('fired', {}); if (f[id]) return;
-          f[id] = 1; store.set('fired', f); notify(s, key);
+          f[id] = 1; store.set('fired', f);
+          // 앱이 꺼져 있는 동안 아이폰이 타이머를 멈췄다가 다시 열 때 한꺼번에 울려요.
+          // 이미 일정이 시작됐거나 알림 시각에서 3분 넘게 늦었으면 울리지 않아요.
+          var t = Date.now();
+          if (t >= startDate(key, s) || t - at > 3 * 60000) return;
+          notify(s, key);
         }, at - now));
       });
     });
