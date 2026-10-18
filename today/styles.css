@@ -710,6 +710,17 @@ a.wk-row:active { background: var(--surface-2); }
 @media (max-width: 820px), (pointer: coarse) {
   input, select, textarea, .cl-text, .cl-title, .cl-new-input, .qa input, .eh-search, .rule-name, .rule-num, .rule-items, .rule-plus, .cat-name, #cat-new-name { font-size: 16px !important; }
 }
+/* 해외 + 라이트 모드 + 밝은 국기: 진한 글자 */
+.hero.ink-dark { color: #14181f; }
+.hero.ink-dark::after { background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 45%, rgba(8, 12, 20, 0.18) 100%); }
+.hero.ink-dark .season-name { text-shadow: 0 1px 10px rgba(255, 255, 255, 0.5); }
+.hero.ink-dark .kw-chip { color: #14181f; background: rgba(255, 255, 255, 0.55); border-color: rgba(20, 24, 31, 0.18); }
+.hero.ink-dark .icon-btn.glass { color: #14181f; background: rgba(20, 24, 31, 0.08); }
+.hero.ink-dark .phase { background: #14181f; color: #fff; }
+.hero.ink-dark .hero-nn .nn-item { color: #14181f; background: rgba(255, 255, 255, 0.6); }
+.hero.ink-dark .hero-nn .nn-item:hover { background: rgba(255, 255, 255, 0.75); }
+.hero.ink-dark .nn-bar { background: rgba(20, 24, 31, 0.15); }
+.hero.ink-dark .nn-bar i { background: #14181f; }
 .hero.travel .hero-motif { font-size: clamp(80px, 18vw, 150px); transform: rotate(-8deg); }
 a.kw-chip { text-decoration: none; }
 

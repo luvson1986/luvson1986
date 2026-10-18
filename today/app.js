@@ -614,13 +614,38 @@
     }).catch(function () { return null; });
   }
   /* 해외에 있으면 시즌 대신 도시 이름 + 국기 + 그 나라 여행 키워드 */
-  var travelMode = false;
+  var travelMode = false, travelBands = null;
+  // 해외: 국기 색을 국기 속 면적 비율 그대로 배경에. 라이트는 원색, 다크는 어둡게 눌러서.
+  var hexRgb = function (h) { h = h.replace('#', ''); return [0, 2, 4].map(function (i) { return parseInt(h.substr(i, 2), 16); }); };
+  var rgbHex = function (c) { return '#' + c.map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join(''); };
+  var mixHex = function (a, b, t) { var x = hexRgb(a), y = hexRgb(b); return rgbHex(x.map(function (v, i) { return v + (y[i] - v) * t; })); };
+  function paintFlag() {
+    if (!travelBands) return;
+    var dark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+    // 라이트: 국기 색을 밝게 풀어 쓰고 진한 글자 / 다크: 어둡게 눌러 쓰고 흰 글자 (색 비율은 그대로)
+    var cols = travelBands.map(function (b) { return [dark ? mixHex(b[0], '#0b1018', 0.55) : mixHex(b[0], '#ffffff', 0.5), b[1]]; });
+    var total = cols.reduce(function (s, b) { return s + b[1]; }, 0), at = 0, stops = [];
+    cols.forEach(function (b, i) {
+      var from = at / total * 100, to = (at += b[1]) / total * 100, soft = Math.min(3, (to - from) / 4);
+      stops.push(b[0] + ' ' + (i ? from + soft : 0).toFixed(1) + '%', b[0] + ' ' + (i < cols.length - 1 ? to - soft : 100).toFixed(1) + '%');
+    });
+    var hero = $('hero');
+    hero.style.background = 'linear-gradient(160deg, ' + stops.join(', ') + ')';
+    hero.classList.toggle('ink-dark', !dark);
+    var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', cols[0][0]);
+    document.documentElement.style.setProperty('--hero-a', cols[0][0]);
+    document.documentElement.style.setProperty('--hero-b', cols[cols.length - 1][0]);
+  }
+  if (window.matchMedia) {
+    var mqDark = matchMedia('(prefers-color-scheme: dark)');
+    (mqDark.addEventListener ? mqDark.addEventListener.bind(mqDark, 'change') : mqDark.addListener.bind(mqDark))(paintFlag);
+  }
   function flagOf(cc) { return cc && cc.length === 2 ? String.fromCodePoint.apply(null, cc.toUpperCase().split('').map(function (c) { return 0x1F1E6 + c.charCodeAt(0) - 65; })) : '🌏'; }
   function applyPlace(w) {
     var cc = (w.cc || '').toUpperCase();
     var inKorea = cc === 'KR' || (!cc && w.lat > 32.5 && w.lat < 39 && w.lon > 124 && w.lon < 132);
     if (!cc || cc === 'KR') {
-      if (travelMode) { travelMode = false; $('hero').classList.remove('travel'); }
+      if (travelMode) { travelMode = false; travelBands = null; $('hero').classList.remove('travel', 'ink-dark'); $('hero').style.background = ''; }
       if (inKorea && !w.sample) {
         seasonCtx = { lat: w.lat, elev: w.elev, anomaly: null, today: new Date(), place: w.place };
         initSeason();
@@ -644,11 +669,10 @@
     var kw = (city ? city.kw : t.kw).slice(0, 3), place = city ? city.name : w.place;
     var root = document.documentElement;
     var fc = (window.FLAG_COLORS || {})[cc] || ['#1d4e89', '#4f86c6', '#e8f4ff'];
-    root.style.setProperty('--hero-a', fc[0]);
-    root.style.setProperty('--hero-b', fc[1]);
     root.style.setProperty('--season', fc[2]);
-    var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', fc[0]);
+    travelBands = (window.FLAG_BANDS || {})[cc] || [[fc[1], 1], [fc[2], 1], [fc[0], 1]];
     $('hero').classList.add('travel');
+    paintFlag();
     $('season-name').textContent = place;
     $('season-phase').textContent = flagOf(cc) + ' ' + t.name;
     $('season-phase').dataset.phase = 'travel';
