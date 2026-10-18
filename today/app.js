@@ -1235,7 +1235,9 @@
   }
 
   /* 지금 · 다음 (홈 상단 요약) */
-  function relLabel(m) { return m < 60 ? m + '분 후' : Math.floor(m / 60) + '시간' + (m % 60 ? ' ' + (m % 60) + '분' : '') + ' 후'; }
+  // 198분 → 3시간 18분
+  function dur(m) { return m < 60 ? m + '분' : Math.floor(m / 60) + '시간' + (m % 60 ? ' ' + (m % 60) + '분' : ''); }
+  function relLabel(m) { return dur(m) + ' 후'; }
   // 시간 있는 일정 우선, 비는 시간에는 시간 미정 일정을 쌓인 순서대로 보여줘요
   // 지금: 진행 중인 일정 → 없으면 자리가 이미 지난 시간 미정 일정. 지금이 비면 다음 할 일 두 개.
   function renderNowNext() {
@@ -1264,8 +1266,8 @@
     var html = '';
     if (cur && cur.start && cur.end) {
       var st = toMin(cur.start), en = toMin(cur.end);
-      html += item(cur, 'current', '진행 중 · ' + (en - nm) + '분 남음', Math.round((nm - st) / (en - st) * 100));
-    } else if (cur && cur.start) html += item(cur, 'current', '진행 중 · ' + (nm - toMin(cur.start)) + '분째');
+      html += item(cur, 'current', '진행 중 · ' + dur(en - nm) + ' 남음', Math.round((nm - st) / (en - st) * 100));
+    } else if (cur && cur.start) html += item(cur, 'current', '진행 중 · ' + dur(nm - toMin(cur.start)) + '째');
     else if (cur) html += item(cur, 'current', '지금 할 일');
     var nexts = upcoming.slice(0, cur ? 1 : 2);
     html += nexts.map(function (s) { return item(s, 'next', nextLabel(s)); }).join('');
