@@ -619,19 +619,49 @@
   var hexRgb = function (h) { h = h.replace('#', ''); return [0, 2, 4].map(function (i) { return parseInt(h.substr(i, 2), 16); }); };
   var rgbHex = function (c) { return '#' + c.map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join(''); };
   var mixHex = function (a, b, t) { var x = hexRgb(a), y = hexRgb(b); return rgbHex(x.map(function (v, i) { return v + (y[i] - v) * t; })); };
+  var lum = function (h) { return hexRgb(h).reduce(function (s, v, i) { v /= 255; v = v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); return s + v * [0.2126, 0.7152, 0.0722][i]; }, 0); };
+  function toHsl(h) {
+    var c = hexRgb(h).map(function (v) { return v / 255; }), mx = Math.max.apply(null, c), mn = Math.min.apply(null, c), l = (mx + mn) / 2, d = mx - mn, hh = 0, ss = 0;
+    if (d) { ss = d / (1 - Math.abs(2 * l - 1)); hh = mx === c[0] ? ((c[1] - c[2]) / d) % 6 : mx === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4; hh *= 60; if (hh < 0) hh += 360; }
+    return [hh, ss, l];
+  }
+  function fromHsl(hh, ss, l) {
+    var c = (1 - Math.abs(2 * l - 1)) * ss, x = c * (1 - Math.abs((hh / 60) % 2 - 1)), m = l - c / 2, r;
+    r = hh < 60 ? [c, x, 0] : hh < 120 ? [x, c, 0] : hh < 180 ? [0, c, x] : hh < 240 ? [0, x, c] : hh < 300 ? [x, 0, c] : [c, 0, x];
+    return rgbHex(r.map(function (v) { return (v + m) * 255; }));
+  }
+  // 해외: 국기에 쓰인 색들을 그라데이션으로 섞되, 각 색이 국기에서 차지하는 만큼의 면적으로.
+  // 낮(라이트)은 맑은 원색, 밤(다크)은 같은 색을 깊게 (빨강 → 버건디, 파랑 → 딥 네이비, 흰색 → 그 나라 색이 도는 차콜)
   function paintFlag() {
     if (!travelBands) return;
     var dark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
-    // 라이트: 국기 색을 밝게 풀어 쓰고 진한 글자 / 다크: 어둡게 눌러 쓰고 흰 글자 (색 비율은 그대로)
-    var cols = travelBands.map(function (b) { return [dark ? mixHex(b[0], '#0b1018', 0.55) : mixHex(b[0], '#ffffff', 0.5), b[1]]; });
-    var total = cols.reduce(function (s, b) { return s + b[1]; }, 0), at = 0, stops = [];
+    // 같은 색은 합쳐서 비율만 남겨요 (국기에 나오는 순서 유지)
+    var agg = [];
+    travelBands.forEach(function (b) {
+      var hit = agg.filter(function (a) { return a[0].toLowerCase() === b[0].toLowerCase(); })[0];
+      if (hit) hit[1] += b[1]; else agg.push([b[0], b[1]]);
+    });
+    var isWhite = function (h) { var x = toHsl(h); return x[2] > 0.9; };
+    var main = agg.filter(function (a) { return !isWhite(a[0]); }).sort(function (x, y) { return y[1] - x[1]; })[0] || agg[0];
+    // 흰색은 맨 끝(오른쪽 아래)으로: 글자가 놓이는 위쪽은 색이 있는 쪽이 되게
+    agg = agg.filter(function (a) { return !isWhite(a[0]); }).concat(agg.filter(function (a) { return isWhite(a[0]); }));
+    var cols = agg.map(function (a) {
+      var c = a[0], x = toHsl(c);
+      if (dark) c = isWhite(c) ? mixHex(main[0], '#0b1018', 0.8) : fromHsl(x[0], Math.min(1, x[1] * 0.9), Math.max(0.1, x[2] * 0.42));
+      else c = isWhite(c) ? mixHex('#ffffff', main[0], 0.1) : fromHsl(x[0], x[1], Math.min(0.62, Math.max(0.34, x[2])));
+      return [c, a[1]];
+    });
+    var total = cols.reduce(function (s, b) { return s + b[1]; }, 0), at = 0, stops = [], top = 0, topW = 0;
     cols.forEach(function (b, i) {
-      var from = at / total * 100, to = (at += b[1]) / total * 100, soft = Math.min(3, (to - from) / 4);
-      stops.push(b[0] + ' ' + (i ? from + soft : 0).toFixed(1) + '%', b[0] + ' ' + (i < cols.length - 1 ? to - soft : 100).toFixed(1) + '%');
+      var from = at / total * 100, to = (at += b[1]) / total * 100, blend = (to - from) * 0.3;
+      stops.push(b[0] + ' ' + (i ? from + blend : 0).toFixed(1) + '%', b[0] + ' ' + (i < cols.length - 1 ? to - blend : 100).toFixed(1) + '%');
+      // 글자가 놓이는 위쪽 60% 밝기
+      var o = Math.max(0, Math.min(to, 60) - from);
+      if (o > 0) { top += lum(b[0]) * o; topW += o; }
     });
     var hero = $('hero');
     hero.style.background = 'linear-gradient(160deg, ' + stops.join(', ') + ')';
-    hero.classList.toggle('ink-dark', !dark);
+    hero.classList.toggle('ink-dark', !dark && topW > 0 && top / topW > 0.4);
     var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', cols[0][0]);
     document.documentElement.style.setProperty('--hero-a', cols[0][0]);
     document.documentElement.style.setProperty('--hero-b', cols[cols.length - 1][0]);
