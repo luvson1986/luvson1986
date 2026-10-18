@@ -330,7 +330,7 @@
   /* ---------- 계절 배경 장면 (canvas) ---------- */
   var scene = (function () {
     var canvas = $('hero-canvas'), ctx = canvas.getContext('2d');
-    var parts = [], type = 'petals', accent = '#fff', raf = 0, w = 0, h = 0, t0 = 0, emojis = [], floats = [];
+    var parts = [], type = 'petals', accent = '#fff', raf = 0, w = 0, h = 0, t0 = 0, emojis = [], floats = [], palOverride = null, sizeRange = null;
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var rnd = function (a, b) { return a + Math.random() * (b - a); };
     var PALETTE = {
@@ -352,7 +352,7 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     function make(initial) {
-      var pal = PALETTE[type] || ['#fff'];
+      var pal = palOverride || PALETTE[type] || ['#fff'];
       var p = { x: rnd(0, w), y: initial ? rnd(0, h) : -20, c: pal[(Math.random() * pal.length) | 0], a: rnd(0, Math.PI * 2), va: rnd(-0.03, 0.03), ph: rnd(0, 6.28) };
       switch (type) {
         case 'petals': p.s = rnd(5, 10); p.vy = rnd(0.4, 1.1); p.vx = rnd(0.2, 0.8); break;
@@ -360,7 +360,7 @@
         case 'snow': p.s = rnd(1.5, 4); p.vy = rnd(0.3, 1.0); p.vx = rnd(-0.3, 0.3); break;
         case 'rain': p.s = rnd(10, 22); p.vy = rnd(6, 10); p.vx = -1.2; break;
         case 'sea': p.s = rnd(2, 6); p.y = initial ? rnd(0, h) : h + 10; p.vy = -rnd(0.3, 0.9); p.vx = 0; break;
-        case 'lights': p.s = rnd(2, 7); p.y = initial ? rnd(0, h) : h + 10; p.vy = -rnd(0.2, 0.5); p.vx = rnd(-0.15, 0.15); break;
+        case 'lights': p.s = sizeRange ? rnd(sizeRange[0], sizeRange[1]) * (Math.random() < 0.25 ? 1.8 : 1) : rnd(2, 7); p.y = initial ? rnd(0, h) : h + 10; p.vy = -rnd(0.2, 0.5); p.vx = rnd(-0.15, 0.15); break;
         case 'fireflies': p.s = rnd(1.5, 3); p.y = rnd(h * 0.2, h); p.vy = rnd(-0.3, 0.3); p.vx = rnd(-0.3, 0.3); break;
         case 'sun': p.s = rnd(2, 5); p.y = rnd(0, h); p.vy = -rnd(0.1, 0.3); p.vx = rnd(-0.1, 0.1); break;
         case 'grass': p.x = rnd(-10, w + 10); p.y = h; p.s = rnd(h * 0.18, h * 0.42); p.vx = 0; p.vy = 0; break;
@@ -459,7 +459,7 @@
     }
     function loop(time) { draw(time); raf = requestAnimationFrame(loop); }
     function start(cfg) {
-      type = cfg.type; accent = cfg.accent; emojis = cfg.emojis || [];
+      type = cfg.type; accent = cfg.accent; emojis = cfg.emojis || []; palOverride = cfg.palette || null; sizeRange = cfg.sizes || null;
       cancelAnimationFrame(raf);
       resize();
       parts = [];
@@ -715,8 +715,8 @@
       return '<a class="kw-chip" href="https://www.google.com/maps/search/' + encodeURIComponent(k + ' ' + place) + '" target="_blank" rel="noopener">' + esc(k) + '</a>';
     }).join('');
     $('hero-motif').innerHTML = '<span>' + flagOf(cc) + '</span>';
-    // 시즌 배경처럼 작은 국기가 둥둥 떠다녀요
-    scene.start({ type: 'lights', accent: fc[2], emojis: [flagOf(cc)] });
+    // 흰색·연노랑 보케만, 크기는 다양하게
+    scene.start({ type: 'lights', accent: fc[2], palette: ['#ffffff', '#fffdf2', '#fff6cc', '#ffefa8'], sizes: [1.5, 6] });
   }
   // 향후 일주일 (오늘 포함 8일)
   // 날씨 앱 열기: 아이폰 기본 날씨(weather://) 또는 '날씨날씨' 단축어
