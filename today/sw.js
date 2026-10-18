@@ -1,7 +1,7 @@
 /* 오늘 서비스 워커
    앱 파일은 네트워크 우선(항상 최신), 오프라인이면 저장해 둔 버전으로 열려요.
    날씨·뉴스 같은 외부 요청은 건드리지 않아요. */
-var CACHE = 'today-v70';
+var CACHE = 'today-v71';
 var SHELL = ['./', './index.html', './styles.css', './data.js', './app.js', './manifest.webmanifest', './icons/icon-192.png', './icons/source.png'];
 
 self.addEventListener('install', function (e) {
@@ -22,6 +22,15 @@ self.addEventListener('fetch', function (e) {
     return res;
   }).catch(function () {
     return caches.match(req).then(function (hit) { return hit || caches.match('./index.html'); });
+  }));
+});
+
+// 알림 서버에서 온 푸시 → 알림 표시
+self.addEventListener('push', function (e) {
+  var d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: '오늘', body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || '오늘', {
+    body: d.body || '', tag: d.tag || 'today', icon: './icons/icon-192.png', badge: './icons/icon-192.png', data: { url: './' }
   }));
 });
 

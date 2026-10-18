@@ -361,6 +361,15 @@
       <p class="hint">위아래 버튼을 누르면 바로 바뀌어요. 맨 위 날씨·계절 영역은 고정이에요.</p>
     </div>
     <div class="field">
+      <label for="set-push">알림 서버</label>
+      <div class="city-row">
+        <input id="set-push" type="url" autocomplete="off" spellcheck="false" placeholder="https://today-push.….workers.dev">
+        <button type="button" class="ghost-btn" id="push-connect">연결</button>
+      </div>
+      <p class="hint" id="push-status">연결하면 앱이 꺼져 있어도 일정 알림이 제시간에 와요.</p>
+      <button type="button" class="link-btn" id="push-test" hidden>테스트 알림 보내기</button>
+    </div>
+    <div class="field">
       <span class="field-label">데이터 백업</span>
       <div class="backup-row">
         <button type="button" class="ghost-btn" id="bk-export">백업 파일 만들기</button>
