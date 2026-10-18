@@ -596,6 +596,8 @@ body.on-news::before {
 /* 아이폰 홈 화면 앱은 화면 고정 레이어가 아래쪽까지 닿지 않아(::backdrop도 마찬가지) 밝은 띠가 남아요.
    그래서 어둡게 덮는 막을 화면이 아니라 페이지 전체에 깔아요. 팝업이 열린 동안은 스크롤이 막혀 있어요. */
 html.modal-open body { position: relative; }
+/* 아이폰이 페이지를 안 그리는 맨 아래 띠에는 문서 바탕색이 보여요 → 시트와 같은 색으로 */
+html.modal-open { background: var(--surface); }
 html.modal-open body::after { content: ""; position: absolute; inset: 0; z-index: 100; background: rgba(8, 12, 20, 0.5); }
 .sheet-body { display: grid; gap: 16px; padding: 20px; }
 .tag-input { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; }
@@ -2874,9 +2876,12 @@ window.FLAG_COLORS = {
     // 시트 배경은 아래로 넉넉히 이어 그려요(CSS box-shadow).
     var vv = window.visualViewport;
     // (vv.pageTop은 아이폰에서 스크롤을 막은 상태면 0으로 나와서 쓰지 않아요)
-    var y = window.scrollY + (vv ? vv.offsetTop + vv.height : window.innerHeight);
+    // 아이폰이 보이는 높이를 가끔 짧게 줘서(아래 띠가 뜸), 기기 화면 높이와 비교해 큰 값을 써요
+    var standalone = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    var full = Math.max(vv ? vv.offsetTop + vv.height : 0, window.innerHeight, standalone ? (window.innerWidth > window.innerHeight ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height)) : 0);
+    var y = window.scrollY + full;
     document.documentElement.style.setProperty('--sheet-y', Math.round(y) + 'px');
-    document.documentElement.style.setProperty('--sheet-h', Math.round(vv ? vv.height : window.innerHeight) + 'px');
+    document.documentElement.style.setProperty('--sheet-h', Math.round(full) + 'px');
     document.body.style.minHeight = Math.round(y) + 'px';
   }
   // 키보드가 올라와도 시트는 그대로. 입력칸이 키보드에 가리면 시트 안 내용만 올려요.

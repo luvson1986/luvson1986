@@ -576,6 +576,8 @@ body.on-news::before {
 /* 아이폰 홈 화면 앱은 화면 고정 레이어가 아래쪽까지 닿지 않아(::backdrop도 마찬가지) 밝은 띠가 남아요.
    그래서 어둡게 덮는 막을 화면이 아니라 페이지 전체에 깔아요. 팝업이 열린 동안은 스크롤이 막혀 있어요. */
 html.modal-open body { position: relative; }
+/* 아이폰이 페이지를 안 그리는 맨 아래 띠에는 문서 바탕색이 보여요 → 시트와 같은 색으로 */
+html.modal-open { background: var(--surface); }
 html.modal-open body::after { content: ""; position: absolute; inset: 0; z-index: 100; background: rgba(8, 12, 20, 0.5); }
 .sheet-body { display: grid; gap: 16px; padding: 20px; }
 .tag-input { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; }

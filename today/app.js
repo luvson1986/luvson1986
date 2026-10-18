@@ -1026,9 +1026,12 @@
     // 시트 배경은 아래로 넉넉히 이어 그려요(CSS box-shadow).
     var vv = window.visualViewport;
     // (vv.pageTop은 아이폰에서 스크롤을 막은 상태면 0으로 나와서 쓰지 않아요)
-    var y = window.scrollY + (vv ? vv.offsetTop + vv.height : window.innerHeight);
+    // 아이폰이 보이는 높이를 가끔 짧게 줘서(아래 띠가 뜸), 기기 화면 높이와 비교해 큰 값을 써요
+    var standalone = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    var full = Math.max(vv ? vv.offsetTop + vv.height : 0, window.innerHeight, standalone ? (window.innerWidth > window.innerHeight ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height)) : 0);
+    var y = window.scrollY + full;
     document.documentElement.style.setProperty('--sheet-y', Math.round(y) + 'px');
-    document.documentElement.style.setProperty('--sheet-h', Math.round(vv ? vv.height : window.innerHeight) + 'px');
+    document.documentElement.style.setProperty('--sheet-h', Math.round(full) + 'px');
     document.body.style.minHeight = Math.round(y) + 'px';
   }
   // 키보드가 올라와도 시트는 그대로. 입력칸이 키보드에 가리면 시트 안 내용만 올려요.
