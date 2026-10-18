@@ -921,7 +921,7 @@ dialog.sheet:focus { outline: none; }
         </button>
       </div>
 
-      <button type="button" class="wx" id="wx-open" aria-label="일주일 날씨 보기">
+      <button type="button" class="wx" id="wx-open" aria-label="날씨 자세히 보기">
         <span class="wx-icon" id="wx-icon" aria-hidden="true">🌤️</span>
         <span class="wx-temp" id="wx-temp">--°</span>
         <span class="wx-meta">
@@ -4193,7 +4193,13 @@ window.FLAG_COLORS = {
   initSeason();
   initSeasonDialog();
   initRules();
-  $('wx-open').onclick = $('hourly').onclick = function () { renderWkLoc(); $('wk-loc-form').hidden = true; openDialog($('week-dialog')); };
+  $('hourly').onclick = function () { renderWkLoc(); $('wk-loc-form').hidden = true; openDialog($('week-dialog')); };
+  // 메인 상단 날씨 → 아래 날씨 섹션으로 이동
+  $('wx-open').onclick = function () {
+    var panel = $('weather-panel');
+    var top = panel.getBoundingClientRect().top + window.scrollY - 64; // 상태바 아래로 여유
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  };
   initWeatherLocation();
   initPhrase();
   initCats();

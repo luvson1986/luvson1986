@@ -2343,7 +2343,13 @@
   initSeason();
   initSeasonDialog();
   initRules();
-  $('wx-open').onclick = $('hourly').onclick = function () { renderWkLoc(); $('wk-loc-form').hidden = true; openDialog($('week-dialog')); };
+  $('hourly').onclick = function () { renderWkLoc(); $('wk-loc-form').hidden = true; openDialog($('week-dialog')); };
+  // 메인 상단 날씨 → 아래 날씨 섹션으로 이동
+  $('wx-open').onclick = function () {
+    var panel = $('weather-panel');
+    var top = panel.getBoundingClientRect().top + window.scrollY - 64; // 상태바 아래로 여유
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  };
   initWeatherLocation();
   initPhrase();
   initCats();
