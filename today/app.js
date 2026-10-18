@@ -1183,13 +1183,20 @@
       }
       var st = toMin(s.start), en = s.end ? toMin(s.end) : null;
       if (!nowPlaced && nowMin < st) { html += nowRow(now); nowPlaced = true; }
-      // 종료 시간이 없으면 '완료'를 누를 때까지 진행 중
+      // 종료 시간이 없으면 다음 시간 일정이 시작될 때까지(그 뒤 일정이 없으면 '완료'를 누를 때까지) 진행 중
+      if (en == null) en = implicitEnd(s, all);
       var state = s.done || diff < 0 ? 'past' : diff > 0 ? '' : en != null && en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
       html += card(s, state, s.start, '', k);
       if (!nowPlaced && state === 'current') { html += nowRow(now); nowPlaced = true; }
     });
     $('timeline').innerHTML = html;
     renderNowNext();
+  }
+  // 끝나는 시간이 없는 일정은 다음 시간 일정의 시작 시각에 끝난 걸로 봐요
+  function implicitEnd(s, all) {
+    var st = toMin(s.start), next = null;
+    all.forEach(function (o) { if (o !== s && o.start && !o.done) { var m = toMin(o.start); if (m > st && (next == null || m < next)) next = m; } });
+    return next;
   }
   function nowRow(now) {
     return '<li class="tl-now" aria-label="현재 시각"><span class="tl-time">' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + '</span><span class="now-dot"></span><span class="now-line"></span></li>';
@@ -1235,7 +1242,11 @@
     var key = ymd(new Date()), now = new Date(), nm = now.getHours() * 60 + now.getMinutes();
     var raw = schedules[key] || [];
     var seq = orderDay(raw).filter(function (s) { return !s.done; });
-    var running = seq.filter(function (s) { return s.start && toMin(s.start) <= nm && (s.end ? nm < toMin(s.end) : true); });
+    var running = seq.filter(function (s) {
+      if (!s.start || toMin(s.start) > nm) return false;
+      var en = s.end ? toMin(s.end) : implicitEnd(s, raw);
+      return en == null || nm < en;
+    });
     var cur = running[running.length - 1] || seq.find(function (s) { return !s.start && seqMin(s, raw.indexOf(s)) <= nm; }) || null;
     var upcoming = seq.filter(function (s) {
       if (s === cur) return false;
