@@ -360,7 +360,7 @@
         case 'snow': p.s = rnd(1.5, 4); p.vy = rnd(0.3, 1.0); p.vx = rnd(-0.3, 0.3); break;
         case 'rain': p.s = rnd(10, 22); p.vy = rnd(6, 10); p.vx = -1.2; break;
         case 'sea': p.s = rnd(2, 6); p.y = initial ? rnd(0, h) : h + 10; p.vy = -rnd(0.3, 0.9); p.vx = 0; break;
-        case 'lights': p.s = rnd(3, 14); p.y = rnd(0, h); p.vy = -rnd(0.05, 0.2); p.vx = 0; break;
+        case 'lights': p.s = rnd(2, 7); p.y = initial ? rnd(0, h) : h + 10; p.vy = -rnd(0.2, 0.5); p.vx = rnd(-0.15, 0.15); break;
         case 'fireflies': p.s = rnd(1.5, 3); p.y = rnd(h * 0.2, h); p.vy = rnd(-0.3, 0.3); p.vx = rnd(-0.3, 0.3); break;
         case 'sun': p.s = rnd(2, 5); p.y = rnd(0, h); p.vy = -rnd(0.1, 0.3); p.vx = rnd(-0.1, 0.1); break;
         case 'grass': p.x = rnd(-10, w + 10); p.y = h; p.s = rnd(h * 0.18, h * 0.42); p.vx = 0; p.vy = 0; break;
@@ -420,11 +420,11 @@
             ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2); type === 'sea' ? ctx.stroke() : (ctx.fillStyle = p.c, ctx.fill());
             break;
           case 'lights': case 'fireflies':
-            p.x += p.vx + (type === 'fireflies' ? Math.sin(tt * 0.7 + p.ph) * 0.4 : 0); p.y += p.vy;
+            p.x += p.vx + Math.sin(tt * 0.7 + p.ph) * (type === 'fireflies' ? 0.4 : 0.25); p.y += p.vy;
             var tw = 0.35 + 0.65 * Math.abs(Math.sin(tt * (type === 'fireflies' ? 1.4 : 0.6) + p.ph));
             var rg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.s * 3);
             rg.addColorStop(0, p.c); rg.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.globalAlpha = tw * (type === 'lights' ? 0.55 : 0.95); ctx.fillStyle = rg;
+            ctx.globalAlpha = tw * (type === 'lights' ? 0.32 : 0.95); ctx.fillStyle = rg;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.s * 3, 0, Math.PI * 2); ctx.fill();
             break;
           case 'grass':
@@ -715,7 +715,8 @@
       return '<a class="kw-chip" href="https://www.google.com/maps/search/' + encodeURIComponent(k + ' ' + place) + '" target="_blank" rel="noopener">' + esc(k) + '</a>';
     }).join('');
     $('hero-motif').innerHTML = '<span>' + flagOf(cc) + '</span>';
-    scene.start({ type: 'lights', accent: fc[2] });
+    // 시즌 배경처럼 작은 국기가 둥둥 떠다녀요
+    scene.start({ type: 'lights', accent: fc[2], emojis: [flagOf(cc)] });
   }
   // 향후 일주일 (오늘 포함 8일)
   // 날씨 앱 열기: 아이폰 기본 날씨(weather://) 또는 '날씨날씨' 단축어
