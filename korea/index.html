@@ -29,6 +29,7 @@
   --accent: #6f9dff; --accent-soft: #1d2c48; --peak: #ff7b7b; --rising: #4cc48d; --fading: #f0a640; color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 400 15px/1.6 var(--f-body); overflow-wrap: anywhere; }
 button, input { font: inherit; color: inherit; }
 a { color: var(--accent); }
@@ -113,7 +114,31 @@ h2 { margin: 0; font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
 .wk-temp .lo { color: var(--ink-3); text-align: right; }
 .wk-bar { position: relative; height: 6px; border-radius: 3px; background: var(--surface-2); }
 .wk-bar i { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: linear-gradient(90deg, #6fa8ff, #ffb04a); }
-.wx-off { padding: 14px; border-radius: var(--r-s); background: var(--surface-2); color: var(--ink-2); font-size: 14px; }
+.wx-off { padding: 10px 12px; border-radius: var(--r-s); background: var(--surface-2); color: var(--ink-2); font-size: 13.5px; margin: 0; }
+.col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; min-width: 0; }
+
+/* What to wear */
+.band { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; align-items: center; padding: 12px; border-radius: var(--r-s); background: var(--surface-2); }
+.band .be { grid-row: span 2; font-size: 34px; line-height: 1; }
+.band b { font-size: 17px; }
+.band span { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.tags li { display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; padding: 4px 11px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
+.tags li.plus { color: var(--ink-2); }
+.tags li.mid { border-color: color-mix(in srgb, var(--fading) 55%, transparent); background: color-mix(in srgb, var(--fading) 10%, var(--surface)); }
+.tags li.high { border-color: color-mix(in srgb, var(--peak) 55%, transparent); background: color-mix(in srgb, var(--peak) 10%, var(--surface)); }
+.tags li b { font: 500 12px var(--f-mono); color: var(--ink-2); }
+.why { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+
+/* Seoul month by month */
+.months12 { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(92px, 100%), 1fr)); gap: 6px; }
+.months12 li { display: grid; gap: 1px; padding: 9px 10px; border-radius: var(--r-s); background: var(--surface-2); font-variant-numeric: tabular-nums; }
+.months12 li.cur { outline: 2px solid var(--accent); background: var(--accent-soft); }
+.months12 .mn { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); display: flex; justify-content: space-between; }
+.months12 .hl { font: 500 14px var(--f-mono); }
+.months12 .hl span { color: var(--ink-3); }
+.months12 .bn { font-size: 12.5px; color: var(--ink-2); }
+.months12 .rd { font-size: 11.5px; color: var(--accent); }
 
 .ph { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; justify-self: start; }
 .ph.peak { color: var(--peak); background: color-mix(in srgb, var(--peak) 13%, transparent); }
@@ -201,22 +226,42 @@ h2 { margin: 0; font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
 </section>
 
 <main class="board wrap">
+  <div class="col">
+  <section class="panel" aria-labelledby="ow-h">
+    <div class="panel-h"><h2 id="ow-h">What to wear</h2><span class="note" id="ow-note"></span></div>
+    <div class="band" id="ow-band"></div>
+    <p class="sub-h">Wear</p>
+    <ul class="tags" id="ow-wear"></ul>
+    <p class="sub-h">Bring</p>
+    <ul class="tags" id="ow-bring"></ul>
+    <p class="why" id="ow-why"></p>
+  </section>
+
   <section class="panel" aria-labelledby="fc-h">
     <div class="panel-h"><h2 id="fc-h">Forecast</h2><span class="note" id="fc-place"></span></div>
+    <p class="wx-off" id="wx-off" hidden></p>
     <div id="wx-live">
       <div class="hourly" id="hourly" aria-label="Next 12 hours"></div>
       <dl class="facts" id="facts" style="margin-top:12px"></dl>
       <p class="sub-h" style="margin-top:14px">Next 8 days</p>
       <ul class="wk" id="week"></ul>
     </div>
-    <div class="wx-off" id="wx-off" hidden></div>
+    <div id="wx-typical" hidden>
+      <dl class="facts" id="typ-facts"></dl>
+    </div>
   </section>
+  </div>
 
   <section class="panel" aria-labelledby="now-h">
     <div class="panel-h"><h2 id="now-h">In season in Korea</h2><span class="note" id="today-note"></span></div>
     <ul class="cards" id="now"></ul>
     <p class="sub-h">Coming up</p>
     <ul class="soon" id="soon"></ul>
+  </section>
+
+  <section class="panel span" aria-labelledby="mo-h">
+    <div class="panel-h"><h2 id="mo-h">Seoul weather and outfits, month by month</h2><span class="note">Typical highs and lows, 1991–2020 averages</span></div>
+    <ul class="months12" id="months12"></ul>
   </section>
 
   <section class="panel span" aria-labelledby="yr-h">
@@ -480,26 +525,128 @@ window.SEASONS = [{"id":"sunrise","name":"New Year sunrise","ko":"새해 해돋�
     var url = 'https://api.open-meteo.com/v1/forecast?' + q +
       '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m' +
       '&hourly=temperature_2m,precipitation_probability,weather_code' +
-      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,sunrise,sunset' +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,snowfall_sum,uv_index_max,sunrise,sunset' +
       '&timezone=auto&forecast_days=8&wind_speed_unit=kmh';
-    var air = getJSON('https://air-quality-api.open-meteo.com/v1/air-quality?' + q + '&current=pm2_5,us_aqi&timezone=auto').then(function (r) { return r.current; }).catch(function () { return null; });
+    var air = getJSON('https://air-quality-api.open-meteo.com/v1/air-quality?' + q + '&current=pm10,pm2_5,us_aqi&timezone=auto').then(function (r) { return r.current; }).catch(function () { return null; });
     Promise.all([getJSON(url), air]).then(function (r) { last = { d: r[0], air: r[1] }; render(); }).catch(offline);
     syncChips();
   }
   function offline() {
     last = null;
-    $('wx-icon').textContent = '🌡️'; $('wx-temp').textContent = '--°';
-    $('wx-cond').textContent = 'Weather isn’t available here'; $('wx-sub').textContent = 'Open the page in a web browser to see it';
-    $('wx-live').hidden = true; $('wx-off').hidden = false;
-    $('wx-off').textContent = 'Live weather couldn’t load in this view. The season guide works everywhere; the forecast needs a normal web browser with internet access.';
+    $('wx-live').hidden = true; $('wx-off').hidden = false; $('wx-typical').hidden = false; $('loc-row').hidden = true; $('loc-form').hidden = true;
+    $('wx-off').textContent = 'The live forecast can’t load in this view, so this shows a typical ' + MONTH_FULL[today.getMonth()] + ' in Seoul instead.';
+    renderTypical();
+  }
+
+  /* ---------- What to wear (the assistant app's 8 temperature bands; °C, rounded, checked top-down) ---------- */
+  var OUTFIT = [
+    { name: 'Midsummer', emoji: '🔥', min: 28, items: ['T-shirt', 'Tank top', 'Shorts'], plus: ['Sandals'] },
+    { name: 'Summer', emoji: '☀️', min: 24, items: ['T-shirt', 'Light cardigan'], plus: ['Sandals'] },
+    { name: 'Early summer', emoji: '🌿', min: 19, items: ['Long sleeves', 'T-shirt + light jacket'], plus: ['Scarf'] },
+    { name: 'Spring & fall', emoji: '🌸', min: 14, items: ['Cardigan', 'Jacket', 'Trench coat', 'Long sleeves'], plus: ['Scarf', 'Tights'] },
+    { name: 'In-between', emoji: '🍂', min: 9, items: ['Light coat', 'Light puffer', 'Thick cardigan', 'Leather jacket', 'Light knit'], plus: ['Light muffler', 'Tights'] },
+    { name: 'Early winter', emoji: '💨', min: 4, items: ['Light coat', 'Shearling jacket', 'Light puffer', 'Winter knit'], plus: ['Light muffler', 'Boots'] },
+    { name: 'Winter', emoji: '⛄', min: -3, items: ['Coat', 'Puffer', 'Shearling jacket', 'Winter knit'], plus: ['Muffler', 'Boots', 'Gloves'] },
+    { name: 'Deep winter', emoji: '❄️', min: -99, items: ['Long puffer', 'Winter knit', 'Thermal layers'], plus: ['Muffler', 'Boots', 'Gloves', 'Beanie'] }
+  ];
+  var bandIndex = function (t) { var r = Math.round(t), i = OUTFIT.findIndex(function (o) { return r >= o.min; }); return i < 0 ? OUTFIT.length - 1 : i; };
+  // Seoul monthly normals 1991–2020 (KMA): mean high, mean low °C, days with rain or snow
+  var NORMALS = [[1.5, -5.9, 6], [4.7, -3.2, 6], [10.6, 2.1, 8], [17.6, 7.9, 8], [23.2, 13.4, 9], [27.2, 18.6, 10],
+    [28.8, 22.4, 16], [29.5, 22.9, 15], [25.6, 17.8, 9], [19.6, 10.9, 6], [11.5, 3.8, 8], [3.6, -3.3, 8]];
+  var MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  // Typical day from a high and low: morning ≈ 40% of the way up, evening ≈ 45%
+  var typicalDay = function (n) { return { am: n[1] + (n[0] - n[1]) * 0.4, pm: n[1] + (n[0] - n[1]) * 0.45, mid: n[0] }; };
+  function chip(b) {
+    return '<li class="' + (b.lvl || '') + (b.cls ? ' ' + b.cls : '') + '"' + (b.why ? ' title="' + esc(b.why) + '"' : '') + '>' +
+      (b.ico ? '<span aria-hidden="true">' + b.ico + '</span>' : '') + esc(b.t) + (b.v ? ' <b>' + esc(b.v) + '</b>' : '') + '</li>';
+  }
+  // Base outfit from the morning (10am) temperature; add a warm layer when the evening (8pm) falls into a colder band,
+  // and an easy-off layer when midday runs two bands warmer
+  function renderOutfit(am, pm, mid, bring, note) {
+    var iIn = bandIndex(am), iOut = bandIndex(pm), iMid = bandIndex(mid), band = OUTFIT[iIn];
+    $('ow-band').innerHTML = '<span class="be" aria-hidden="true">' + band.emoji + '</span><b>' + esc(band.name) + '</b>' +
+      '<span>Morning ' + deg(am) + ' · afternoon ' + deg(mid) + ' · evening ' + deg(pm) + '</span>';
+    var wear = band.items.map(function (t) { return { t: t }; }).concat(band.plus.map(function (t) { return { t: '+ ' + t, cls: 'plus' }; }));
+    var whys = [];
+    if (iOut > iIn) {
+      var ob = OUTFIT[iOut], warm = ob.plus.filter(function (t) { return band.plus.indexOf(t) < 0; });
+      if (!warm.length) warm = [ob.items[0]];
+      warm.forEach(function (t) { wear.push({ t: '+ ' + t, lvl: 'mid' }); });
+      whys.push('It drops to ' + deg(pm) + ' by evening, so bring a warmer layer.');
+    }
+    if (iIn - iMid >= 2 || mid - am >= 8) {
+      wear.push({ t: '+ Layer that’s easy to take off', lvl: 'mid' });
+      whys.push('Afternoon reaches ' + deg(mid) + ', a lot warmer than the morning.');
+    }
+    $('ow-wear').innerHTML = wear.map(chip).join('');
+    if (!bring.length) bring.push({ ico: '👌', t: 'Nothing special' });
+    $('ow-bring').innerHTML = bring.map(chip).join('');
+    $('ow-note').textContent = note;
+    $('ow-why').textContent = whys.join(' ');
+  }
+  function outfitLive(d, air) {
+    var dy = d.daily, day = d.current.time.slice(0, 10), temps = [], codes = [], pops = [], nowH = +d.current.time.slice(11, 13);
+    d.hourly.time.forEach(function (t, i) { if (t.slice(0, 10) === day) { var h = +t.slice(11, 13); temps[h] = d.hourly.temperature_2m[i]; codes[h] = d.hourly.weather_code[i]; pops[h] = d.hourly.precipitation_probability[i]; } });
+    var at = function (h) { return temps[h] != null ? temps[h] : (dy.temperature_2m_min[0] + dy.temperature_2m_max[0]) / 2; };
+    var mid = Math.max.apply(null, [11, 12, 13, 14, 15, 16, 17].map(at));
+    var bring = [], rest = [];
+    for (var h = nowH; h < 24; h++) if (temps[h] != null) rest.push({ code: codes[h], pop: pops[h] || 0 });
+    var pop = Math.max(dy.precipitation_probability_max[0] || 0, Math.max.apply(null, rest.map(function (x) { return x.pop; }).concat(0)));
+    var likely = function (test) { return rest.some(function (x) { return test(x.code) && x.pop >= 20; }); };
+    var isSnow = function (c) { return (c >= 71 && c <= 77) || c === 85 || c === 86; };
+    var isRain = function (c) { return (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95; };
+    if (likely(isSnow) || (dy.snowfall_sum && dy.snowfall_sum[0] > 0 && pop >= 20)) { bring.push({ ico: '🥾', t: 'Non-slip shoes', lvl: 'high' }); bring.push({ ico: '☂️', t: 'Umbrella', lvl: 'mid' }); }
+    else if (pop >= 60 || likely(isRain)) bring.push({ ico: '☂️', t: 'Umbrella', v: pop + '%', lvl: 'high' });
+    else if (pop >= 30) bring.push({ ico: '🌂', t: 'Folding umbrella', v: pop + '%', lvl: 'mid' });
+    if (air && (air.pm2_5 > 35 || air.pm10 > 80)) bring.push({ ico: '😷', t: 'KF94 mask', v: 'bad air', lvl: 'high', why: 'PM2.5 ' + Math.round(air.pm2_5) + ' µg/m³' });
+    else if (air && (air.pm2_5 > 15 || air.pm10 > 30)) bring.push({ ico: '😷', t: 'Mask', v: 'so-so air', why: 'PM2.5 ' + Math.round(air.pm2_5) + ' µg/m³' });
+    var uv = dy.uv_index_max[0] || 0, sunny = rest.slice(0, 8).filter(function (x) { return x.code <= 1; }).length >= 4;
+    if (uv >= 6 || (uv >= 4 && sunny)) bring.push({ ico: '🕶️', t: 'Sunglasses', v: 'UV ' + Math.round(uv), lvl: uv >= 8 ? 'high' : 'mid' });
+    if (uv >= 7 || dy.temperature_2m_max[0] >= 30) bring.push({ ico: '🧢', t: 'Hat', v: uv >= 7 ? 'UV ' + Math.round(uv) : deg(dy.temperature_2m_max[0]), lvl: 'mid' });
+    if (d.current.wind_speed_10m >= 29) bring.push({ ico: '🌬️', t: 'Windbreaker', v: unit === 'f' ? Math.round(d.current.wind_speed_10m * 0.621) + ' mph' : Math.round(d.current.wind_speed_10m) + ' km/h', lvl: 'mid' });
+    if (dy.temperature_2m_min[0] <= 0) bring.push({ ico: '🔥', t: 'Hand warmers', v: deg(dy.temperature_2m_min[0]), lvl: 'mid' });
+    renderOutfit(at(10), at(20), mid, bring, 'Today in ' + place.name);
+  }
+  function typicalBring(m) {
+    var n = NORMALS[m], bring = [];
+    if (n[2] >= 12) bring.push({ ico: '☂️', t: 'Umbrella', v: 'monsoon', lvl: 'high', why: 'About ' + n[2] + ' rainy days this month' });
+    else if (n[2] >= 8) bring.push({ ico: '🌂', t: 'Folding umbrella', v: '~' + n[2] + ' rainy days', lvl: 'mid' });
+    if (m >= 1 && m <= 4) bring.push({ ico: '😷', t: 'Mask', v: 'spring dust', why: 'Fine dust and yellow dust are most common in spring' });
+    if (m >= 4 && m <= 8) bring.push({ ico: '🕶️', t: 'Sunglasses', v: 'strong UV', lvl: 'mid' });
+    if (n[0] >= 28) bring.push({ ico: '🪭', t: 'Hand fan', v: 'humid', lvl: 'mid' });
+    if (n[1] <= 0) bring.push({ ico: '🔥', t: 'Hand warmers', v: deg(n[1]), lvl: 'mid' });
+    return bring;
+  }
+  function renderTypical() {
+    var m = today.getMonth(), n = NORMALS[m], t = typicalDay(n), band = OUTFIT[bandIndex(t.am)];
+    $('wx-icon').textContent = band.emoji;
+    $('wx-temp').textContent = deg((n[0] + n[1]) / 2);
+    $('wx-cond').textContent = 'Typical ' + MONTH_FULL[m] + ' in Seoul';
+    $('wx-sub').textContent = 'H ' + deg(n[0]) + '  L ' + deg(n[1]) + ' · ~' + n[2] + ' rainy days';
+    $('wx-place').textContent = 'Seoul · typical'; $('fc-place').textContent = 'Seoul · ' + MONTH_FULL[m];
+    $('typ-facts').innerHTML = [['Avg high', deg(n[0])], ['Avg low', deg(n[1])], ['Rainy days', '~' + n[2]], ['Outfit', band.name]]
+      .map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('');
+    renderOutfit(t.am, t.pm, t.mid, typicalBring(m), 'Typical ' + MONTH_FULL[m] + ' in Seoul');
+  }
+  function renderMonths() {
+    var cur = today.getMonth();
+    $('months12').innerHTML = NORMALS.map(function (n, m) {
+      var b = OUTFIT[bandIndex(typicalDay(n).am)];
+      return '<li' + (m === cur ? ' class="cur" aria-current="date"' : '') + '><span class="mn">' + MON[m] + '<span aria-hidden="true">' + b.emoji + '</span></span>' +
+        '<span class="hl">' + deg(n[0]) + ' <span>/ ' + deg(n[1]) + '</span></span><span class="bn">' + esc(b.name) + '</span>' +
+        '<span class="rd">' + (n[2] >= 12 ? '☔ Monsoon' : '~' + n[2] + ' rainy days') + '</span></li>';
+    }).join('');
   }
   function hm(iso) { var h = +iso.slice(11, 13), m = iso.slice(14, 16); return unit === 'f' ? ((h % 12) || 12) + ':' + m + (h < 12 ? ' am' : ' pm') : iso.slice(11, 16); }
   function hourLabel(h) { return unit === 'f' ? ((h % 12) || 12) + (h < 12 ? 'a' : 'p') : String(h).padStart(2, '0'); }
   function aqiWord(v) { return v <= 50 ? 'Good' : v <= 100 ? 'Moderate' : v <= 150 ? 'Unhealthy for some' : v <= 200 ? 'Unhealthy' : 'Very unhealthy'; }
   function render() {
-    if (!last) return;
+    renderMonths();
+    if (!last) { if (!$('wx-typical').hidden) renderTypical(); return; }
     var d = last.d, c = d.current, dy = d.daily, info = wmo(c.weather_code);
-    $('wx-live').hidden = false; $('wx-off').hidden = true;
+    $('wx-live').hidden = false; $('wx-off').hidden = true; $('wx-typical').hidden = true; $('loc-row').hidden = false;
+    $('wx-place').textContent = place.name; $('fc-place').textContent = place.name;
+    outfitLive(d, last.air);
     $('wx-icon').textContent = info[1];
     $('wx-temp').textContent = deg(c.temperature_2m);
     $('wx-cond').textContent = info[0] + ' · feels ' + deg(c.apparent_temperature);
