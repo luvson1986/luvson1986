@@ -322,6 +322,14 @@
       <h2>내 설정</h2>
     </header>
     <div class="field">
+      <label for="set-lang">언어</label>
+      <select id="set-lang">
+        <option value="ko">한국어</option>
+        <option value="en">English</option>
+      </select>
+      <p class="hint">언어를 바꾸면 앱을 다시 열어요.</p>
+    </div>
+    <div class="field">
       <label for="set-name">이름</label>
       <input id="set-name" type="text" maxlength="20" placeholder="예: 지은">
     </div>
@@ -511,7 +519,9 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
+<script src="i18n.js"></script>
 <script src="data.js"></script>
+<script src="i18n-data.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

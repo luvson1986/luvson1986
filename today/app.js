@@ -1,5 +1,15 @@
 (function () {
   'use strict';
+  var tr = window.tr || function (x) { return x; };
+
+  // 영어 모드: 시즌·여행·표현 데이터를 영어 내용으로 바꿔 끼워요 (내가 추가한 시즌은 그대로)
+  if (window.IS_EN && window.EN_DATA) (function (E) {
+    (window.SEASONS || []).forEach(function (s) { var e = E.seasons && E.seasons[s.id]; if (e) Object.keys(e).forEach(function (k) { s[k] = e[k]; }); });
+    Object.keys(window.TRAVEL || {}).forEach(function (cc) { var e = E.travel && E.travel[cc]; if (e) { window.TRAVEL[cc].name = e.name; window.TRAVEL[cc].kw = e.kw; } });
+    (window.TRAVEL_CITIES || []).forEach(function (c) { var e = E.cities && E.cities[c.name]; if (e) { c.name = e.name; c.kw = e.kw; } });
+    (window.PHRASES || []).forEach(function (p, i) { var e = E.phrases && E.phrases[i]; if (e) { p.when = e.when; p.ko = e.meaning; } });
+    (window.SAMPLE_NEWS || []).forEach(function (n, i) { if (E.sampleNews && E.sampleNews[i] && n.title) n.title = E.sampleNews[i]; });
+  })(window.EN_DATA);
 
   /* ---------- 공통 ---------- */
   // 드래그로 순서 바꾸기: 손잡이(≡)를 잡거나 항목을 길게 눌러 끌어요
@@ -1219,7 +1229,7 @@
     var card = function (s, state, timeLabel, rel, k) {
       var openEnded = !s.end; // 시간 미정·종료 시간 없는 일정은 직접 완료 처리
       var movable = !s.start;  // 시간 미정 일정은 끌어서 사이에 끼워 넣을 수 있어요
-      return '<li class="tl-item ' + state + (s.important ? ' imp' : '') + (s.done ? ' done' : '') + (openEnded ? ' has-done' : '') + (movable ? ' movable' : '') + '" data-id="' + s.id + '" data-min="' + k + '" style="--c: ' + catOf(s.cat).color + '">' +
+      return '<li class="tl-item ' + state + (s.important ? ' imp' : '') + (s.done ? ' done' : '') + (openEnded ? ' has-done' : '') + (movable ? ' movable' : '') + (s.sample ? ' is-sample' : '') + '" data-id="' + s.id + '" data-min="' + k + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="tl-time">' + (movable ? '<span class="tl-grip" aria-label="끌어서 옮기기">' + GRIP + '</span>' : timeLabel) + '</span><span class="tl-dot"></span>' +
         '<button type="button" class="tl-card" data-id="' + s.id + '">' +
         '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
@@ -1287,7 +1297,7 @@
       html += '<li><button type="button" class="dl-row' + (k === ymd(viewDate) ? ' on' : '') + (d.getDay() === 0 ? ' sun' : d.getDay() === 6 ? ' sat' : '') + '" data-key="' + k + '">' +
         '<span class="dl-date">' + label + (k === todayKey ? '<em>오늘</em>' : '') + '</span><span class="dl-items">' +
         orderDay(schedules[k]).map(function (s, i) {
-          return (i ? '<span class="dl-sep">-</span>' : '') + '<span class="dl-item' + (s.important ? ' imp' : '') + '" style="--c:' + catOf(s.cat).color + '">' +
+          return (i ? '<span class="dl-sep">-</span>' : '') + '<span class="dl-item' + (s.important ? ' imp' : '') + (s.sample ? ' is-sample' : '') + '" style="--c:' + catOf(s.cat).color + '">' +
             (s.start ? '<span class="dl-time">' + hhmm(s.start) + '</span>' : '') + esc(s.title) + '</span>';
         }).join('') + '</span></button></li>';
     });
@@ -1316,7 +1326,7 @@
       return true; // 끝내지 않은 시간 미정 일정은 아직 할 일
     });
     var item = function (s, kind, label, bar) {
-      return '<button type="button" class="nn-item ' + kind + (s.important ? ' imp' : '') + '" data-id="' + s.id + '" style="--c: ' + catOf(s.cat).color + '">' +
+      return '<button type="button" class="nn-item ' + kind + (s.important ? ' imp' : '') + (s.sample ? ' is-sample' : '') + '" data-id="' + s.id + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="nn-label">' + label + '</span>' +
         '<span class="nn-title">' + esc(s.title) + '</span>' +
         '<span class="nn-meta">' + (s.start ? s.start + (s.end ? '–' + s.end : '') : '시간 미정') + (s.place ? ' · ' + esc(s.place) : '') + '</span>' +
@@ -1442,6 +1452,7 @@
     $('dt-pos').textContent = (od.getMonth() + 1) + '/' + od.getDate() + ' ' + DAYS[od.getDay()];
     $('dt-imp').setAttribute('aria-pressed', String(!!s.important));
     $('dt-title').classList.toggle('imp', !!s.important);
+    $('dt-title').classList.toggle('is-sample', !!s.sample);
     $('dt-title').textContent = s.title;
     $('dt-meta').textContent = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 (' + DAYS[d.getDay()] + ')' + (s.start ? ' ' + s.start + (s.end ? '–' + s.end : '') : ' · 시간 미정');
     closeInlineEdits();
@@ -1577,7 +1588,7 @@
   var remindTimers = [];
   function notify(s, key) {
     var mins = Math.max(0, Math.round((startDate(key, s) - Date.now()) / 60000));
-    var body = (mins ? mins + '분 후 시작' : '곧 시작') + ' · ' + s.start + (s.place ? ' · ' + s.place : '');
+    var body = tr((mins ? mins + '분 후 시작' : '곧 시작') + ' · ' + s.start + (s.place ? ' · ' + s.place : ''));
     var opts = { body: body, tag: 'remind-' + s.id + '-' + key, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { url: './' } };
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
       navigator.serviceWorker.ready.then(function (reg) { reg.showNotification(s.title, opts); });
@@ -1636,7 +1647,7 @@
         var start = startDate(key, s), at = start - r * 60000;
         if (at < now - 60000) return;
         out.push({ id: s.id + '@' + key + '@' + s.start + '@' + r, at: at, title: s.title,
-          body: (r >= 60 ? (r / 60) + '시간' : r + '분') + ' 후 시작 · ' + s.start + (s.place ? ' · ' + s.place : '') });
+          body: tr((r >= 60 ? (r / 60) + '시간' : r + '분') + ' 후 시작 · ' + s.start + (s.place ? ' · ' + s.place : '')) });
       });
     }
     return out;
@@ -1928,7 +1939,7 @@
     $('cl-empty').hidden = lists.length > 0;
     $('cl-groups').innerHTML = lists.map(function (g, gi) {
       var done = g.items.filter(function (i) { return i.done; }).length, total = g.items.length;
-      return '<div class="cl-group' + (g.collapsed ? ' collapsed' : '') + '" data-g="' + g.id + '">' +
+      return '<div class="cl-group' + (g.collapsed ? ' collapsed' : '') + (g.sample ? ' is-sample' : '') + '" data-g="' + g.id + '">' +
         '<div class="cl-head">' +
           '<button type="button" class="cl-fold" data-act="fold" aria-expanded="' + !g.collapsed + '" aria-label="' + esc(g.title) + (g.collapsed ? ' 펼치기' : ' 접기') + '"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg></button>' +
           '<input class="cl-title" value="' + esc(g.title) + '" maxlength="30" aria-label="목록 제목">' +
@@ -2334,6 +2345,7 @@
       $('set-name').value = draft.name;
       $('set-ytkey').value = draft.ytKey || '';
       $('set-wxapp').value = draft.weatherApp || 'apple';
+      $('set-lang').value = draft.lang || 'ko';
       $('set-interest').value = ''; $('set-city').value = ''; $('city-results').innerHTML = '';
       renderTags();
       openDialog(dlg);
@@ -2378,10 +2390,13 @@
       draft.name = $('set-name').value.trim();
       draft.ytKey = $('set-ytkey').value.trim();
       draft.weatherApp = $('set-wxapp').value;
+      var langChanged = $('set-lang').value !== (settings.lang || 'ko');
+      draft.lang = $('set-lang').value;
       var interestsChanged = draft.interests.join('|') !== settings.interests.join('|') || draft.ytKey !== (settings.ytKey || '');
       var locChanged = JSON.stringify(draft.location) !== JSON.stringify(settings.location);
       settings = draft;
       store.set('settings', settings);
+      if (langChanged) { location.reload(); return; }
       dlg.close ? dlg.close() : dlg.removeAttribute('open');
       renderGreeting();
       if (locChanged) loadWeather().then(renderWeather);
