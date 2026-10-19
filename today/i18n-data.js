@@ -149,6 +149,12 @@ window.EN_DATA = {
       desc: 'Starting at Seoraksan, the colors move south 20-25 km a day. Seoul peaks from late October to early November.',
       todo: ['Check peak dates', 'Naejangsan / Seoraksan', 'Deoksugung wall walk']
     },
+    appledate: {
+      name: 'Apple jujubes',
+      headline: 'Crisp, sweet apple jujubes',
+      desc: 'Bigger than regular jujubes and crunchy like an apple. Best during the late-Sept to mid-Oct harvest; refrigerated they stay crisp for 1-2 weeks.',
+      todo: ['A box of apple jujubes', 'Eat them fresh', 'Make jujube chips']
+    },
     chestnut: {
       name: 'Chestnuts & sweet potatoes',
       headline: 'Warm roasted sweet potatoes and chestnuts',

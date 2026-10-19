@@ -178,6 +178,13 @@ window.SEASONS = [
     scene: { type: 'leaves', colors: ['#7a2a14', '#f0a040'], accent: '#ffe2b0', motif: ['🍁'] }
   },
   {
+    id: 'appledate', name: '사과대추', from: '09-15', to: '11-05', peak: ['09-28', '10-20'], w: 1,
+    headline: '아삭하고 달콤한 사과대추',
+    desc: '일반 대추보다 크고 사과처럼 아삭해요. 9월 말~10월 중순 수확철이 가장 맛있고, 냉장 보관하면 1~2주 아삭함이 유지돼요.',
+    todo: ['사과대추 한 박스', '생으로 아삭하게', '대추칩 만들기'],
+    scene: { type: 'sun', colors: ['#7a2a14', '#c8a040'], accent: '#ffe6b0', motif: ['🍏'] }
+  },
+  {
     id: 'chestnut', name: '군밤·군고구마', from: '10-15', to: '02-28', peak: ['11-15', '01-31'], w: 1,
     headline: '따끈한 군고구마와 군밤',
     desc: '꿀고구마는 수확 후 2~3주 숙성하면 더 달아져요. 에어프라이어 200도 40분이면 충분해요.',
