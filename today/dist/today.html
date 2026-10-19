@@ -3769,7 +3769,8 @@ window.EN_DATA = {
     orderDay(all).forEach(function (s) {
       var k = seqMin(s, all.indexOf(s));
       if (!s.start) {
-        if (!nowPlaced && s.pos != null && nowMin < k && list.length) { html += nowRow(now); nowPlaced = true; }
+        // 완료한 시간 미정 일정은 지난 일로 보고 현재 시각 줄을 그 아래로
+        if (!nowPlaced && !s.done && (s.pos == null || nowMin < k) && list.length) { html += nowRow(now); nowPlaced = true; }
         html += card(s, diff < 0 || s.done ? 'past' : '', '미정', '', k);
         return;
       }
