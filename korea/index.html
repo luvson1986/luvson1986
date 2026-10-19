@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Korea in Season</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500&display=swap">
+<style>
+/* Layout: a full-bleed season scene with today's weather, then a board — forecast, what's in season, and the 12-month season chart */
+:root {
+  --bg: #eef1f5; --surface: #ffffff; --surface-2: #f4f6f9; --ink: #142032; --ink-2: #4a5a70; --ink-3: #758396; --line: #dde3eb;
+  --accent: #1d5bd8; --accent-soft: #e3ecfd; --peak: #c43b3b; --rising: #1f8a5b; --fading: #b86b00;
+  --hero-a: #7a2a14; --hero-b: #f0a040; --season: #ffe2b0;
+  --f-display: "Gowun Batang", Georgia, serif;
+  --f-body: "IBM Plex Sans", "IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r: 14px; --r-s: 9px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e141d; --surface: #161f2b; --surface-2: #1c2734; --ink: #e8edf4; --ink-2: #aab6c6; --ink-3: #7f8da0; --line: #273445;
+    --accent: #6f9dff; --accent-soft: #1d2c48; --peak: #ff7b7b; --rising: #4cc48d; --fading: #f0a640; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e141d; --surface: #161f2b; --surface-2: #1c2734; --ink: #e8edf4; --ink-2: #aab6c6; --ink-3: #7f8da0; --line: #273445;
+  --accent: #6f9dff; --accent-soft: #1d2c48; --peak: #ff7b7b; --rising: #4cc48d; --fading: #f0a640; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 15px/1.6 var(--f-body); overflow-wrap: anywhere; }
+button, input { font: inherit; color: inherit; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.ko { font-family: "IBM Plex Sans KR", var(--f-body); }
+.wrap { max-width: 1080px; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* ---------- Hero ---------- */
+.hero { position: relative; overflow: hidden; color: #fff; background: linear-gradient(160deg, var(--hero-a) 0%, var(--hero-b) 100%); transition: background 0.8s ease; }
+.hero::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(8,12,20,0.32) 0%, rgba(8,12,20,0) 45%, rgba(8,12,20,0.38) 100%); }
+.hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+.hero-motif { position: absolute; z-index: 1; right: max(8px, env(safe-area-inset-right, 0px)); top: 56px; font-size: clamp(90px, 20vw, 170px); line-height: 1; display: flex;
+  filter: drop-shadow(0 16px 26px rgba(0,0,0,0.28)); transform: rotate(-10deg); pointer-events: none; }
+.hero-motif span:nth-child(2) { font-size: 0.5em; align-self: flex-end; transform: rotate(18deg); }
+.hero-inner { position: relative; z-index: 2; padding-block: 20px 22px; display: grid; gap: 16px; }
+.eyebrow { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+.season-box { display: grid; gap: 8px; justify-items: start; padding-right: 96px; }
+.season-name { margin: 0; font: 700 clamp(30px, 7vw, 46px)/1.1 var(--f-display); text-wrap: balance; text-shadow: 0 1px 12px rgba(0,0,0,0.2); }
+.season-line { margin: 0; font-size: 15px; max-width: 46ch; opacity: 0.95; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.phase { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.92); color: #1a1a1a; }
+.hangul { font-size: 13px; opacity: 0.85; }
+.glass { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: #fff; font: 500 13px/1 var(--f-body); padding: 7px 12px; border-radius: 999px;
+  background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.32); backdrop-filter: blur(6px); text-decoration: none; }
+.glass:hover { background: rgba(255,255,255,0.3); }
+.glass:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.glass[aria-pressed="true"] { background: rgba(255,255,255,0.92); color: #1a1a1a; border-color: transparent; }
+
+.wx { display: grid; gap: 10px; padding: 14px 16px; border-radius: var(--r); background: rgba(10,14,24,0.32); backdrop-filter: blur(10px); max-width: 520px; }
+.wx-main { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.wx-icon { font-size: 38px; line-height: 1; }
+.wx-temp { font: 500 52px/1 var(--f-mono); letter-spacing: -0.04em; }
+.wx-meta { display: grid; gap: 1px; font-size: 13px; min-width: 0; }
+.wx-cond { font-weight: 600; font-size: 15px; }
+.wx-sub { opacity: 0.88; font-variant-numeric: tabular-nums; }
+.wx-place { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.loc-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.loc-form { display: flex; gap: 6px; flex-wrap: wrap; position: relative; }
+.loc-form input { flex: 1 1 180px; min-width: 0; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.25); color: #fff; font-size: 14px; }
+.loc-form input::placeholder { color: rgba(255,255,255,0.75); }
+.results { display: grid; gap: 4px; width: 100%; }
+.results button { all: unset; cursor: pointer; padding: 7px 12px; border-radius: 10px; background: rgba(255,255,255,0.9); color: #1a1a1a; font-size: 13.5px; }
+.results button:focus-visible { outline: 2px solid #fff; }
+.results .hint { font-size: 13px; opacity: 0.85; }
+@media (min-width: 880px) {
+  .hero-inner { grid-template-columns: 1fr minmax(320px, 420px); column-gap: 40px; align-items: end; padding-block: 32px 30px; min-height: 340px; }
+  .eyebrow { grid-column: 1 / -1; align-self: start; }
+  .season-box { padding-right: 0; }
+  .hero-motif { top: auto; bottom: -10px; right: max(460px, 40vw); font-size: 150px; opacity: 0.85; }
+}
+
+/* ---------- Board ---------- */
+.board { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding-block: 16px 48px; }
+@media (min-width: 880px) { .board { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 18px; align-items: start; } .span { grid-column: 1 / -1; } }
+.panel { background: var(--surface); border-radius: var(--r); padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+.panel-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+h2 { margin: 0; font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
+.note { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+.seg { display: inline-flex; padding: 2px; border-radius: 999px; background: var(--surface-2); }
+.seg button { border: 0; background: none; cursor: pointer; padding: 3px 10px; border-radius: 999px; font: 600 12px var(--f-mono); color: var(--ink-2); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+
+.hourly { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; padding: 8px 4px; border-radius: var(--r-s); background: var(--surface-2); }
+.hourly::-webkit-scrollbar { display: none; }
+.hour { flex: 1 0 46px; display: grid; justify-items: center; gap: 1px; font-size: 11.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.hour .h-ico { font-size: 17px; }
+.hour .h-t { font: 500 13.5px var(--f-mono); color: var(--ink); }
+.hour .h-p { color: var(--accent); min-height: 1.2em; }
+.hour.now .h-time { font-weight: 700; color: var(--ink); }
+.facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr)); gap: 8px; margin: 0; }
+.facts div { padding: 8px 10px; border-radius: var(--r-s); background: var(--surface-2); }
+.facts dt { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.facts dd { margin: 0; font: 500 14px var(--f-mono); }
+.wk { list-style: none; margin: 0; padding: 0; display: grid; }
+.wk li { display: grid; grid-template-columns: 74px 30px 38px 1fr; align-items: center; gap: 8px; padding-block: 8px; }
+.wk li + li { border-top: 1px solid var(--line); }
+.wk-day { display: grid; line-height: 1.25; } .wk-day b { font-size: 14px; } .wk-day span { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.wk-ico { font-size: 21px; text-align: center; }
+.wk-pop { font-size: 12px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.wk-temp { display: grid; grid-template-columns: 36px 1fr 36px; align-items: center; gap: 8px; font-size: 14px; }
+.wk-temp .lo { color: var(--ink-3); text-align: right; }
+.wk-bar { position: relative; height: 6px; border-radius: 3px; background: var(--surface-2); }
+.wk-bar i { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: linear-gradient(90deg, #6fa8ff, #ffb04a); }
+.wx-off { padding: 14px; border-radius: var(--r-s); background: var(--surface-2); color: var(--ink-2); font-size: 14px; }
+
+.ph { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; justify-self: start; }
+.ph.peak { color: var(--peak); background: color-mix(in srgb, var(--peak) 13%, transparent); }
+.ph.rising { color: var(--rising); background: color-mix(in srgb, var(--rising) 13%, transparent); }
+.ph.fading { color: var(--fading); background: color-mix(in srgb, var(--fading) 13%, transparent); }
+.ph.later { color: var(--ink-2); background: var(--surface-2); }
+.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.card { display: grid; grid-template-columns: 44px 1fr; gap: 4px 12px; padding: 12px; border-radius: var(--r-s); background: var(--surface-2); }
+.card .em { grid-row: span 4; font-size: 30px; line-height: 1.1; text-align: center; }
+.card .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; }
+.card h3 { margin: 0; font-size: 16px; font-weight: 700; }
+.card .kn { font-size: 12.5px; color: var(--ink-3); }
+.card .when { font: 500 12px var(--f-mono); color: var(--ink-3); }
+.card p { margin: 0; font-size: 14px; color: var(--ink-2); max-width: 62ch; }
+.todo { display: flex; flex-wrap: wrap; gap: 5px; margin: 2px 0 0; padding: 0; list-style: none; }
+.todo li { font-size: 12.5px; padding: 2px 9px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.card.focus { outline: 2px solid var(--accent); }
+.soon { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.soon button { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; padding: 8px 8px; border-radius: 8px; }
+.soon button:hover { background: var(--surface-2); }
+.soon button:focus-visible { outline: 2px solid var(--accent); }
+.soon .d { font: 500 12px var(--f-mono); color: var(--ink-3); white-space: nowrap; }
+.sub-h { margin: 4px 0 0; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--ink-2); }
+.legend i { display: inline-block; width: 20px; height: 8px; border-radius: 4px; vertical-align: middle; margin-right: 6px; }
+.lg-bar { background: var(--line); } .lg-peak { background: var(--peak); } .legend i.lg-today { width: 2px; height: 12px; background: var(--accent); }
+.cal-box { overflow-x: auto; }
+.ycal { min-width: 620px; display: grid; }
+.yc-row { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 180px minmax(0, 1fr); align-items: center; min-height: 32px; border-radius: 6px; cursor: pointer; }
+.yc-row:not(.yc-head):hover { background: var(--surface-2); }
+.yc-row:focus-visible { outline: 2px solid var(--accent); }
+.yc-row.on { background: var(--accent-soft); }
+.yc-head { cursor: default; min-height: 24px; }
+.yc-name { font-size: 13px; padding-left: 6px; display: flex; gap: 6px; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2); }
+.yc-row.active .yc-name { color: var(--ink); font-weight: 600; }
+.yc-months { display: grid; grid-template-columns: repeat(12, 1fr); font: 500 11px var(--f-mono); color: var(--ink-3); }
+.yc-months span { padding-left: 4px; }
+.yc-track { position: relative; height: 32px; background-image: repeating-linear-gradient(90deg, transparent 0, transparent calc(100% / 12 - 1px), var(--line) calc(100% / 12 - 1px), var(--line) calc(100% / 12)); }
+.yc-track i { position: absolute; }
+.yc-bar { top: 12px; height: 8px; border-radius: 4px; background: var(--line); }
+.yc-row.active .yc-bar { background: color-mix(in srgb, var(--peak) 30%, var(--line)); }
+.yc-peak { top: 11px; height: 10px; border-radius: 5px; background: var(--peak); opacity: 0.5; }
+.yc-row.active .yc-peak { opacity: 1; }
+.yc-today { top: 0; bottom: 0; width: 2px; background: var(--accent); }
+.detail { min-height: 1px; }
+.foot { padding-block: 0 40px; font-size: 12.5px; color: var(--ink-3); }
+.foot a { color: inherit; }
+@media (max-width: 420px) { .wx-temp { font-size: 44px; } .season-box { padding-right: 70px; } .wk li { grid-template-columns: 62px 28px 34px 1fr; gap: 6px; } }
+@media (prefers-reduced-motion: reduce) { .hero { transition: none; } }
+</style>
+</head>
+<body>
+
+<section class="hero" id="hero" aria-label="What's in season in Korea and today's weather">
+  <canvas class="hero-canvas" id="hero-canvas" aria-hidden="true"></canvas>
+  <div class="hero-motif" id="hero-motif" aria-hidden="true"></div>
+  <div class="hero-inner wrap">
+    <p class="eyebrow" id="eyebrow">Korea · in season now</p>
+    <div class="season-box">
+      <h1 class="season-name" id="season-name">Korea in Season</h1>
+      <div class="chips"><span class="phase" id="season-phase"></span><span class="hangul ko" id="season-ko"></span></div>
+      <p class="season-line" id="season-line"></p>
+    </div>
+    <div class="wx" id="wx">
+      <div class="wx-place"><span id="wx-place">Seoul</span><span class="seg" role="group" aria-label="Temperature unit"><button type="button" id="u-c" aria-pressed="true">°C</button><button type="button" id="u-f" aria-pressed="false">°F</button></span></div>
+      <div class="wx-main">
+        <span class="wx-icon" id="wx-icon" aria-hidden="true">🌤️</span>
+        <span class="wx-temp" id="wx-temp">--°</span>
+        <span class="wx-meta"><span class="wx-cond" id="wx-cond">Loading weather…</span><span class="wx-sub" id="wx-sub"></span></span>
+      </div>
+      <div class="loc-row" id="loc-row" role="group" aria-label="Choose a place">
+        <button type="button" class="glass" data-city="seoul">Seoul</button>
+        <button type="button" class="glass" data-city="busan">Busan</button>
+        <button type="button" class="glass" data-city="jeju">Jeju</button>
+        <button type="button" class="glass" id="loc-me">📍 My location</button>
+        <button type="button" class="glass" id="loc-search" aria-expanded="false">🔎 Other city</button>
+      </div>
+      <form class="loc-form" id="loc-form" hidden autocomplete="off">
+        <input id="loc-q" type="search" placeholder="Type a city, e.g. London" aria-label="City name">
+        <div class="results" id="loc-results"></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<main class="board wrap">
+  <section class="panel" aria-labelledby="fc-h">
+    <div class="panel-h"><h2 id="fc-h">Forecast</h2><span class="note" id="fc-place"></span></div>
+    <div id="wx-live">
+      <div class="hourly" id="hourly" aria-label="Next 12 hours"></div>
+      <dl class="facts" id="facts" style="margin-top:12px"></dl>
+      <p class="sub-h" style="margin-top:14px">Next 8 days</p>
+      <ul class="wk" id="week"></ul>
+    </div>
+    <div class="wx-off" id="wx-off" hidden></div>
+  </section>
+
+  <section class="panel" aria-labelledby="now-h">
+    <div class="panel-h"><h2 id="now-h">In season in Korea</h2><span class="note" id="today-note"></span></div>
+    <ul class="cards" id="now"></ul>
+    <p class="sub-h">Coming up</p>
+    <ul class="soon" id="soon"></ul>
+  </section>
+
+  <section class="panel span" aria-labelledby="yr-h">
+    <div class="panel-h"><h2 id="yr-h">The Korean year, season by season</h2><span class="note">Tap a row for details</span></div>
+    <div class="legend"><span><i class="lg-bar"></i>In season</span><span><i class="lg-peak"></i>Best time</span><span><i class="lg-today"></i>Today</span></div>
+    <div class="cal-box"><div class="ycal" id="ycal"></div></div>
+    <div class="detail" id="detail" aria-live="polite"></div>
+  </section>
+</main>
+<p class="foot wrap">Season dates are typical for Korea and shift by a week or two with the year's weather; flowers bloom in the south first. Weather by <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>.</p>
+
+<script>
+window.SEASONS = [{"id":"sunrise","name":"New Year sunrise","ko":"새해 해돋이","from":"12-28","to":"01-05","peak":["12-31","01-01"],"w":3,"headline":"Time to catch the first sunrise of the year","desc":"Jeongdongjin, Ganjeolgot and Homigot are the classic spots. Arrive 30 minutes before sunrise to get a good place.","todo":["Check local sunrise time","Hot tea in a thermos","Write 3 new-year goals"],"scene":{"type":"lights","colors":["#1b2a4a","#e0875a"],"accent":"#ffb27a","motif":["🌅"]}},{"id":"bangeo","name":"Yellowtail (bangeo)","ko":"방어","from":"11-01","to":"02-28","peak":["12-01","01-31"],"w":2,"headline":"Fatty winter yellowtail is in season","desc":"The colder the water, the firmer and richer the fish. Belly as sashimi, head grilled or braised.","todo":["Yellowtail belly sashimi","Grilled yellowtail head","Moseulpo festival dates"],"scene":{"type":"sea","colors":["#0f2d4a","#3f7fa8"],"accent":"#9fd3ff","motif":["🐟","🍣"]}},{"id":"snow","name":"Snowy mountain hikes","ko":"눈꽃 산행","from":"12-15","to":"02-28","peak":["01-05","02-10"],"w":2,"headline":"Snow-covered peaks and winter views","desc":"Deogyusan, Taebaeksan and Hallasan are famous for snow flowers. Bring crampons and warm gloves.","todo":["Book Deogyusan gondola","Crampons & gaiters","Hot fish cake soup"],"scene":{"type":"snow","colors":["#5b7593","#c9d6e3"],"accent":"#ffffff","motif":["⛄","❄️"]}},{"id":"strawberry","name":"Strawberries","ko":"딸기","from":"12-01","to":"04-30","peak":["01-15","03-15"],"w":2,"headline":"Winter strawberries at their sweetest","desc":"Seolhyang, Geumsil and Kingsberry each taste different. Hotel strawberry buffets open around now too.","todo":["Compare varieties","Strawberry picking","Book a berry buffet"],"scene":{"type":"petals","colors":["#7a1f33","#f08a9b"],"accent":"#ffd1da","motif":["🍓"]}},{"id":"smelt","name":"Ice fishing for smelt","ko":"빙어 낚시","from":"01-01","to":"02-15","peak":["01-10","01-31"],"w":1,"headline":"Smelt fishing on a frozen lake","desc":"Smelt festivals in Hongcheon and Inje run around this time. Check the ice-thickness notice before you go.","todo":["Check if festival is on","Fried smelt","Pack winter boots"],"scene":{"type":"snow","colors":["#2f4d6b","#9fc0d8"],"accent":"#e6f4ff","motif":["🎣"]}},{"id":"namul","name":"Spring greens","ko":"봄나물","from":"02-20","to":"04-10","peak":["03-05","03-31"],"w":1,"headline":"Wake up your taste buds with spring greens","desc":"Fragrant spring greens like shepherd's purse, wild chives and mugwort are best in March. Try doenjang soup or a bibimbap with wild-chive sauce.","todo":["Shepherd's purse soup","Wild-chive bibimbap","Steamed mugwort cake"],"scene":{"type":"grass","colors":["#3e5b2a","#b8d48a"],"accent":"#e6f5c8","motif":["🌱"]}},{"id":"jjukkumi","name":"Webfoot octopus","ko":"주꾸미","from":"03-01","to":"05-10","peak":["03-20","04-20"],"w":2,"headline":"Spring webfoot octopus full of roe","desc":"Right before spawning, their heads are packed with roe. The Seocheon festival runs in March and April.","todo":["Octopus shabu-shabu","Spicy stir-fried octopus","Seocheon octopus fest"],"scene":{"type":"sea","colors":["#5a2a3a","#d9826b"],"accent":"#ffd0bf","motif":["🐙"]}},{"id":"maehwa","name":"Plum blossoms","ko":"매화","from":"02-25","to":"03-31","peak":["03-08","03-22"],"w":2,"headline":"Plum blossoms, the first sign of spring","desc":"Gwangyang Maehwa Village and the red plum at Tongdosa, Yangsan are famous. They bloom 2-3 weeks before cherry blossoms.","todo":["Gwangyang plum festival","Tongdosa red plum","A cup of plum tea"],"scene":{"type":"petals","colors":["#6b3a5a","#f5d1e0"],"accent":"#ffffff","motif":["🌼"]}},{"id":"cherry","name":"Cherry blossoms","ko":"벚꽃","from":"03-20","to":"04-20","peak":["03-28","04-10"],"w":3,"headline":"Cherry blossoms are in full bloom","headlines":{"rising":"Cherry blossoms are starting to open","peak":"Cherry blossoms are in full bloom","fading":"The last petals are falling"},"desc":"They bloom from the south: Jinhae, then Gyeongju, then Yeouido. About a week after full bloom, petals start to fall.","todo":["Yeouido Yunjung-ro walk","Seokchon Lake blossoms","Picnic with a lunchbox"],"scene":{"type":"petals","colors":["#c76b8f","#ffe3ec"],"accent":"#ffffff","motif":["🌸"]}},{"id":"doda","name":"Flounder & mugwort soup","ko":"도다리쑥국","from":"03-01","to":"04-30","peak":["03-15","04-15"],"w":1,"headline":"Soup of spring flounder and fresh mugwort","desc":"A spring delicacy around Tongyeong and Geoje. Light and clean, with a strong mugwort aroma.","todo":["Flounder mugwort soup","Bone-in flounder sashimi","Plan a Tongyeong trip"],"scene":{"type":"sea","colors":["#2a5a5a","#9fd1b8"],"accent":"#e2fff0","motif":["🐟","🌿"]}},{"id":"azalea","name":"Royal azaleas","ko":"철쭉","from":"04-15","to":"05-31","peak":["04-25","05-15"],"w":2,"headline":"Azaleas painting the mountains pink","desc":"Gunpo Azalea Hill, Hwangmaesan and Sobaeksan are the top spots. They peak in early May.","todo":["Gunpo azalea festival","Hwangmaesan azalea hike","Spring picnic"],"scene":{"type":"petals","colors":["#8c2a5e","#f59ac6"],"accent":"#ffe0f0","motif":["🌺"]}},{"id":"rose","name":"Roses","ko":"장미","from":"05-10","to":"06-20","peak":["05-20","06-05"],"w":2,"headline":"Rose gardens at their most vivid","desc":"See hundreds of varieties at Seoul Grand Park, the Jungnangcheon rose festival and Everland Rose Garden.","todo":["Jungnang rose festival","Evening stroll","Flower photos"],"scene":{"type":"petals","colors":["#7a1830","#f07a8a"],"accent":"#ffd8dd","motif":["🌹"]}},{"id":"hydrangea","name":"Hydrangeas","ko":"수국","from":"06-01","to":"07-20","peak":["06-15","07-05"],"w":2,"headline":"Lush hydrangeas around monsoon season","desc":"Hueree in Jeju, Jeogu Port in Geoje and Taejongdae in Busan are top spots. Colors look richer on rainy days.","todo":["Hydrangea outing","Chodang sweet corn","Check your umbrella"],"scene":{"type":"rain","colors":["#3b4f8a","#a8b8f0"],"accent":"#e0e6ff","motif":["💠"]}},{"id":"corn","name":"Chodang sweet corn","ko":"초당옥수수","from":"06-01","to":"07-31","peak":["06-15","07-15"],"w":1,"headline":"Sweet corn you can eat raw","desc":"Sweetness fades fast after harvest, so steam it as soon as it arrives. Four minutes in the microwave is enough.","todo":["Order sweet corn","Butter-grilled corn","Corn silk tea"],"scene":{"type":"sun","colors":["#c98a1a","#ffe08a"],"accent":"#fff6d0","motif":["🌽"]}},{"id":"firefly","name":"Fireflies","ko":"반딧불이","from":"05-25","to":"07-05","peak":["06-05","06-25"],"w":1,"headline":"Go see fireflies on a summer night","desc":"Catch them at the Muju Firefly Festival or Gildong Ecological Park in Seoul. 8-9 pm after sunset is best.","todo":["Book a firefly tour","Summer night walk","Use a red flashlight"],"scene":{"type":"fireflies","colors":["#0d1f1a","#264a3a"],"accent":"#e6ff8a","motif":["✨"]}},{"id":"boknal","name":"Boknal stamina food","ko":"복날 보양식","from":"07-05","to":"08-25","peak":["07-15","08-15"],"w":2,"headline":"A bowl of samgyetang on Boknal","desc":"Treat yourself to stamina food on Chobok, Jungbok and Malbok, the hottest days. Popular spots have long lines before lunch.","todo":["Samgyetang","Croaker fish soup","Cold soy-milk noodles"],"scene":{"type":"sun","colors":["#b5541a","#ffc46a"],"accent":"#fff0c8","motif":["🍲"]}},{"id":"beach","name":"Beach days","ko":"바다 물놀이","from":"07-01","to":"08-31","peak":["07-20","08-15"],"w":3,"headline":"Midsummer, perfect for the beach","desc":"Check when beaches open for the season. UV is especially strong from 10 am to 2 pm.","todo":["Check beach opening","Watermelon punch","Dry bag & sunscreen"],"scene":{"type":"sea","colors":["#0a5a8a","#6fd3e8"],"accent":"#e8fbff","motif":["🌊","🍉"]}},{"id":"jeoneo","name":"Gizzard shad (jeoneo)","ko":"전어","from":"08-20","to":"10-31","peak":["09-01","09-30"],"w":2,"headline":"Autumn shad, so good it brings anyone home","desc":"Shad in September and October is fatty and nutty. The smell of it grilling is especially good.","todo":["Grilled shad","Spicy shad sashimi salad","Gwangyang shad festival"],"scene":{"type":"sea","colors":["#2a4a6a","#c9a46a"],"accent":"#ffe8c0","motif":["🐟"]}},{"id":"daeha","name":"King prawns (daeha)","ko":"대하","from":"08-25","to":"11-10","peak":["09-10","10-10"],"w":3,"headline":"It's king prawn season","headlines":{"rising":"King prawn season has begun","peak":"It's king prawn season","fading":"King prawn season is winding down"},"desc":"Plump autumn prawns taste best grilled on coarse salt. Fry the leftover heads in butter.","todo":["Salt-grilled prawns","Butter-fried prawn heads","Namdang Port festival"],"scene":{"type":"sea","colors":["#7a2e1a","#f0a070"],"accent":"#ffe0c8","motif":["🦐"]}},{"id":"crab","name":"Autumn blue crab","ko":"가을 꽃게","from":"09-01","to":"11-15","peak":["09-15","10-31"],"w":2,"headline":"Meaty male blue crabs of autumn","desc":"In autumn, male crabs have the most meat. Steam them or make a spicy crab stew.","todo":["Steamed crab","Spicy crab stew","Yeonan Pier fish market"],"scene":{"type":"sea","colors":["#6a1e1e","#e0765a"],"accent":"#ffd6c8","motif":["🦀"]}},{"id":"cosmos","name":"Cosmos","ko":"코스모스","from":"09-01","to":"10-20","peak":["09-15","10-05"],"w":1,"headline":"Cosmos paths swaying in the breeze","desc":"Guri Hangang Park and the Bukcheon Cosmos Festival in Hadong are the classic spots.","todo":["Hadong Bukcheon cosmos","Go for a bike ride","Autumn photos"],"scene":{"type":"petals","colors":["#a0486a","#f6c2d6"],"accent":"#ffffff","motif":["🌸"]}},{"id":"pinkmuhly","name":"Pink muhly grass","ko":"핑크뮬리","from":"09-15","to":"10-31","peak":["09-25","10-15"],"w":1,"headline":"Waves of pink muhly","desc":"Find it at Cheomseongdae in Gyeongju, Nari Park in Yangju and Olympic Park. Backlight at sunset is gorgeous.","todo":["Olympic Park wildflowers","Cheomseongdae walk","Sunset photos"],"scene":{"type":"grass","colors":["#9a4a7a","#f2b8d4"],"accent":"#ffe6f2","motif":["🌾"]}},{"id":"eoksae","name":"Silver grass","ko":"억새","from":"09-25","to":"11-15","peak":["10-10","11-05"],"w":2,"headline":"The season of rippling silver grass","desc":"Haneul Park, Mindungsan and Ganwoljae in the Yeongnam Alps are top spots. The Haneul Park festival is in mid-October.","todo":["Haneul Park festival","Mindungsan hike","Sunset walk"],"scene":{"type":"grass","colors":["#6a5a3a","#e8d8a8"],"accent":"#fff8e0","motif":["🌾"]}},{"id":"foliage","name":"Autumn foliage","ko":"단풍","from":"10-01","to":"11-25","peak":["10-18","11-10"],"w":3,"headline":"Autumn leaves are at their peak","headlines":{"rising":"Autumn colors are moving south","peak":"Autumn leaves are at their peak","fading":"The last of the late-autumn leaves"},"desc":"Starting at Seoraksan, the colors move south 20-25 km a day. Seoul peaks from late October to early November.","todo":["Check peak dates","Naejangsan / Seoraksan","Deoksugung wall walk"],"scene":{"type":"leaves","colors":["#7a2a14","#f0a040"],"accent":"#ffe2b0","motif":["🍁"]}},{"id":"chestnut","name":"Chestnuts & sweet potatoes","ko":"군밤·군고구마","from":"10-15","to":"02-28","peak":["11-15","01-31"],"w":1,"headline":"Warm roasted sweet potatoes and chestnuts","desc":"Honey sweet potatoes get sweeter after curing 2-3 weeks. 40 minutes at 200°C in an air fryer is plenty.","todo":["Roasted sweet potatoes","Roasted chestnuts","Hot citron tea"],"scene":{"type":"lights","colors":["#3a2416","#b8743a"],"accent":"#ffd8a0","motif":["🍠","🌰"]}},{"id":"bungeoppang","name":"Bungeoppang (fish pastry)","ko":"붕어빵","from":"10-25","to":"02-28","peak":["12-01","01-31"],"w":1,"headline":"The smell of bungeoppang on every corner","desc":"Street stalls pop up one by one as it gets cold. Half red bean, half custard is the rule; find stalls with the app \"Gaseumsok 3000 won\".","todo":["Find a local stall","Red bean vs custard","Bring 3,000 won cash"],"scene":{"type":"lights","colors":["#4a2a12","#d08a3a"],"accent":"#ffe0b0","motif":["🐟"]}},{"id":"ginkgo","name":"Ginkgo-lined roads","ko":"은행나무길","from":"10-20","to":"11-25","peak":["10-30","11-15"],"w":2,"headline":"Roads lined with golden ginkgo trees","desc":"Gokgyocheon in Asan, the Hongcheon Ginkgo Forest and Myeongnyundang at Sungkyunkwan in Seoul are famous.","todo":["Gokgyocheon ginkgo road","Hongcheon Ginkgo Forest","Walk on fallen leaves"],"scene":{"type":"leaves","colors":["#8a6a10","#f5d84a"],"accent":"#fff6c0","motif":["🍂"]}},{"id":"oyster","name":"Oysters & kimjang","ko":"굴·김장","from":"11-01","to":"02-28","peak":["11-20","12-20"],"w":2,"headline":"Kimjang season: time for oyster bossam","desc":"Oysters plump up when the cold wind blows. Kimjang day isn't complete without oyster bossam.","todo":["Oyster bossam","Oyster rice soup","Order Tongyeong oysters"],"scene":{"type":"sea","colors":["#2a3a4a","#a8b8c8"],"accent":"#f0f6ff","motif":["🦪","🥬"]}},{"id":"gwamegi","name":"Gwamegi (dried herring)","ko":"과메기","from":"11-15","to":"02-15","peak":["12-01","01-15"],"w":1,"headline":"Gwamegi, half-dried in the cold wind","desc":"Guryongpo gwamegi from Pohang is famous. Wrap it with laver, seaweed, scallions and garlic.","todo":["A gwamegi spread","Trip to Guryongpo","Napa cabbage wraps"],"scene":{"type":"sea","colors":["#1a2a3a","#5a7a9a"],"accent":"#d8e8f8","motif":["🐟"]}},{"id":"christmas","name":"Year-end lights","ko":"연말 조명","from":"12-01","to":"12-27","peak":["12-15","12-25"],"w":3,"headline":"The city sparkles at year-end","desc":"Christmas decorations in Myeongdong, Cheonggyecheon and Lotte World Mall are dazzling. Book year-end gatherings early.","todo":["Christmas market","Book year-end dinner","Write a year review"],"scene":{"type":"lights","colors":["#14243a","#3a5a7a"],"accent":"#ffe08a","motif":["🎄"]}},{"id":"gyul","name":"Tangerines (gyul)","ko":"귤","from":"11-01","to":"02-28","peak":["11-20","01-15"],"w":1,"headline":"Winter means a box of tangerines","desc":"Open-field tangerines start in November; Hallabong and Cheonhyehyang are best in January and February.","todo":["Order tangerines","Tangerine picking","Try Hallabong"],"scene":{"type":"snow","colors":["#b8641a","#ffc070"],"accent":"#fff2d8","motif":["🍊"]}}];
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem('kis:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem('kis:' + k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } }
+  };
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var fmtMd = function (md) { var p = md.split('-'); return MON[+p[0] - 1] + ' ' + +p[1]; };
+  var range = function (a, b) { var x = a.split('-'), y = b.split('-'); return x[0] === y[0] ? fmtMd(a) + '–' + +y[1] : fmtMd(a) + ' – ' + fmtMd(b); };
+
+  /* ---------- Season scoring (same rules as the assistant app) ---------- */
+  function doy(md) { var p = md.split('-'); return Math.floor((Date.UTC(2001, +p[0] - 1, +p[1]) - Date.UTC(2001, 0, 1)) / 864e5); }
+  function lift(x, base) { return x < base ? x + 365 : x; }
+  function todayDoy(d) { return Math.floor((Date.UTC(2001, d.getMonth(), d.getDate()) - Date.UTC(2001, 0, 1)) / 864e5); }
+  function phase(s, date) {
+    var from = doy(s.from), to = lift(doy(s.to), from);
+    var ps = lift(doy(s.peak[0]), from), pe = lift(doy(s.peak[1]), ps), t = lift(todayDoy(date), from);
+    if (t > to) return null;
+    if (t < ps) { var d = ps - t, win = Math.max(ps - from, 1); return { phase: 'rising', label: 'On its way', score: s.w * (0.55 + 0.4 * (1 - d / win)), days: d }; }
+    if (t <= pe) return { phase: 'peak', label: 'At its best', score: s.w, days: 0 };
+    var rem = to - t, fw = Math.max(to - pe, 1);
+    return { phase: 'fading', label: 'Last chance', score: s.w * 0.5 * (rem / fw), days: -(t - pe) };
+  }
+  var ORDER = { peak: 0, rising: 1, fading: 2 };
+  function rank(date) {
+    return SEASONS.map(function (s) { var p = phase(s, date); return p && { s: s, p: p }; }).filter(Boolean)
+      .sort(function (a, b) { return (ORDER[a.p.phase] - ORDER[b.p.phase]) || (b.p.score - a.p.score); });
+  }
+  function daysUntil(md) { return (doy(md) - todayDoy(new Date()) + 365) % 365; }
+  function phaseText(p) {
+    if (p.phase === 'rising') return p.days === 1 ? 'Best from tomorrow' : 'Best in ' + p.days + ' days';
+    return p.label;
+  }
+  function headline(s, p) { return (s.headlines && p && s.headlines[p.phase]) || s.headline; }
+
+  /* ---------- Animated season scene ---------- */
+  var scene = (function () {
+    var canvas = $('hero-canvas'), ctx = canvas.getContext('2d');
+    var parts = [], type = 'petals', raf = 0, w = 0, h = 0, t0 = 0, emojis = [], floats = [];
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var rnd = function (a, b) { return a + Math.random() * (b - a); };
+    var EMO = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    var PALETTE = { petals: ['#ffd6e4', '#ffc2d6', '#fff0f5', '#f7a8c4'], leaves: ['#e0552a'], snow: ['#ffffff'], lights: ['#ffe08a', '#ffc46a', '#fff2c8', '#ff9a6a'],
+      sun: ['#fff6d0', '#ffe08a'], fireflies: ['#e6ff8a', '#c8ff6a'], grass: ['#fff8e0', '#f0e0b0'], sea: ['#ffffff'], rain: ['#e0e8ff'] };
+    function resize() {
+      var r = canvas.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = r.width; h = r.height; canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    function make(initial) {
+      var pal = PALETTE[type] || ['#fff'];
+      var p = { x: rnd(0, w), y: initial ? rnd(0, h) : -20, c: pal[(Math.random() * pal.length) | 0], a: rnd(0, 6.28), va: rnd(-0.03, 0.03), ph: rnd(0, 6.28) };
+      switch (type) {
+        case 'petals': p.s = rnd(5, 10); p.vy = rnd(0.4, 1.1); p.vx = rnd(0.2, 0.8); break;
+        case 'leaves': p.s = rnd(7, 13); p.vy = rnd(0.6, 1.4); p.vx = rnd(-0.3, 0.6); p.leaf = Math.random() < 0.6 ? '🍁' : '🍂'; break;
+        case 'snow': p.s = rnd(1.5, 4); p.vy = rnd(0.3, 1.0); p.vx = rnd(-0.3, 0.3); break;
+        case 'rain': p.s = rnd(10, 22); p.vy = rnd(6, 10); p.vx = -1.2; break;
+        case 'lights': p.s = rnd(2, 7); p.y = initial ? rnd(0, h) : h + 10; p.vy = -rnd(0.2, 0.5); p.vx = rnd(-0.15, 0.15); break;
+        case 'fireflies': p.s = rnd(1.5, 3); p.y = rnd(h * 0.2, h); p.vy = rnd(-0.3, 0.3); p.vx = rnd(-0.3, 0.3); break;
+        case 'sun': p.s = rnd(2, 5); p.y = rnd(0, h); p.vy = -rnd(0.1, 0.3); p.vx = rnd(-0.1, 0.1); break;
+        case 'grass': p.x = rnd(-10, w + 10); p.y = h; p.s = rnd(h * 0.18, h * 0.42); p.vx = 0; p.vy = 0; break;
+        default: p.s = 3; p.vx = 0; p.vy = 0;
+      }
+      return p;
+    }
+    function count() {
+      var base = Math.max(24, Math.min(90, Math.round(w * h / 9000)));
+      return type === 'grass' ? Math.round(w / 7) : type === 'leaves' ? Math.round(base * 0.45) : type === 'rain' ? base * 1.4 : type === 'lights' ? base * 0.5 : type === 'sea' ? 0 : base;
+    }
+    function draw(time) {
+      var tt = (time - t0) / 1000;
+      ctx.clearRect(0, 0, w, h);
+      if (type === 'sun' || type === 'lights') {
+        var g = ctx.createRadialGradient(w * 0.82, h * 0.18, 0, w * 0.82, h * 0.18, Math.max(w, h) * 0.6);
+        g.addColorStop(0, type === 'sun' ? 'rgba(255,240,180,0.55)' : 'rgba(255,210,140,0.25)'); g.addColorStop(1, 'rgba(255,240,180,0)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+      }
+      if (type === 'sea') for (var k = 0; k < 3; k++) {
+        ctx.beginPath(); ctx.moveTo(0, h);
+        for (var x = 0; x <= w; x += 12) ctx.lineTo(x, h * (0.78 + k * 0.07) + Math.sin(x / 70 + tt * (0.6 + k * 0.2) + k) * 8);
+        ctx.lineTo(w, h); ctx.closePath(); ctx.fillStyle = 'rgba(255,255,255,' + (0.07 + k * 0.03) + ')'; ctx.fill();
+      }
+      for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        switch (type) {
+          case 'petals':
+            p.x += p.vx + Math.sin(tt + p.ph) * 0.4; p.y += p.vy; p.a += p.va;
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.c; ctx.globalAlpha = 0.85;
+            ctx.beginPath(); ctx.ellipse(0, 0, p.s, p.s * 0.6, 0, 0, 6.283); ctx.fill(); ctx.restore(); break;
+          case 'leaves':
+            p.x += p.vx + Math.sin(tt * 0.8 + p.ph) * 0.8; p.y += p.vy; p.a += p.va * 1.5;
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.globalAlpha = 0.92; ctx.fillStyle = '#000';
+            ctx.font = Math.round(p.s * 2) + 'px ' + EMO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.leaf, 0, 0); ctx.restore(); break;
+          case 'snow':
+            p.x += p.vx + Math.sin(tt + p.ph) * 0.3; p.y += p.vy;
+            ctx.globalAlpha = 0.85; ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 6.283); ctx.fill(); break;
+          case 'rain':
+            p.x += p.vx; p.y += p.vy; ctx.globalAlpha = 0.35; ctx.strokeStyle = p.c; ctx.lineWidth = 1.2;
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.vx * 2, p.y + p.s); ctx.stroke(); break;
+          case 'sun':
+            p.x += p.vx + Math.sin(tt + p.ph) * 0.3; p.y += p.vy; ctx.globalAlpha = 0.45; ctx.fillStyle = p.c;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 6.283); ctx.fill(); break;
+          case 'lights': case 'fireflies':
+            p.x += p.vx + Math.sin(tt * 0.7 + p.ph) * (type === 'fireflies' ? 0.4 : 0.25); p.y += p.vy;
+            var tw = 0.35 + 0.65 * Math.abs(Math.sin(tt * (type === 'fireflies' ? 1.4 : 0.6) + p.ph));
+            var rg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.s * 3); rg.addColorStop(0, p.c); rg.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.globalAlpha = tw * (type === 'lights' ? 0.32 : 0.95); ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(p.x, p.y, p.s * 3, 0, 6.283); ctx.fill(); break;
+          case 'grass':
+            var sway = Math.sin(tt * 0.9 + p.x / 90) * 18;
+            ctx.globalAlpha = 0.35; ctx.strokeStyle = p.c; ctx.lineWidth = 1.4;
+            ctx.beginPath(); ctx.moveTo(p.x, h); ctx.quadraticCurveTo(p.x + sway * 0.3, h - p.s * 0.6, p.x + sway, h - p.s); ctx.stroke();
+            ctx.globalAlpha = 0.5; ctx.fillStyle = p.c; ctx.beginPath(); ctx.ellipse(p.x + sway, h - p.s, 3, 12, sway / 60, 0, 6.283); ctx.fill(); break;
+        }
+        if (p.y > h + 30 || p.y < -40 || p.x > w + 40 || p.x < -40) {
+          if (type !== 'grass') parts[i] = make(false);
+          if (type === 'lights' || type === 'fireflies' || type === 'sun') parts[i].y = type === 'fireflies' ? rnd(h * 0.3, h) : h + 10;
+        }
+      }
+      var fall = type === 'petals' || type === 'leaves' || type === 'snow' || type === 'rain';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (var j = 0; j < floats.length; j++) {
+        var f = floats[j];
+        f.y += fall ? f.v : -f.v; f.x += Math.sin(tt * 0.7 + f.ph) * 0.35; f.a = Math.sin(tt * 0.9 + f.ph) * 0.35;
+        if (f.y > h + 30) { f.y = -24; f.x = rnd(0, w); }
+        if (f.y < -30) { f.y = h + 24; f.x = rnd(0, w); }
+        ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.a); ctx.globalAlpha = 0.6; ctx.fillStyle = '#000';
+        ctx.font = Math.round(f.s) + 'px ' + EMO; ctx.fillText(f.e, 0, 0); ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+    }
+    function loop(time) { draw(time); raf = requestAnimationFrame(loop); }
+    function start(cfg) {
+      type = cfg.type; emojis = cfg.emojis || [];
+      cancelAnimationFrame(raf); resize(); parts = [];
+      var n = count(); if (emojis.length && type !== 'leaves') n = Math.round(n * 0.6);
+      for (var i = 0; i < n; i++) parts.push(make(true));
+      floats = [];
+      var fn = emojis.length ? Math.max(8, Math.min(16, Math.round(w / 32))) : 0;
+      for (var k = 0; k < fn; k++) floats.push({ e: emojis[k % emojis.length], x: rnd(0, w), y: rnd(0, h), s: rnd(15, 24), v: rnd(0.25, 0.6), ph: rnd(0, 6.28), a: 0 });
+      t0 = performance.now();
+      if (reduce) { draw(t0 + 1000); return; }
+      raf = requestAnimationFrame(loop);
+    }
+    var rt;
+    window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { start({ type: type, emojis: emojis }); }, 200); });
+    document.addEventListener('visibilitychange', function () { if (document.hidden) cancelAnimationFrame(raf); else if (!reduce) raf = requestAnimationFrame(loop); });
+    return { start: start };
+  })();
+
+  /* ---------- Seasons ---------- */
+  var today = new Date();
+  var ranked = rank(today);
+  var activeIds = ranked.map(function (x) { return x.s.id; });
+  function showHero() {
+    var first = ranked[0];
+    var tops = first ? ranked.filter(function (x) { return x.p.phase === first.p.phase && first.p.score - x.p.score < 0.001; }) : [{ s: SEASONS[0], p: null }];
+    var s = tops[0].s, p = tops[0].p, root = document.documentElement.style;
+    root.setProperty('--hero-a', s.scene.colors[0]); root.setProperty('--hero-b', s.scene.colors[1]); root.setProperty('--season', s.scene.accent);
+    $('eyebrow').textContent = 'Korea · ' + MON[today.getMonth()] + ' ' + today.getDate() + ' · in season now';
+    $('season-name').textContent = tops.map(function (x) { return x.s.name; }).join(' & ');
+    $('season-ko').textContent = tops.map(function (x) { return x.s.ko; }).join(' · ');
+    $('season-phase').textContent = p ? phaseText(p) : 'Off season';
+    $('season-line').textContent = headline(s, p);
+    var motif = tops.length > 1 ? tops.slice(0, 2).map(function (x) { return x.s.scene.motif[0]; }) : s.scene.motif;
+    $('hero-motif').innerHTML = motif.map(function (m) { return '<span>' + esc(m) + '</span>'; }).join('');
+    var em = [];
+    tops.forEach(function (x) { x.s.scene.motif.forEach(function (m) { if (em.indexOf(m) < 0) em.push(m); }); });
+    if (s.scene.type === 'leaves' && tops.length === 1) em = [];
+    scene.start({ type: s.scene.type, emojis: em });
+  }
+  function card(s, p, focus) {
+    var chip = p ? '<span class="ph ' + p.phase + '">' + esc(phaseText(p)) + '</span>' : '<span class="ph later">Starts in ' + daysUntil(s.from) + ' days</span>';
+    return '<li class="card' + (focus ? ' focus' : '') + '" id="c-' + esc(s.id) + '"><span class="em" aria-hidden="true">' + esc(s.scene.motif[0] || '') + '</span>' +
+      '<div class="top"><h3>' + esc(s.name) + '</h3><span class="kn ko">' + esc(s.ko) + '</span>' + chip + '</div>' +
+      '<span class="when">Season ' + range(s.from, s.to) + ' · best ' + range(s.peak[0], s.peak[1]) + '</span>' +
+      '<p><b>' + esc(headline(s, p)) + '.</b> ' + esc(s.desc) + '</p>' +
+      '<ul class="todo" aria-label="Things to try">' + s.todo.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></li>';
+  }
+  function renderNow() {
+    $('today-note').textContent = MON[today.getMonth()] + ' ' + today.getDate();
+    $('now').innerHTML = ranked.length ? ranked.map(function (x) { return card(x.s, x.p); }).join('') : '<li class="note">Nothing is in season right now.</li>';
+    var later = SEASONS.filter(function (s) { return activeIds.indexOf(s.id) < 0; })
+      .sort(function (a, b) { return daysUntil(a.from) - daysUntil(b.from); }).slice(0, 5);
+    $('soon').innerHTML = later.map(function (s) {
+      var d = daysUntil(s.from);
+      return '<li><button type="button" data-sid="' + esc(s.id) + '"><span aria-hidden="true">' + esc(s.scene.motif[0]) + '</span><span>' + esc(s.name) + '</span><span class="d">' + fmtMd(s.from) + (d ? ' · in ' + d + 'd' : ' · today') + '</span></button></li>';
+    }).join('');
+  }
+  var focusId = null;
+  function renderCal() {
+    var pct = function (d) { return (d / 365 * 100).toFixed(3) + '%'; };
+    var seg = function (a, b, cls) {
+      var x = doy(a), y = doy(b) + 1;
+      if (y > x) return '<i class="' + cls + '" style="left:' + pct(x) + ';width:' + pct(y - x) + '"></i>';
+      return '<i class="' + cls + '" style="left:' + pct(x) + ';width:' + pct(365 - x) + '"></i><i class="' + cls + '" style="left:0;width:' + pct(y) + '"></i>';
+    };
+    var rows = SEASONS.slice().sort(function (a, b) { return lift(doy(a.peak[0]), 0) - lift(doy(b.peak[0]), 0); });
+    var t = todayDoy(today) + 0.5;
+    var html = '<div class="yc-row yc-head"><span class="yc-name"></span><span class="yc-months">' + MON.map(function (m) { return '<span>' + m + '</span>'; }).join('') + '</span></div>';
+    rows.forEach(function (s) {
+      html += '<button type="button" class="yc-row' + (focusId === s.id ? ' on' : '') + (activeIds.indexOf(s.id) >= 0 ? ' active' : '') + '" data-sid="' + esc(s.id) + '" aria-pressed="' + (focusId === s.id) + '">' +
+        '<span class="yc-name"><span aria-hidden="true">' + esc(s.scene.motif[0] || '') + '</span>' + esc(s.name) + '</span>' +
+        '<span class="yc-track">' + seg(s.from, s.to, 'yc-bar') + seg(s.peak[0], s.peak[1], 'yc-peak') + '<i class="yc-today" style="left:' + pct(t) + '"></i></span></button>';
+    });
+    $('ycal').innerHTML = html;
+    var s = focusId && SEASONS.find(function (x) { return x.id === focusId; });
+    $('detail').innerHTML = s ? '<ul class="cards">' + card(s, phase(s, today)) + '</ul>' : '';
+  }
+  function focusSeason(id, scroll) {
+    focusId = focusId === id && !scroll ? null : id;
+    renderCal();
+    if (scroll && focusId) $('detail').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  $('ycal').addEventListener('click', function (e) { var b = e.target.closest('[data-sid]'); if (b) focusSeason(b.dataset.sid); });
+  $('soon').addEventListener('click', function (e) { var b = e.target.closest('[data-sid]'); if (b) focusSeason(b.dataset.sid, true); });
+
+  /* ---------- Weather (Open-Meteo, no key needed) ---------- */
+  var WMO = {
+    0: ['Clear', '☀️'], 1: ['Mostly clear', '🌤️'], 2: ['Partly cloudy', '⛅'], 3: ['Overcast', '☁️'], 45: ['Fog', '🌫️'], 48: ['Freezing fog', '🌫️'],
+    51: ['Light drizzle', '🌦️'], 53: ['Drizzle', '🌦️'], 55: ['Heavy drizzle', '🌧️'], 56: ['Freezing drizzle', '🌧️'], 57: ['Freezing drizzle', '🌧️'],
+    61: ['Light rain', '🌦️'], 63: ['Rain', '🌧️'], 65: ['Heavy rain', '🌧️'], 66: ['Freezing rain', '🌧️'], 67: ['Heavy freezing rain', '🌧️'],
+    71: ['Light snow', '🌨️'], 73: ['Snow', '🌨️'], 75: ['Heavy snow', '❄️'], 77: ['Snow grains', '🌨️'],
+    80: ['Showers', '🌦️'], 81: ['Showers', '🌧️'], 82: ['Heavy showers', '⛈️'], 85: ['Snow showers', '🌨️'], 86: ['Heavy snow showers', '❄️'],
+    95: ['Thunderstorm', '⛈️'], 96: ['Thunderstorm with hail', '⛈️'], 99: ['Severe thunderstorm', '⛈️']
+  };
+  var wmo = function (c) { return WMO[c] || ['Unknown', '🌡️']; };
+  var CITIES = {
+    seoul: { name: 'Seoul', lat: 37.5665, lon: 126.978 },
+    busan: { name: 'Busan', lat: 35.1796, lon: 129.0756 },
+    jeju: { name: 'Jeju', lat: 33.4996, lon: 126.5312 }
+  };
+  var unit = store.get('unit', /^en-(US|LR|MM)$/.test(navigator.language || '') ? 'f' : 'c');
+  var place = store.get('place', CITIES.seoul);
+  var last = null;
+  var T = function (c) { return Math.round(unit === 'f' ? c * 9 / 5 + 32 : c); };
+  var deg = function (c) { return T(c) + '°'; };
+  function getJSON(url, ms) {
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, ms || 9000);
+    return fetch(url, ctrl ? { signal: ctrl.signal } : {}).then(function (r) { clearTimeout(timer); if (!r.ok) throw new Error(r.status); return r.json(); },
+      function (e) { clearTimeout(timer); throw e; });
+  }
+  function load() {
+    var q = 'latitude=' + place.lat + '&longitude=' + place.lon;
+    $('wx-place').textContent = place.name; $('fc-place').textContent = place.name;
+    $('wx-cond').textContent = 'Loading weather…';
+    var url = 'https://api.open-meteo.com/v1/forecast?' + q +
+      '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m' +
+      '&hourly=temperature_2m,precipitation_probability,weather_code' +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,sunrise,sunset' +
+      '&timezone=auto&forecast_days=8&wind_speed_unit=kmh';
+    var air = getJSON('https://air-quality-api.open-meteo.com/v1/air-quality?' + q + '&current=pm2_5,us_aqi&timezone=auto').then(function (r) { return r.current; }).catch(function () { return null; });
+    Promise.all([getJSON(url), air]).then(function (r) { last = { d: r[0], air: r[1] }; render(); }).catch(offline);
+    syncChips();
+  }
+  function offline() {
+    last = null;
+    $('wx-icon').textContent = '🌡️'; $('wx-temp').textContent = '--°';
+    $('wx-cond').textContent = 'Weather isn’t available here'; $('wx-sub').textContent = 'Open the page in a web browser to see it';
+    $('wx-live').hidden = true; $('wx-off').hidden = false;
+    $('wx-off').textContent = 'Live weather couldn’t load in this view. The season guide works everywhere; the forecast needs a normal web browser with internet access.';
+  }
+  function hm(iso) { var h = +iso.slice(11, 13), m = iso.slice(14, 16); return unit === 'f' ? ((h % 12) || 12) + ':' + m + (h < 12 ? ' am' : ' pm') : iso.slice(11, 16); }
+  function hourLabel(h) { return unit === 'f' ? ((h % 12) || 12) + (h < 12 ? 'a' : 'p') : String(h).padStart(2, '0'); }
+  function aqiWord(v) { return v <= 50 ? 'Good' : v <= 100 ? 'Moderate' : v <= 150 ? 'Unhealthy for some' : v <= 200 ? 'Unhealthy' : 'Very unhealthy'; }
+  function render() {
+    if (!last) return;
+    var d = last.d, c = d.current, dy = d.daily, info = wmo(c.weather_code);
+    $('wx-live').hidden = false; $('wx-off').hidden = true;
+    $('wx-icon').textContent = info[1];
+    $('wx-temp').textContent = deg(c.temperature_2m);
+    $('wx-cond').textContent = info[0] + ' · feels ' + deg(c.apparent_temperature);
+    $('wx-sub').textContent = 'H ' + deg(dy.temperature_2m_max[0]) + '  L ' + deg(dy.temperature_2m_min[0]) + ' · rain ' + (dy.precipitation_probability_max[0] || 0) + '%';
+    var nowIso = c.time.slice(0, 13), start = Math.max(0, d.hourly.time.findIndex(function (t) { return t.slice(0, 13) === nowIso; })), hrs = [];
+    for (var i = start; i < start + 12 && i < d.hourly.time.length; i++) hrs.push(i);
+    $('hourly').innerHTML = hrs.map(function (i, k) {
+      var pop = d.hourly.precipitation_probability[i];
+      return '<div class="hour' + (k ? '' : ' now') + '"><span class="h-time">' + (k ? hourLabel(+d.hourly.time[i].slice(11, 13)) : 'Now') + '</span>' +
+        '<span class="h-ico" aria-hidden="true">' + wmo(d.hourly.weather_code[i])[1] + '</span><span class="h-t">' + deg(d.hourly.temperature_2m[i]) + '</span>' +
+        '<span class="h-p">' + (pop >= 20 ? pop + '%' : '') + '</span></div>';
+    }).join('');
+    var wind = unit === 'f' ? Math.round(c.wind_speed_10m * 0.621) + ' mph' : Math.round(c.wind_speed_10m) + ' km/h';
+    var facts = [['Humidity', c.relative_humidity_2m + '%'], ['Wind', wind], ['UV index', dy.uv_index_max[0] != null ? Math.round(dy.uv_index_max[0]) : '–'],
+      ['Sunrise', hm(dy.sunrise[0])], ['Sunset', hm(dy.sunset[0])]];
+    if (last.air && last.air.us_aqi != null) facts.push(['Air quality', last.air.us_aqi + ' · ' + aqiWord(last.air.us_aqi)]);
+    $('facts').innerHTML = facts.map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('');
+    var lo = Math.min.apply(null, dy.temperature_2m_min), hi = Math.max.apply(null, dy.temperature_2m_max), span = Math.max(1, hi - lo);
+    $('week').innerHTML = dy.time.map(function (t, i) {
+      var p = t.split('-'), day = new Date(+p[0], +p[1] - 1, +p[2]), wi = wmo(dy.weather_code[i]), mn = dy.temperature_2m_min[i], mx = dy.temperature_2m_max[i], pop = dy.precipitation_probability_max[i] || 0;
+      return '<li><span class="wk-day"><b>' + (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : DAY[day.getDay()]) + '</b><span>' + MON[day.getMonth()] + ' ' + day.getDate() + '</span></span>' +
+        '<span class="wk-ico" title="' + esc(wi[0]) + '" aria-label="' + esc(wi[0]) + '">' + wi[1] + '</span><span class="wk-pop">' + (pop >= 20 ? pop + '%' : '') + '</span>' +
+        '<span class="wk-temp mono"><span class="lo">' + deg(mn) + '</span><span class="wk-bar"><i style="left:' + ((mn - lo) / span * 100) + '%;right:' + ((hi - mx) / span * 100) + '%"></i></span><span class="hi">' + deg(mx) + '</span></span></li>';
+    }).join('');
+  }
+  function setUnit(u) {
+    unit = u; store.set('unit', u);
+    $('u-c').setAttribute('aria-pressed', String(u === 'c')); $('u-f').setAttribute('aria-pressed', String(u === 'f'));
+    render();
+  }
+  $('u-c').onclick = function () { setUnit('c'); };
+  $('u-f').onclick = function () { setUnit('f'); };
+  function syncChips() {
+    Array.prototype.forEach.call(document.querySelectorAll('#loc-row [data-city]'), function (b) {
+      var c = CITIES[b.dataset.city]; b.setAttribute('aria-pressed', String(c.lat === place.lat && c.lon === place.lon));
+    });
+    $('loc-me').setAttribute('aria-pressed', String(!!place.me));
+  }
+  function choose(p) { place = p; store.set('place', p); load(); }
+  $('loc-row').addEventListener('click', function (e) { var b = e.target.closest('[data-city]'); if (b) choose(CITIES[b.dataset.city]); });
+  $('loc-me').onclick = function () {
+    if (!navigator.geolocation) { $('wx-cond').textContent = 'This browser can’t share your location'; return; }
+    $('wx-cond').textContent = 'Finding you…';
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var g = { name: 'My location', lat: +pos.coords.latitude.toFixed(3), lon: +pos.coords.longitude.toFixed(3), me: true };
+      getJSON('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + g.lat + '&longitude=' + g.lon + '&localityLanguage=en', 4000)
+        .then(function (r) { g.name = r.city || r.locality || r.principalSubdivision || g.name; }).catch(function () {})
+        .then(function () { choose(g); });
+    }, function () { $('wx-cond').textContent = 'Location is off. Pick a city instead.'; }, { timeout: 8000, maximumAge: 30 * 60 * 1000 });
+  };
+  $('loc-search').onclick = function () {
+    var f = $('loc-form'); f.hidden = !f.hidden; this.setAttribute('aria-expanded', String(!f.hidden));
+    if (!f.hidden) $('loc-q').focus();
+  };
+  var qt;
+  $('loc-q').addEventListener('input', function () {
+    var q = this.value.trim(); clearTimeout(qt);
+    if (q.length < 2) { $('loc-results').innerHTML = ''; return; }
+    qt = setTimeout(function () {
+      getJSON('https://geocoding-api.open-meteo.com/v1/search?count=5&language=en&name=' + encodeURIComponent(q), 6000).then(function (r) {
+        var list = r.results || [];
+        $('loc-results').innerHTML = list.length ? list.map(function (c) {
+          return '<button type="button" data-lat="' + c.latitude + '" data-lon="' + c.longitude + '" data-name="' + esc(c.name) + '">' + esc(c.name) + '<span style="opacity:.6"> · ' + esc([c.admin1, c.country].filter(Boolean).join(', ')) + '</span></button>';
+        }).join('') : '<span class="hint">No city found with that name.</span>';
+      }).catch(function () { $('loc-results').innerHTML = '<span class="hint">City search needs internet access.</span>'; });
+    }, 300);
+  });
+  $('loc-form').addEventListener('submit', function (e) { e.preventDefault(); var b = $('loc-results').querySelector('button'); if (b) b.click(); });
+  $('loc-results').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    choose({ name: b.dataset.name, lat: +b.dataset.lat, lon: +b.dataset.lon });
+    $('loc-form').hidden = true; $('loc-search').setAttribute('aria-expanded', 'false'); $('loc-q').value = ''; $('loc-results').innerHTML = '';
+  });
+
+  showHero(); renderNow(); renderCal(); setUnit(unit); load();
+})();
+</script>
+</body>
+</html>
