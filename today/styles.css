@@ -153,6 +153,7 @@ a { color: var(--accent); }
 .hero-nn .nn-item.idle { cursor: default; border-left-color: rgba(255, 255, 255, 0.25); }
 .nn-label { grid-row: span 2; font-size: 11.5px; font-weight: 700; line-height: 1.3; opacity: 0.9; font-variant-numeric: tabular-nums; }
 .nn-title { font-size: 14px; font-weight: 600; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.hero-nn .nn-item > .nn-title:last-child, .hero-nn .nn-item > .nn-title:nth-last-child(2):has(+ .nn-bar) { grid-row: span 2; }
 .nn-item.idle .nn-title { opacity: 0.75; font-weight: 500; }
 .nn-meta { font-size: 12px; opacity: 0.8; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .nn-bar { grid-column: 1 / -1; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); margin-top: 6px; overflow: hidden; }

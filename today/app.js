@@ -1330,7 +1330,9 @@
       return '<button type="button" class="nn-item ' + kind + (s.important ? ' imp' : '') + (s.sample ? ' is-sample' : '') + '" data-id="' + s.id + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="nn-label">' + label + '</span>' +
         '<span class="nn-title">' + esc(s.title) + '</span>' +
-        '<span class="nn-meta">' + (s.start ? s.start + (s.end ? '–' + s.end : '') : '시간 미정') + (s.place ? ' · ' + esc(s.place) : '') + '</span>' +
+        // 시간이 없으면 '시간 미정' 대신 장소만 (둘 다 없으면 줄 자체를 빼요)
+        (function () { var m = [s.start ? s.start + (s.end ? '–' + s.end : '') : '', s.place ? esc(s.place) : ''].filter(Boolean).join(' · ');
+          return m ? '<span class="nn-meta">' + m + '</span>' : ''; })() +
         (bar != null ? '<span class="nn-bar"><i style="width:' + bar + '%"></i></span>' : '') + '</button>';
     };
     var nextLabel = function (s) { return s.start ? '다음 · ' + relLabel(toMin(s.start) - nm) : '다음 할 일'; };
