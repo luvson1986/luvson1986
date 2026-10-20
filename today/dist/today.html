@@ -2917,14 +2917,6 @@ window.EN_DATA = {
         g.addColorStop(1, 'rgba(255,240,180,0)');
         ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
       }
-      if (type === 'sea') {
-        for (var k = 0; k < 3; k++) {
-          ctx.beginPath(); ctx.moveTo(0, h);
-          for (var x = 0; x <= w; x += 12) ctx.lineTo(x, h * (0.78 + k * 0.07) + Math.sin(x / 70 + tt * (0.6 + k * 0.2) + k) * 8);
-          ctx.lineTo(w, h); ctx.closePath();
-          ctx.fillStyle = 'rgba(255,255,255,' + (0.07 + k * 0.03) + ')'; ctx.fill();
-        }
-      }
       for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
         switch (type) {
