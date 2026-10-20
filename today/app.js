@@ -1242,24 +1242,27 @@
         (openEnded ? '<button type="button" class="tl-done" data-done="' + s.id + '" aria-pressed="' + !!s.done + '" aria-label="' + esc(s.title) + (s.done ? ' 완료 취소' : ' 완료') + '">' + (s.done ? '✓ 완료' : '완료') + '</button>' : '') +
         '</li>';
     };
-    var html = '';
-    var nowPlaced = diff !== 0;
+    // 일정을 순서대로 그리고, 현재 시각 줄은 '아직 남은 첫 일정' 바로 앞에 넣어요.
+    // 지난 일: 완료했거나, 시작 시각이 지났거나(진행 중 포함), 지금보다 앞자리에 둔 시간 미정 일정
+    var rows = [];
     orderDay(all).forEach(function (s) {
       var k = seqMin(s, all.indexOf(s));
       if (!s.start) {
-        // 완료한 시간 미정 일정은 지난 일로 보고 현재 시각 줄을 그 아래로
-        if (!nowPlaced && !s.done && (s.pos == null || nowMin < k) && list.length) { html += nowRow(now); nowPlaced = true; }
-        html += card(s, diff < 0 || s.done ? 'past' : '', '미정', '', k);
+        rows.push({ html: card(s, diff < 0 || s.done ? 'past' : '', '미정', '', k), behind: s.done || (s.pos != null && k <= nowMin) });
         return;
       }
       var st = toMin(s.start), en = s.end ? toMin(s.end) : null;
-      if (!nowPlaced && nowMin < st) { html += nowRow(now); nowPlaced = true; }
       // 종료 시간이 없으면 다음 시간 일정이 시작될 때까지(그 뒤 일정이 없으면 '완료'를 누를 때까지) 진행 중
       if (en == null) en = implicitEnd(s, all);
       var state = s.done || diff < 0 ? 'past' : diff > 0 ? '' : en != null && en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
-      html += card(s, state, s.start, '', k);
-      if (!nowPlaced && state === 'current') { html += nowRow(now); nowPlaced = true; }
+      rows.push({ html: card(s, state, s.start, '', k), behind: s.done || st <= nowMin });
     });
+    var at = -1;
+    if (diff === 0 && list.length) {
+      at = rows.length;
+      for (var ri = 0; ri < rows.length; ri++) if (!rows[ri].behind) { at = ri; break; }
+    }
+    var html = rows.map(function (r, i) { return (i === at ? nowRow(now) : '') + r.html; }).join('') + (at === rows.length ? nowRow(now) : '');
     $('timeline').innerHTML = html;
     renderNowNext();
   }
