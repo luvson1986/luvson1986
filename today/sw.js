@@ -1,7 +1,7 @@
 /* 오늘 서비스 워커
    앱 파일은 네트워크 우선(항상 최신), 오프라인이면 저장해 둔 버전으로 열려요.
    날씨·뉴스 같은 외부 요청은 건드리지 않아요. */
-var CACHE = 'today-v104';
+var CACHE = 'today-v105';
 var SHELL = ['./', './index.html', './styles.css', './i18n.js', './data.js', './i18n-data.js', './phrases.js', './app.js', './manifest.webmanifest', './icons/icon-192.png', './icons/source.png'];
 
 self.addEventListener('install', function (e) {
@@ -15,14 +15,19 @@ self.addEventListener('activate', function (e) {
 self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
-  // 브라우저 캐시를 건너뛰고 서버에 확인해서, 고친 버전이 바로 보이게
-  e.respondWith(fetch(req, { cache: 'no-cache' }).then(function (res) {
+  // 네트워크 우선이지만 1.5초 안에 안 오면 저장해 둔 버전으로 먼저 열어요 (켤 때 흰 화면이 길지 않게)
+  var net = fetch(req, { cache: 'no-cache' }).then(function (res) {
     var copy = res.clone();
     caches.open(CACHE).then(function (c) { c.put(req, copy); });
     return res;
-  }).catch(function () {
-    return caches.match(req).then(function (hit) { return hit || caches.match('./index.html'); });
+  });
+  var cached = caches.match(req).then(function (hit) { return hit || (req.mode === 'navigate' ? caches.match('./index.html') : null); });
+  e.respondWith(new Promise(function (resolve) {
+    var done = false, finish = function (r) { if (!done && r) { done = true; resolve(r); } };
+    net.then(finish, function () { cached.then(function (h) { finish(h); if (!done) resolve(Response.error()); }); });
+    setTimeout(function () { cached.then(finish); }, 1500);
   }));
+  if (e.waitUntil) e.waitUntil(net.catch(function () {}));
 });
 
 // 알림 서버에서 온 푸시 → 알림 표시

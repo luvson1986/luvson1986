@@ -664,7 +664,7 @@
     return { lat: loc && loc.lat, lon: loc && loc.lon, place: (loc && loc.name) || s.place, cc: (loc && loc.cc) || '', country: (loc && loc.country) || '', current: s.current, daily: s.daily, hours: s.hourlyFrom(new Date().getHours()), today: s.todayTemps, air: s.air, sample: true };
   }
 
-  var wxLoadedAt = 0;
+  var wxLoadedAt = 0, radarWait = null, fxWait = null;
   function renderWeather(w) {
     var c = w.current, d = w.daily, info = wmo(c.weather_code);
     wxLoadedAt = Date.now();
@@ -672,7 +672,7 @@
     var pr = w.sample ? [null, 0] : precipNow(c);
     scene.setWeather(pr[0], pr[1]);
     // 레이더(실제 관측)로 한 번 더 확인해서, 모델이 놓친 비도 잡아요
-    if (!w.sample && w.lat != null) radarPrecip(w.lat, w.lon).then(function (lv) {
+    if (!w.sample && w.lat != null) radarWait = radarPrecip(w.lat, w.lon).then(function (lv) {
       if (lv == null) return;
       if (lv > 0) scene.setWeather(c.temperature_2m <= 1 ? 'snow' : 'rain', lv);
       else if (!c.precipitation) scene.setWeather(null, 0);
@@ -827,7 +827,7 @@
     $('season-kw').innerHTML = kw.map(function (k) {
       return '<a class="kw-chip" href="https://www.google.com/maps/search/' + encodeURIComponent(k + ' ' + place) + '" target="_blank" rel="noopener">' + esc(k) + '</a>';
     }).join('') + (cur ? '<button type="button" class="kw-chip fx-chip" id="fx-chip">' + (window.IS_EN ? 'Loading rate' : '환율 불러오는 중') + '</button>' : '');
-    if (cur) loadRate(cur[0]).then(function (krw) {
+    if (cur) fxWait = loadRate(cur[0]).then(function (krw) {
       var el = $('fx-chip'); if (!el || !krw) { if (el) el.remove(); return; }
       fx = { code: cur[0], sym: cur[1], unit: cur[2], krw: krw, t: (store.get('fx', {})[cur[0]] || {}).t || Date.now() };
       el.textContent = cur[1] + cur[2].toLocaleString('en-US') + ' = ' + won(krw * cur[2]);
@@ -2509,7 +2509,10 @@
     }, Math.max(0, 600 - (Date.now() - splashStart)));
   }
   setTimeout(hideSplash, 8000);
-  loadWeather().then(renderWeather).then(hideSplash, hideSplash);
+  // 날씨 → 레이더(비·눈)·환율까지 다 받은 뒤에 스플래시를 걷어요. 각각 오래 걸리면 3초에서 끊어요
+  var cap = function (pr) { return pr ? Promise.race([pr, new Promise(function (r) { setTimeout(r, 3000); })]).catch(function () {}) : null; };
+  loadWeather().then(renderWeather).then(function () { return Promise.all([cap(radarWait), cap(fxWait)]); })
+    .then(function () { requestAnimationFrame(function () { requestAnimationFrame(hideSplash); }); }, hideSplash);
 
   scheduleReminders();
   document.addEventListener('visibilitychange', function () { if (!document.hidden) scheduleReminders(); });

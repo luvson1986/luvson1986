@@ -14,11 +14,25 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="오늘">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- 홈 화면 앱을 켤 때 아이폰이 먼저 보여주는 시작 화면 (흰 화면 대신) -->
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash/750x1334.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash/828x1792.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/1125x2436.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/1242x2688.png">
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/1170x2532.png">
+<link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/1284x2778.png">
+<link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/1179x2556.png">
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/1290x2796.png">
+<link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/1206x2622.png">
+<link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/1320x2868.png">
+<link rel="apple-touch-startup-image" media="(device-width: 360px) and (device-height: 780px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/1080x2340.png">
+<!-- 첫 화면이 바로 스플래시로 그려지게: 바탕색을 먼저, 글꼴 CSS는 화면을 막지 않게 늦게 -->
+<style>html,body{background:#e7e1dd}</style>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chiron+Sung+HK:wght@400;700&family=Song+Myung&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chiron+Sung+HK:wght@400;700&family=Song+Myung&display=swap" media="print" onload="this.media='all'">
 <style>
 /* 레이아웃: 계절 장면이 꽉 찬 히어로 아래로, 데스크톱 2열 / 모바일 1열 보드 */
 :root {
@@ -3929,7 +3943,7 @@ window.PHRASE_TOPICS = [
     return { lat: loc && loc.lat, lon: loc && loc.lon, place: (loc && loc.name) || s.place, cc: (loc && loc.cc) || '', country: (loc && loc.country) || '', current: s.current, daily: s.daily, hours: s.hourlyFrom(new Date().getHours()), today: s.todayTemps, air: s.air, sample: true };
   }
 
-  var wxLoadedAt = 0;
+  var wxLoadedAt = 0, radarWait = null, fxWait = null;
   function renderWeather(w) {
     var c = w.current, d = w.daily, info = wmo(c.weather_code);
     wxLoadedAt = Date.now();
@@ -3937,7 +3951,7 @@ window.PHRASE_TOPICS = [
     var pr = w.sample ? [null, 0] : precipNow(c);
     scene.setWeather(pr[0], pr[1]);
     // 레이더(실제 관측)로 한 번 더 확인해서, 모델이 놓친 비도 잡아요
-    if (!w.sample && w.lat != null) radarPrecip(w.lat, w.lon).then(function (lv) {
+    if (!w.sample && w.lat != null) radarWait = radarPrecip(w.lat, w.lon).then(function (lv) {
       if (lv == null) return;
       if (lv > 0) scene.setWeather(c.temperature_2m <= 1 ? 'snow' : 'rain', lv);
       else if (!c.precipitation) scene.setWeather(null, 0);
@@ -4092,7 +4106,7 @@ window.PHRASE_TOPICS = [
     $('season-kw').innerHTML = kw.map(function (k) {
       return '<a class="kw-chip" href="https://www.google.com/maps/search/' + encodeURIComponent(k + ' ' + place) + '" target="_blank" rel="noopener">' + esc(k) + '</a>';
     }).join('') + (cur ? '<button type="button" class="kw-chip fx-chip" id="fx-chip">' + (window.IS_EN ? 'Loading rate' : '환율 불러오는 중') + '</button>' : '');
-    if (cur) loadRate(cur[0]).then(function (krw) {
+    if (cur) fxWait = loadRate(cur[0]).then(function (krw) {
       var el = $('fx-chip'); if (!el || !krw) { if (el) el.remove(); return; }
       fx = { code: cur[0], sym: cur[1], unit: cur[2], krw: krw, t: (store.get('fx', {})[cur[0]] || {}).t || Date.now() };
       el.textContent = cur[1] + cur[2].toLocaleString('en-US') + ' = ' + won(krw * cur[2]);
@@ -5774,7 +5788,10 @@ window.PHRASE_TOPICS = [
     }, Math.max(0, 600 - (Date.now() - splashStart)));
   }
   setTimeout(hideSplash, 8000);
-  loadWeather().then(renderWeather).then(hideSplash, hideSplash);
+  // 날씨 → 레이더(비·눈)·환율까지 다 받은 뒤에 스플래시를 걷어요. 각각 오래 걸리면 3초에서 끊어요
+  var cap = function (pr) { return pr ? Promise.race([pr, new Promise(function (r) { setTimeout(r, 3000); })]).catch(function () {}) : null; };
+  loadWeather().then(renderWeather).then(function () { return Promise.all([cap(radarWait), cap(fxWait)]); })
+    .then(function () { requestAnimationFrame(function () { requestAnimationFrame(hideSplash); }); }, hideSplash);
 
   scheduleReminders();
   document.addEventListener('visibilitychange', function () { if (!document.hidden) scheduleReminders(); });
