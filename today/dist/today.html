@@ -3589,7 +3589,9 @@ window.PHRASE_TOPICS = [
   /* ---------- 계절 배경 장면 (canvas) ---------- */
   var scene = (function () {
     var canvas = $('hero-canvas'), ctx = canvas.getContext('2d');
-    var parts = [], type = 'petals', accent = '#fff', raf = 0, w = 0, h = 0, t0 = 0, emojis = [], floats = [], palOverride = null, sizeRange = null;
+    var parts = [], type = 'petals', accent = '#fff', raf = 0, w = 0, h = 0, t0 = 0, emojis = [], floats = [], palOverride = null, sizeRange = null, lastCfg = null;
+    // 실제 날씨: 지금 비·눈이 오면 시즌 배경 위에 겹쳐 내려요
+    var wx = { kind: null, level: 0 }, wxParts = [];
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var rnd = function (a, b) { return a + Math.random() * (b - a); };
     var PALETTE = {
@@ -3691,6 +3693,14 @@ window.PHRASE_TOPICS = [
           if (type === 'lights' || type === 'fireflies' || type === 'sun') { parts[i].y = h + 10; if (type === 'fireflies') parts[i].y = rnd(h * 0.3, h); }
         }
       }
+      // 실제 비·눈
+      for (var q = 0; q < wxParts.length; q++) {
+        var r = wxParts[q];
+        r.x += r.vx; r.y += r.vy;
+        if (wx.kind === 'snow') { r.x += Math.sin(tt * 0.8 + r.ph) * 0.4; ctx.globalAlpha = r.o; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(r.x, r.y, r.s, 0, Math.PI * 2); ctx.fill(); }
+        else { ctx.globalAlpha = r.o; ctx.strokeStyle = '#fff'; ctx.lineWidth = r.wd; ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x + r.vx * 1.6, r.y + r.s); ctx.stroke(); }
+        if (r.y > h + 20 || r.x < -30) wxParts[q] = makeWx(false);
+      }
       // 시즌 아이콘(꽃게·억새 등)이 작게 둥둥 떠다녀요
       var fall = type === 'petals' || type === 'leaves' || type === 'snow' || type === 'rain';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -3708,8 +3718,25 @@ window.PHRASE_TOPICS = [
       }
       ctx.globalAlpha = 1;
     }
+    function makeWx(initial) {
+      var lv = wx.level, y = initial ? rnd(-20, h) : rnd(-40, -10);
+      if (wx.kind === 'snow') return { x: rnd(-10, w + 10), y: y, s: rnd(1.4, 2.6 + lv * 0.8), vy: rnd(0.5, 1.1 + lv * 0.3), vx: rnd(-0.3, 0.3), ph: rnd(0, 6.28), o: rnd(0.55, 0.9) };
+      return { x: rnd(0, w + 40), y: y, s: rnd(9, 14 + lv * 6), vy: rnd(7, 9 + lv * 2), vx: -1.4 - lv * 0.4, wd: lv >= 2 ? 1.4 : 1, o: rnd(0.25, 0.4 + lv * 0.08) };
+    }
+    function buildWx() {
+      wxParts = [];
+      if (!wx.kind) return;
+      var n = Math.round((wx.kind === 'snow' ? [0, 35, 70, 120] : [0, 45, 95, 160])[wx.level] * Math.max(0.6, Math.min(1.4, w / 390)));
+      for (var i = 0; i < n; i++) wxParts.push(makeWx(true));
+    }
+    function setWeather(kind, level) {
+      if (wx.kind === kind && wx.level === level) return;
+      wx = { kind: kind, level: kind ? level : 0 };
+      buildWx();
+    }
     function loop(time) { draw(time); raf = requestAnimationFrame(loop); }
     function start(cfg) {
+      lastCfg = cfg;
       type = cfg.type; accent = cfg.accent; emojis = cfg.emojis || []; palOverride = cfg.palette || null; sizeRange = cfg.sizes || null;
       cancelAnimationFrame(raf);
       resize();
@@ -3722,6 +3749,7 @@ window.PHRASE_TOPICS = [
       floats = [];
       var fn = emojis.length ? Math.max(8, Math.min(16, Math.round(w / 32))) : 0;
       for (var k = 0; k < fn; k++) floats.push({ e: emojis[k % emojis.length], x: rnd(0, w), y: rnd(0, h), s: rnd(15, 24), v: rnd(0.25, 0.6), ph: rnd(0, 6.28), a: 0 });
+      buildWx();
       t0 = performance.now();
       if (reduce) { draw(t0 + 1000); return; }
       raf = requestAnimationFrame(loop);
@@ -3729,14 +3757,25 @@ window.PHRASE_TOPICS = [
     var rt;
     window.addEventListener('resize', function () {
       clearTimeout(rt);
-      rt = setTimeout(function () { start({ type: type, accent: accent, emojis: emojis }); }, 200);
+      rt = setTimeout(function () { if (lastCfg) start(lastCfg); }, 200);
     });
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) cancelAnimationFrame(raf);
       else if (!reduce) raf = requestAnimationFrame(loop);
     });
-    return { start: start };
+    return { start: start, setWeather: setWeather };
   })();
+  // 날씨 코드 → 비/눈과 세기(1~3)
+  function precipOf(code) {
+    if ([71, 77, 85].indexOf(code) >= 0) return ['snow', 1];
+    if (code === 73) return ['snow', 2];
+    if (code === 75 || code === 86) return ['snow', 3];
+    if (code >= 51 && code <= 57) return ['rain', 1];
+    if (code === 61 || code === 66 || code === 80) return ['rain', 1];
+    if (code === 63 || code === 81) return ['rain', 2];
+    if (code === 65 || code === 67 || code === 82 || code >= 95) return ['rain', 3];
+    return [null, 0];
+  }
 
   /* ---------- 날씨 ---------- */
   var WMO = {
@@ -3825,8 +3864,13 @@ window.PHRASE_TOPICS = [
     return { lat: loc && loc.lat, lon: loc && loc.lon, place: (loc && loc.name) || s.place, cc: (loc && loc.cc) || '', country: (loc && loc.country) || '', current: s.current, daily: s.daily, hours: s.hourlyFrom(new Date().getHours()), today: s.todayTemps, air: s.air, sample: true };
   }
 
+  var wxLoadedAt = 0;
   function renderWeather(w) {
     var c = w.current, d = w.daily, info = wmo(c.weather_code);
+    wxLoadedAt = Date.now();
+    // 예시 날씨일 때는 비·눈 효과를 띄우지 않아요
+    var pr = w.sample ? [null, 0] : precipOf(c.weather_code);
+    scene.setWeather(pr[0], pr[1]);
     $('wx-icon').textContent = info[1];
     $('wx-temp').textContent = Math.round(c.temperature_2m) + '°';
     $('wx-cond').textContent = info[0] + ' · 체감 ' + Math.round(c.apparent_temperature) + '°';
@@ -5663,6 +5707,9 @@ window.PHRASE_TOPICS = [
 
   scheduleReminders();
   document.addEventListener('visibilitychange', function () { if (!document.hidden) scheduleReminders(); });
+  // 날씨는 15분마다(앱으로 돌아왔을 때 10분 넘었으면 바로) 다시 받아서 비·눈 효과도 맞춰요
+  setInterval(function () { if (!document.hidden) loadWeather().then(renderWeather); }, 15 * 60 * 1000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - wxLoadedAt > 10 * 60 * 1000) loadWeather().then(renderWeather); });
   setInterval(function () { renderGreeting(); if (ymd(viewDate) === ymd(new Date())) renderSchedule(); else renderNowNext(); }, 60 * 1000);
 })();
 
