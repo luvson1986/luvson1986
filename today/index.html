@@ -45,7 +45,7 @@
 <main id="view-home" class="view">
   <!-- 계절 이미지 + 날씨 요약. 이미지를 누르면 시즌 목록 -->
   <section class="hero" id="hero" aria-label="오늘의 날씨와 계절">
-    <canvas class="hero-canvas" id="hero-canvas" aria-hidden="true"></canvas>
+    <div class="hero-bg" id="hero-bg" aria-hidden="true"><canvas class="hero-canvas" id="hero-canvas"></canvas></div>
     <div class="hero-motif" id="hero-motif" aria-hidden="true"></div>
     <div class="hero-inner wrap">
       <div class="hero-top">
@@ -513,7 +513,7 @@
   </div>
 </dialog>
 
-<div class="overscroll-top" id="hero-ext" aria-hidden="true"><div class="hero-ext-bg" id="hero-ext-bg"></div><canvas class="hero-ext-canvas" id="hero-ext-canvas"></canvas></div>
+<div class="overscroll-top" aria-hidden="true"></div>
 <div class="ptr" id="ptr" aria-hidden="true"><i></i></div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 

@@ -44,15 +44,10 @@
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; background: var(--bg); }
-/* 맨 위에서 당길 때 드러나는 바깥 배경을 메인(히어로) 색으로 */
-/* 맨 위에서 당길 때 페이지 위쪽 바깥에 보이는 판: 메인 맨 위와 같은 색 (아이폰은 html 배경을 여기 안 쓰는 경우가 있어서 직접 깔아요) */
-.overscroll-top { position: fixed; left: 0; right: 0; top: 0; height: 45vh; z-index: -1; pointer-events: none; overflow: hidden; display: none; }
-/* 메인 배경을 위아래로 뒤집어 붙이면 경계(메인 맨 위)가 끊김 없이 이어져요 */
-.hero-ext-bg { position: absolute; inset: 0; transform: scaleY(-1); background-repeat: no-repeat; background-position: left top; }
-.hero-ext-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8, 12, 20, 0.3) 0%, rgba(8, 12, 20, 0) 45%, rgba(8, 12, 20, 0.35) 100%); }
-.hero-ext-bg.ink-dark::after { background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 45%, rgba(8, 12, 20, 0.18) 100%); }
-.hero-ext-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-/* 맨 위 근처에서만: 몸통 배경을 비워서, 당겼을 때 화면에 고정된 메인 색 판이 드러나게 */
+/* 맨 위에서 당길 때: 메인 배경(.hero-bg)이 페이지 위쪽 바깥까지 이어져 있어서 그대로 보여요.
+   혹시 그 부분이 안 그려지는 경우를 대비해, 화면에 고정된 판을 메인 맨 위 색으로 한 겹 더 깔아요 */
+.overscroll-top { position: fixed; left: 0; right: 0; top: 0; height: 45vh; z-index: -1; pointer-events: none; display: none;
+  background: color-mix(in srgb, var(--hero-a) 70%, rgb(8, 12, 20)); }
 html.at-top .overscroll-top { display: block; }
 html.at-top body { background: transparent; }
 /* 당겨서 새로고침 */
@@ -87,13 +82,21 @@ a { color: var(--accent); }
 
 /* ---------- 히어로: 계절 이미지 + 날씨 한 줄 ---------- */
 .hero {
-  position: relative; overflow: hidden; color: #fff; cursor: pointer;
-  background: linear-gradient(160deg, var(--hero-a) 0%, var(--hero-b) 100%);
+  --ext: 520px; /* 배경이 메인 위쪽 바깥으로 이어지는 길이 */
+  position: relative; color: #fff; cursor: pointer;
+  /* 옆·아래는 자르고, 위쪽만 배경이 이어지게 열어 둬요 */
+  overflow: visible; -webkit-clip-path: inset(calc(-1 * var(--ext)) 0 0 0); clip-path: inset(calc(-1 * var(--ext)) 0 0 0);
+}
+/* 배경·효과 한 장: 메인 영역 + 위쪽 바깥(--ext)까지. 색은 메인 맨 위에서 위로 그대로 이어져요 */
+.hero-bg {
+  position: absolute; left: 0; right: 0; bottom: 0; top: calc(-1 * var(--ext)); z-index: 0; overflow: hidden;
+  /* 160°: 메인 영역의 시작점이 그라데이션 선 위에서 ext×cos20° 만큼 아래에 있어요 */
+  background: linear-gradient(160deg, var(--hero-a) calc(var(--ext) * 0.94), var(--hero-b) 100%);
   transition: background 0.8s ease;
 }
-.hero::after {
+.hero-bg::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(8, 12, 20, 0.3) 0%, rgba(8, 12, 20, 0) 45%, rgba(8, 12, 20, 0.35) 100%);
+  background: linear-gradient(180deg, rgba(8, 12, 20, 0.3) 0%, rgba(8, 12, 20, 0.3) var(--ext), rgba(8, 12, 20, 0) calc(var(--ext) + (100% - var(--ext)) * 0.45), rgba(8, 12, 20, 0.35) 100%);
 }
 .hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
 .hero-motif {
@@ -632,7 +635,7 @@ html.modal-open body::after { content: ""; position: absolute; inset: 0; z-index
   .season-box { padding-right: 64px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero { transition: none; }
+  .hero-bg { transition: none; }
   .tl-card.flash { animation: none; outline: 2px solid var(--accent); }
 }
 .sheet .seg { background: var(--surface-2); }
@@ -733,7 +736,7 @@ a.wk-row:active { background: var(--surface-2); }
 }
 /* 해외 + 라이트 모드 + 밝은 국기: 진한 글자 */
 .hero.ink-dark { color: #14181f; }
-.hero.ink-dark::after { background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 45%, rgba(8, 12, 20, 0.18) 100%); }
+.hero.ink-dark .hero-bg::before { background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.25) var(--ext), rgba(255, 255, 255, 0) calc(var(--ext) + (100% - var(--ext)) * 0.45), rgba(8, 12, 20, 0.18) 100%); }
 .hero.ink-dark .season-name { text-shadow: 0 1px 10px rgba(255, 255, 255, 0.5); }
 .hero.ink-dark .kw-chip { color: #14181f; background: rgba(255, 255, 255, 0.55); border-color: rgba(20, 24, 31, 0.18); }
 .hero.ink-dark .icon-btn.glass { color: #14181f; background: rgba(20, 24, 31, 0.08); }
