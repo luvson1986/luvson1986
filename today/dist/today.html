@@ -6,7 +6,7 @@
 <title>오늘</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#121a26">
+<meta name="theme-color" content="#7a2e1a">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -37,19 +37,19 @@
 /* 레이아웃: 계절 장면이 꽉 찬 히어로 아래로, 데스크톱 2열 / 모바일 1열 보드 */
 :root {
   color-scheme: light;
-  --bg: #eef1f5;
-  --surface: #ffffff;
-  --surface-2: #f5f7fa;
-  --ink: #142032;
-  --ink-2: #4a5a70;
-  --ink-3: #7d8a9c;
-  --line: #dde3eb;
-  --accent: #1d5bd8;
+  --bg: #ece6e1;
+  --surface: #fffdfb;
+  --surface-2: #f6f1ec;
+  --ink: #2b211d;
+  --ink-2: #655650;
+  --ink-3: #9a8b83;
+  --line: #e4dad3;
+  --accent: #b42d2d;
   --accent-ink: #ffffff;
-  --accent-soft: #e3ecfd;
-  --good: #1f8a5b;
+  --accent-soft: #f5e1df;
+  --good: #4a7f4f;
   --warn: #b86b00;
-  --bad: #c43b3b;
+  --bad: #c8553d;
   --cat-meeting: #1d5bd8;
   --cat-focus: #7a4fd0;
   --cat-personal: #d0731f;
@@ -69,9 +69,9 @@
 /* 다크 모드는 기기 설정(prefers-color-scheme)만 따라요 */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0e141d; --surface: #161f2b; --surface-2: #1c2734; --ink: #e8edf4; --ink-2: #aab6c6; --ink-3: #7c8a9c;
-    --line: #273445; --accent: #6f9dff; --accent-ink: #0b1220; --accent-soft: #1d2c48;
-    --good: #4cc48d; --warn: #f0a640; --bad: #ff7b7b;
+    --bg: #141312; --surface: #1e1c1b; --surface-2: #272524; --ink: #efebe8; --ink-2: #bdb6b1; --ink-3: #8c8581;
+    --line: #363231; --accent: #e0574d; --accent-ink: #ffffff; --accent-soft: #3b2220;
+    --good: #79c48e; --warn: #f0a640; --bad: #f08a5d;
     --cat-meeting: #6f9dff; --cat-focus: #b392ff; --cat-personal: #f0a050; --cat-health: #4cc48d;
     --thumb-l: 32%;
     color-scheme: dark;
@@ -86,7 +86,7 @@ html { -webkit-text-size-adjust: 100%; background: var(--bg); }
   border-radius: 50%; background: rgba(255, 255, 255, 0.92); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); display: grid; place-items: center;
   opacity: 0; transform: translateY(-40px) scale(0.6); transition: opacity 0.15s, transform 0.15s; pointer-events: none;
 }
-.ptr i { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid #1d5bd8; border-right-color: transparent; }
+.ptr i { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid #b42d2d; border-right-color: transparent; }
 .ptr.spin i { animation: ptr-spin 0.7s linear infinite; }
 @keyframes ptr-spin { to { transform: rotate(360deg); } }
 body {
@@ -124,7 +124,7 @@ a { color: var(--accent); }
 }
 .hero-bg::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(8, 12, 20, 0.3) 0%, rgba(8, 12, 20, 0.3) var(--ext), rgba(8, 12, 20, 0) calc(var(--ext) + (100% - var(--ext)) * 0.45), rgba(8, 12, 20, 0.35) 100%);
+  background: linear-gradient(180deg, rgba(28, 16, 12, 0.3) 0%, rgba(28, 16, 12, 0.3) var(--ext), rgba(28, 16, 12, 0) calc(var(--ext) + (100% - var(--ext)) * 0.45), rgba(28, 16, 12, 0.35) 100%);
 }
 .hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
 .hero-motif {
@@ -197,9 +197,9 @@ a { color: var(--accent); }
 .hero-nn .nn-item {
   all: unset; box-sizing: border-box; display: grid; grid-template-columns: 74px 1fr; gap: 1px 10px; align-items: center;
   padding: 9px 12px; border-radius: 12px; cursor: pointer; color: #fff;
-  background: rgba(10, 14, 24, 0.34); backdrop-filter: blur(10px); border-left: 3px solid var(--c, rgba(255, 255, 255, 0.4));
+  background: rgba(26, 17, 14, 0.34); backdrop-filter: blur(10px); border-left: 3px solid var(--c, rgba(255, 255, 255, 0.4));
 }
-.hero-nn .nn-item:hover { background: rgba(10, 14, 24, 0.46); }
+.hero-nn .nn-item:hover { background: rgba(26, 17, 14, 0.46); }
 .hero-nn .nn-item:focus-visible { outline: 2px solid #fff; }
 .hero-nn .nn-item.idle { cursor: default; border-left-color: rgba(255, 255, 255, 0.25); }
 .nn-label { grid-row: span 2; font-size: 11.5px; font-weight: 700; line-height: 1.3; opacity: 0.9; font-variant-numeric: tabular-nums; }
@@ -630,7 +630,7 @@ body.on-news::before {
 html.modal-open body { position: relative; }
 /* 아이폰이 페이지를 안 그리는 맨 아래 띠에는 문서 바탕색이 보여요 → 시트와 같은 색으로 */
 html.modal-open { background: var(--surface); }
-html.modal-open body::after { content: ""; position: absolute; inset: 0; z-index: 100; background: rgba(8, 12, 20, 0.5); }
+html.modal-open body::after { content: ""; position: absolute; inset: 0; z-index: 100; background: rgba(28, 16, 12, 0.5); }
 .sheet-body { display: grid; gap: 16px; padding: 20px; }
 .tag-input { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; }
 .tag-input input { border: 0; padding: 4px 6px; flex: 1 1 140px; width: auto; outline: none; }
@@ -763,16 +763,16 @@ a.wk-row:active { background: var(--surface-2); }
   input, select, textarea, .cl-text, .cl-title, .cl-new-input, .qa input, .eh-search, .rule-name, .rule-num, .rule-items, .rule-plus, .cat-name, #cat-new-name { font-size: 16px !important; }
 }
 /* 해외 + 라이트 모드 + 밝은 국기: 진한 글자 */
-.hero.ink-dark { color: #14181f; }
-.hero.ink-dark .hero-bg::before { background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.25) var(--ext), rgba(255, 255, 255, 0) calc(var(--ext) + (100% - var(--ext)) * 0.45), rgba(8, 12, 20, 0.18) 100%); }
+.hero.ink-dark { color: #2b211d; }
+.hero.ink-dark .hero-bg::before { background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.25) var(--ext), rgba(255, 255, 255, 0) calc(var(--ext) + (100% - var(--ext)) * 0.45), rgba(28, 16, 12, 0.18) 100%); }
 .hero.ink-dark .season-name { text-shadow: 0 1px 10px rgba(255, 255, 255, 0.5); }
-.hero.ink-dark .kw-chip { color: #14181f; background: rgba(255, 255, 255, 0.55); border-color: rgba(20, 24, 31, 0.18); }
-.hero.ink-dark .icon-btn.glass { color: #14181f; background: rgba(20, 24, 31, 0.08); }
-.hero.ink-dark .phase { background: #14181f; color: #fff; }
-.hero.ink-dark .hero-nn .nn-item { color: #14181f; background: rgba(255, 255, 255, 0.6); }
+.hero.ink-dark .kw-chip { color: #2b211d; background: rgba(255, 255, 255, 0.55); border-color: rgba(43, 33, 29, 0.18); }
+.hero.ink-dark .icon-btn.glass { color: #2b211d; background: rgba(43, 33, 29, 0.08); }
+.hero.ink-dark .phase { background: #2b211d; color: #fff; }
+.hero.ink-dark .hero-nn .nn-item { color: #2b211d; background: rgba(255, 255, 255, 0.6); }
 .hero.ink-dark .hero-nn .nn-item:hover { background: rgba(255, 255, 255, 0.75); }
-.hero.ink-dark .nn-bar { background: rgba(20, 24, 31, 0.15); }
-.hero.ink-dark .nn-bar i { background: #14181f; }
+.hero.ink-dark .nn-bar { background: rgba(43, 33, 29, 0.15); }
+.hero.ink-dark .nn-bar i { background: #2b211d; }
 .hero.travel .hero-motif { font-size: clamp(80px, 18vw, 150px); transform: rotate(-8deg); }
 a.kw-chip { text-decoration: none; }
 
@@ -4045,7 +4045,7 @@ window.PHRASE_TOPICS = [
     agg = agg.filter(function (a) { return !isWhite(a[0]); }).concat(agg.filter(function (a) { return isWhite(a[0]); }));
     var cols = agg.map(function (a) {
       var c = a[0], x = toHsl(c);
-      if (dark) c = isWhite(c) ? mixHex(main[0], '#0b1018', 0.8) : fromHsl(x[0], Math.min(1, x[1] * 0.9), Math.max(0.1, x[2] * 0.42));
+      if (dark) c = isWhite(c) ? mixHex(main[0], '#141312', 0.8) : fromHsl(x[0], Math.min(1, x[1] * 0.9), Math.max(0.1, x[2] * 0.42));
       else c = isWhite(c) ? mixHex('#ffffff', main[0], 0.1) : fromHsl(x[0], x[1], Math.min(0.62, Math.max(0.34, x[2])));
       return [c, a[1]];
     });
