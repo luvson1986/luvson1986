@@ -3828,7 +3828,8 @@ window.PHRASE_TOPICS = [
   function precipNow(c) {
     var byCode = precipOf(c.weather_code);
     var mm = c.precipitation || 0, snow = c.snowfall || 0;
-    if (mm < 0.1 && !byCode[0]) return [null, 0];
+    // 실제로 내리는 양이 있을 때만 (날씨 코드만으로는 띄우지 않아요)
+    if (mm < 0.1 && snow <= 0) return [null, 0];
     var kind = snow > 0 || byCode[0] === 'snow' ? 'snow' : 'rain';
     var lv = mm >= 4 ? 3 : mm >= 1 ? 2 : mm >= 0.1 ? 1 : byCode[1];
     return [kind, Math.max(lv, byCode[0] ? byCode[1] : 1)];
@@ -3966,13 +3967,12 @@ window.PHRASE_TOPICS = [
     // 예시 날씨일 때는 비·눈 효과를 띄우지 않아요
     var pr = w.sample ? [null, 0] : precipNow(c);
     scene.setWeather(pr[0], pr[1]);
-    // 레이더(실제 관측)로 한 번 더 확인해서, 모델이 놓친 비도 잡아요
-    // 단, 예보에도 비 낌새(지금 시간 강수확률 40% 이상·강수량·비 코드)가 있을 때만 믿어요. 아니면 레이더 잡음일 수 있어서
-    var hint = (w.hours && w.hours[0] && w.hours[0].pop >= 40) || c.precipitation > 0 || c.weather_code >= 51;
+    // 비·눈은 실제 강수량이 있을 때만 띄워요. 레이더(실제 관측)는 그때 세기만 맞추는 데 써요
+    var hint = (c.precipitation || 0) >= 0.1 || (c.snowfall || 0) > 0;
     if (!w.sample && w.lat != null) radarWait = radarPrecip(w.lat, w.lon).then(function (lv) {
       if (lv == null) return;
       if (lv > 0 && hint) scene.setWeather(c.temperature_2m <= 1 ? 'snow' : 'rain', lv);
-      else if (!c.precipitation) scene.setWeather(null, 0);
+      else if (!hint) scene.setWeather(null, 0);
     });
     $('wx-icon').textContent = info[1];
     $('wx-temp').textContent = Math.round(c.temperature_2m) + '°';
