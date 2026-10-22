@@ -2534,9 +2534,6 @@
 
   scheduleReminders();
   document.addEventListener('visibilitychange', function () { if (!document.hidden) scheduleReminders(); });
-  // 맨 위 근처에서는 몸통 배경을 비워서, 위로 이어진 메인 배경이 보이게
-  var syncTop = function () { document.documentElement.classList.toggle('at-top', window.scrollY < 120); };
-  window.addEventListener('scroll', syncTop, { passive: true }); syncTop();
   // 맨 위에서 아래로 당기면 새로고침 (날씨·레이더 다시 받기)
   (function () {
     var ptr = $('ptr'), y0 = null, pull = 0, busy = false;

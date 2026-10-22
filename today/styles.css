@@ -44,12 +44,6 @@
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; background: var(--bg); }
-/* 맨 위에서 당길 때: 메인 배경(.hero-bg)이 페이지 위쪽 바깥까지 이어져 있어서 그대로 보여요.
-   혹시 그 부분이 안 그려지는 경우를 대비해, 화면에 고정된 판을 메인 맨 위 색으로 한 겹 더 깔아요 */
-.overscroll-top { position: fixed; left: 0; right: 0; top: 0; height: 45vh; z-index: -1; pointer-events: none; display: none;
-  background: color-mix(in srgb, var(--hero-a) 70%, rgb(8, 12, 20)); }
-html.at-top .overscroll-top { display: block; }
-html.at-top body { background: transparent; }
 /* 당겨서 새로고침 */
 .ptr {
   position: fixed; z-index: 50; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 8px); width: 34px; height: 34px; margin-left: -17px;
@@ -82,12 +76,10 @@ a { color: var(--accent); }
 
 /* ---------- 히어로: 계절 이미지 + 날씨 한 줄 ---------- */
 .hero {
-  --ext: 520px; /* 배경이 메인 위쪽 바깥으로 이어지는 길이 */
-  position: relative; color: #fff; cursor: pointer;
-  /* 옆·아래는 자르고, 위쪽만 배경이 이어지게 열어 둬요 */
-  overflow: visible; -webkit-clip-path: inset(calc(-1 * var(--ext)) 0 0 0); clip-path: inset(calc(-1 * var(--ext)) 0 0 0);
+  --ext: 0px; /* 배경을 메인 위쪽 바깥으로 이어 붙일 길이 (지금은 쓰지 않아요) */
+  position: relative; overflow: hidden; color: #fff; cursor: pointer;
 }
-/* 배경·효과 한 장: 메인 영역 + 위쪽 바깥(--ext)까지. 색은 메인 맨 위에서 위로 그대로 이어져요 */
+/* 배경·효과 한 장 */
 .hero-bg {
   position: absolute; left: 0; right: 0; bottom: 0; top: calc(-1 * var(--ext)); z-index: 0; overflow: hidden;
   /* 160°: 메인 영역의 시작점이 그라데이션 선 위에서 ext×cos20° 만큼 아래에 있어요 */
