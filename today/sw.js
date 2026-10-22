@@ -2,7 +2,7 @@
    앱 파일은 네트워크 우선(항상 최신), 오프라인이면 저장해 둔 버전으로 열려요.
    날씨·뉴스 같은 외부 요청은 건드리지 않아요. */
 var CACHE = 'today-v96';
-var SHELL = ['./', './index.html', './styles.css', './i18n.js', './data.js', './i18n-data.js', './app.js', './manifest.webmanifest', './icons/icon-192.png', './icons/source.png'];
+var SHELL = ['./', './index.html', './styles.css', './i18n.js', './data.js', './i18n-data.js', './phrases.js', './app.js', './manifest.webmanifest', './icons/icon-192.png', './icons/source.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));

@@ -8,7 +8,6 @@
     Object.keys(window.TRAVEL || {}).forEach(function (cc) { var e = E.travel && E.travel[cc]; if (e) { window.TRAVEL[cc].name = e.name; window.TRAVEL[cc].kw = e.kw; } });
     (window.TRAVEL_CITIES || []).forEach(function (c) { var e = E.cities && E.cities[c.name]; if (e) { c.name = e.name; c.kw = e.kw; } });
     (window.PHRASES || []).forEach(function (p, i) { var e = E.phrases && E.phrases[i]; if (e) { p.when = e.when; p.ko = e.meaning; } });
-    (window.SAMPLE_NEWS || []).forEach(function (n, i) { if (E.sampleNews && E.sampleNews[i] && n.title) n.title = E.sampleNews[i]; });
   })(window.EN_DATA);
 
   /* ---------- 공통 ---------- */
@@ -87,7 +86,7 @@
 
   var DEFAULT_SETTINGS = {
     name: '',
-    interests: ['UX 디자인', '핀테크', '디지털 금융', 'AI 서비스'],
+    enKeywords: ['디자인', '업무'],
     location: { mode: 'auto', name: '서울특별시', lat: 37.5665, lon: 126.978, cc: 'KR' }
   };
   var settings = Object.assign({}, DEFAULT_SETTINGS, store.get('settings', {}));
@@ -975,11 +974,60 @@
     $('bring').innerHTML = bring.map(chip).join('');
   }
 
-  /* ---------- 업무 영어 ---------- */
-  var phraseIdx;
+  /* ---------- 오늘의 영어: 설정의 키워드 중 하나를 골라 그 상황에 맞는 문장 하루 하나 ---------- */
   function dayIndex() { var n = new Date(); return Math.floor(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) / 864e5); }
+  // 같은 날엔 같은 값이 나오는 간단한 난수
+  var hashDay = function (d, salt) { var x = Math.sin(d * 12.9898 + salt * 78.233) * 43758.5453; return x - Math.floor(x); };
+  var PHRASE_BY_EN = {};
+  (function () {
+    var add = function (p, topic) {
+      if (PHRASE_BY_EN[p.en]) return;
+      PHRASE_BY_EN[p.en] = window.IS_EN && p.when_en ? Object.assign({}, p, { when: p.when_en, ko: p.meaning_en || p.ko, topic: topic }) : Object.assign({}, p, { topic: topic });
+    };
+    (window.PHRASE_TOPICS || []).forEach(function (t) { t.phrases.forEach(function (p) { add(p, t); }); });
+    (window.PHRASES || []).forEach(function (p) { add(p, null); });
+  })();
+  // 키워드 → 주제 (한글·영어 비슷한 말까지)
+  function topicsFor(kw) {
+    var k = String(kw || '').toLowerCase().replace(/\s+/g, '');
+    var hit = (window.PHRASE_TOPICS || []).filter(function (t) {
+      return t.tags.some(function (g) { g = g.toLowerCase().replace(/\s+/g, ''); return k && (k.indexOf(g) >= 0 || (k.length >= 2 && g.indexOf(k) >= 0)); });
+    });
+    if (hit.length) return hit;
+    var daily = (window.PHRASE_TOPICS || []).filter(function (t) { return t.id === 'daily'; });
+    return daily.length ? daily : (window.PHRASE_TOPICS || []);
+  }
+  // 날짜별로 보여준 문장을 저장해요 (공부한 표현은 여기서 쌓여요)
+  function enLog() {
+    var log = store.get('enLog', null);
+    if (!log) {
+      // 예전 방식(날짜 순서대로 돌던 문장)으로 이미 본 것들을 옮겨 와요
+      log = {};
+      var start = store.get('enStart', null), today = dayIndex(), l = window.PHRASES || [];
+      if (start !== null && l.length) for (var d = start; d < today; d++) log[d] = l[((d % l.length) + l.length) % l.length].en;
+      store.set('enLog', log);
+    }
+    return log;
+  }
+  function pickPhrase(day) {
+    var log = enLog();
+    if (log[day] && PHRASE_BY_EN[log[day]]) return PHRASE_BY_EN[log[day]];
+    var kws = (settings.enKeywords && settings.enKeywords.length) ? settings.enKeywords : ['디자인', '업무'];
+    var kw = kws[Math.floor(hashDay(day, 1) * kws.length)];
+    var pool = [];
+    topicsFor(kw).forEach(function (t) { t.phrases.forEach(function (p) { if (pool.indexOf(p.en) < 0) pool.push(p.en); }); });
+    if (!pool.length) pool = Object.keys(PHRASE_BY_EN);
+    var used = {}; Object.keys(log).forEach(function (d) { used[log[d]] = 1; });
+    var fresh = pool.filter(function (en) { return !used[en]; });
+    var from = fresh.length ? fresh : pool;
+    var en = from[Math.floor(hashDay(day, 2) * from.length)];
+    log[day] = en; store.set('enLog', log);
+    return PHRASE_BY_EN[en];
+  }
+  // 키워드를 바꾸면 오늘 문장을 새로 골라요
+  function enRepick() { var log = enLog(); delete log[dayIndex()]; store.set('enLog', log); }
   function renderPhrase() {
-    var list = window.PHRASES, p = list[((phraseIdx % list.length) + list.length) % list.length];
+    var p = pickPhrase(dayIndex());
     var html = esc(p.en);
     if (p.key) {
       var k = esc(p.key), at = html.toLowerCase().indexOf(k.toLowerCase());
@@ -987,18 +1035,16 @@
     }
     $('en-text').innerHTML = html;
     $('en-ko').textContent = p.ko;
-    $('en-when').textContent = p.when;
+    $('en-when').textContent = (p.topic ? (window.IS_EN ? p.topic.name_en : p.topic.name) + ' · ' : '') + p.when;
   }
-  var phraseAt = function (day) { var l = window.PHRASES; return l[((day % l.length) + l.length) % l.length]; };
-  // 처음 연 날부터 오늘까지 하루 하나씩 본 표현 (최신순, 중복 제외)
+  // 날짜별 기록 (최신순, 중복 제외)
   function studiedPhrases() {
-    var start = store.get('enStart', null), today = dayIndex();
-    if (start === null || start > today) { start = today; store.set('enStart', start); }
-    var seen = {}, out = [];
-    for (var d = today; d >= start && out.length < window.PHRASES.length; d--) {
-      var p = phraseAt(d);
-      if (!seen[p.en]) { seen[p.en] = 1; out.push(p); }
-    }
+    var log = enLog(), seen = {}, out = [];
+    pickPhrase(dayIndex());
+    Object.keys(log).map(Number).sort(function (x, y) { return y - x; }).forEach(function (d) {
+      var p = PHRASE_BY_EN[log[d]];
+      if (p && !seen[p.en]) { seen[p.en] = 1; out.push(p); }
+    });
     return out;
   }
   function renderStudied() {
@@ -1011,9 +1057,7 @@
     }).join('') : '<li class="empty">“' + esc(q) + '”에 맞는 표현이 없어요.</li>';
   }
   function initPhrase() {
-    phraseIdx = dayIndex();
     renderPhrase();
-    studiedPhrases();
     $('en-history').onclick = function () { $('en-search').value = ''; renderStudied(); openDialog($('en-dialog')); };
     $('en-search').addEventListener('input', renderStudied);
     $('en-speak').onclick = function () {
@@ -2139,233 +2183,6 @@
     renderLists();
   }
 
-  /* ---------- 관심 소식: 오늘 가장 많이 보도된 소식 ----------
-     공유·조회수 같은 바이럴 지표는 무료로 얻을 수 없어서,
-     같은 사건을 다룬 매체 수(보도 규모)를 화제성 지표로 써요. */
-  var stories = [], videos = [], newsFilter = 'all', newsKind = 'news', newsSample = false;
-  var readSet = new Set(store.get('newsRead', []));
-  var squash = function (t) { return String(t).toLowerCase().replace(/[^0-9a-z가-힣]/g, ''); };
-
-  function parseRss(xml, interest) {
-    var doc = new DOMParser().parseFromString(xml, 'text/xml');
-    return Array.prototype.map.call(doc.querySelectorAll('item'), function (it) {
-      var g = function (s) { var n = it.querySelector(s); return n ? n.textContent : ''; };
-      var src = it.querySelector('source');
-      return normalize({ title: g('title'), link: g('link'), pubDate: g('pubDate'), source: g('source'), sourceUrl: src && src.getAttribute('url') }, interest);
-    });
-  }
-  function normalize(r, interest) {
-    var title = (r.title || '').trim(), source = r.source || r.author || '';
-    var cut = title.lastIndexOf(' - ');
-    if (cut > 0) { if (!source) source = title.slice(cut + 3); title = title.slice(0, cut); }
-    var date = r.pubDate ? new Date(r.pubDate.replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d|GMT/.test(r.pubDate) ? '' : 'Z')) : null;
-    if (date && isNaN(date)) date = new Date(r.pubDate);
-    return { title: title, link: r.link, source: source, image: r.thumbnail || '', date: date && !isNaN(date) ? date.toISOString() : null, interest: interest };
-  }
-  function fetchGoogle(q) {
-    var rss = 'https://news.google.com/rss/search?q=' + encodeURIComponent(q + ' when:1d') + '&hl=ko&gl=KR&ceid=KR:ko';
-    return getJSON('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(rss))
-      .then(function (r) {
-        if (r.status !== 'ok') throw new Error('rss2json');
-        return r.items.map(function (x) { return normalize(x, q); });
-      })
-      .catch(function () {
-        return fetchWithTimeout('https://api.allorigins.win/raw?url=' + encodeURIComponent(rss))
-          .then(function (r) { return r.text(); })
-          .then(function (xml) { return parseRss(xml, q); });
-      });
-  }
-  function fetchGdelt(interests) {
-    var terms = interests.map(function (q) { return /\s/.test(q) ? '"' + q + '"' : q; });
-    var query = (terms.length > 1 ? '(' + terms.join(' OR ') + ')' : terms[0]) + ' sourcelang:korean';
-    return getJSON('https://api.gdeltproject.org/api/v2/doc/doc?mode=artlist&format=json&sort=datedesc&timespan=1d&maxrecords=75&query=' + encodeURIComponent(query), 9000)
-      .then(function (r) {
-        return (r.articles || []).map(function (a) {
-          var t = squash(a.title);
-          var hit = interests.find(function (q) { return t.indexOf(squash(q)) >= 0; }) || interests[0];
-          var sd = a.seendate || '';
-          var iso = sd.length >= 15 ? sd.slice(0, 4) + '-' + sd.slice(4, 6) + '-' + sd.slice(6, 8) + 'T' + sd.slice(9, 11) + ':' + sd.slice(11, 13) + ':' + sd.slice(13, 15) + 'Z' : null;
-          return { title: a.title, link: a.url, source: a.domain, image: a.socialimage || '', date: iso, interest: hit };
-        });
-      });
-  }
-
-  // 유튜브: API 키가 있으면 오늘 올라온 영상을 조회수 순으로, 없으면 Piped에서 조회수 순
-  var PIPED = ['https://pipedapi.kavin.rocks', 'https://pipedapi.adminforge.de'];
-  function fetchYoutube(q) {
-    if (settings.ytKey) {
-      var start = new Date(); start.setHours(0, 0, 0, 0);
-      return getJSON('https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=viewCount&maxResults=8&regionCode=KR&relevanceLanguage=ko' +
-        '&publishedAfter=' + encodeURIComponent(start.toISOString()) + '&q=' + encodeURIComponent(q) + '&key=' + encodeURIComponent(settings.ytKey))
-        .then(function (r) {
-          return (r.items || []).map(function (v, i) {
-            return { id: v.id.videoId, title: decodeEntities(v.snippet.title), channel: v.snippet.channelTitle, date: v.snippet.publishedAt, rank: i, interest: q };
-          });
-        });
-    }
-    var tryAt = function (i) {
-      if (i >= PIPED.length) return Promise.reject(new Error('piped'));
-      return getJSON(PIPED[i] + '/search?filter=videos&q=' + encodeURIComponent(q), 7000)
-        .then(function (r) {
-          return (r.items || []).filter(function (v) { return v.url && v.url.indexOf('/watch') === 0; })
-            .sort(function (a, b) { return (b.views || 0) - (a.views || 0); }).slice(0, 8).map(function (v) {
-              return { id: v.url.split('v=')[1], title: v.title, channel: v.uploaderName, views: v.views, date: v.uploaded > 0 ? new Date(v.uploaded).toISOString() : null, ago: v.uploadedDate, interest: q };
-            });
-        })
-        .catch(function () { return tryAt(i + 1); });
-    };
-    return tryAt(0);
-  }
-  function decodeEntities(s) { var t = document.createElement('textarea'); t.innerHTML = s; return t.value; }
-
-  // 제목 글자 2-gram 유사도로 같은 사건을 묶어요
-  function grams(t) { var s = squash(t), g = {}; for (var i = 0; i < s.length - 1; i++) g[s.substr(i, 2)] = 1; return g; }
-  function similar(a, b) {
-    var n = 0, ka = Object.keys(a), kb = Object.keys(b).length;
-    ka.forEach(function (k) { if (b[k]) n++; });
-    return n / Math.max(1, Math.min(ka.length, kb));
-  }
-  function clusterStories(items) {
-    var clusters = [];
-    items.forEach(function (it) {
-      var g = grams(it.title);
-      var hit = clusters.find(function (c) { return similar(c.g, g) >= 0.5; });
-      if (hit) { hit.items.push(it); return; }
-      clusters.push({ g: g, items: [it] });
-    });
-    return clusters.map(function (c) {
-      var sources = {};
-      c.items.forEach(function (x) { sources[x.source || x.link] = 1; });
-      var lead = c.items.find(function (x) { return x.image; }) || c.items[0];
-      var latest = c.items.map(function (x) { return x.date || ''; }).sort().pop();
-      return {
-        title: lead.title, link: lead.link, source: lead.source, interest: lead.interest, date: latest || null,
-        image: lead.image || (c.items.find(function (x) { return x.image; }) || {}).image || '',
-        outlets: Object.keys(sources).length
-      };
-    }).sort(function (a, b) {
-      return (b.outlets - a.outlets) || ((b.image ? 1 : 0) - (a.image ? 1 : 0)) || (b.date || '').localeCompare(a.date || '');
-    });
-  }
-  var isToday = function (iso) { return iso && ymd(new Date(iso)) === ymd(new Date()); };
-
-  function loadNews() {
-    var sig = ymd(new Date()) + '|' + settings.interests.join('|') + '#' + (settings.ytKey ? 'k' : '');
-    var cache = store.get('feedCache2', null);
-    if (cache && cache.sig === sig && Date.now() - cache.at < 30 * 60 * 1000 && cache.stories.length) {
-      return Promise.resolve({ stories: cache.stories, videos: cache.videos, failed: false });
-    }
-    var qs = settings.interests;
-    if (!qs.length) return Promise.resolve({ stories: [], videos: [], failed: false });
-    var settle = function (p) { return p.then(function (v) { return { ok: true, v: v }; }, function () { return { ok: false, v: [] }; }); };
-    var jobs = [settle(fetchGdelt(qs))].concat(qs.map(function (q) { return settle(fetchGoogle(q)); }));
-    var vids = Promise.all(qs.map(function (q) { return settle(fetchYoutube(q)); }));
-    return Promise.all([Promise.all(jobs), vids]).then(function (res) {
-      var all = [];
-      res[0].forEach(function (r) { r.v.forEach(function (it) { if (it.title && it.link && isToday(it.date)) all.push(it); }); });
-      var vseen = {}, vs = [];
-      res[1].forEach(function (r) { r.v.forEach(function (v) { if (v.id && !vseen[v.id]) { vseen[v.id] = 1; vs.push(v); } }); });
-      var failed = res[0].every(function (r) { return !r.ok; });
-      var out = { stories: clusterStories(all), videos: vs, failed: failed };
-      if (!failed) store.set('feedCache2', { sig: sig, at: Date.now(), stories: out.stories, videos: vs });
-      return out;
-    });
-  }
-
-  function ago(iso) {
-    if (!iso) return '';
-    var m = Math.round((Date.now() - new Date(iso)) / 60000);
-    if (m < 60) return Math.max(m, 1) + '분 전';
-    if (m < 1440) return Math.round(m / 60) + '시간 전';
-    return Math.round(m / 1440) + '일 전';
-  }
-  function hueOf(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
-  function thumbHtml(n, cls) {
-    var tile = '<span class="thumb-fallback" style="--h:' + hueOf(n.interest) + '"><span>' + esc(n.interest) + '</span></span>';
-    if (!n.image) return '<span class="thumb ' + cls + '">' + tile + '</span>';
-    return '<span class="thumb ' + cls + '">' + tile + '<img src="' + esc(n.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"></span>';
-  }
-  function newsCard(n) {
-    var read = readSet.has(n.link);
-    var img = n.image ? '<span class="thumb square"><img src="' + esc(n.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="var a=this.closest(\'.news-card\');this.parentNode.remove();a.classList.add(\'noimg\')"></span>' : '';
-    return '<li><a class="news-card' + (n.image ? '' : ' noimg') + (read ? ' read' : '') + '" href="' + esc(n.link) + '" target="_blank" rel="noopener" data-id="' + esc(n.link) + '">' +
-      img +
-      '<span class="n-body"><span class="n-title">' + esc(n.title) + '</span>' +
-      '<span class="n-meta">' + (n.outlets > 1 ? '<span class="n-hot">' + n.outlets + '개 매체 보도</span>' : '') + '<span class="n-tag">' + esc(n.interest) + '</span>' +
-      (n.source ? '<span>' + esc(n.source) + '</span>' : '') + (n.date ? '<span>' + ago(n.date) + '</span>' : '') + '</span></span></a></li>';
-  }
-  function fmtViews(v) { return v >= 10000 ? Math.round(v / 1000) / 10 + '만회' : v >= 1000 ? Math.round(v / 100) / 10 + '천회' : v + '회'; }
-  function videoCard(v) {
-    return '<li><a class="yt-card" href="https://www.youtube.com/watch?v=' + encodeURIComponent(v.id) + '" target="_blank" rel="noopener" data-id="yt:' + esc(v.id) + '">' +
-      '<span class="thumb wide"><span class="thumb-fallback" style="--h:' + hueOf(v.interest) + '"><span>' + esc(v.interest) + '</span></span>' +
-      '<img src="https://i.ytimg.com/vi/' + encodeURIComponent(v.id) + '/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="play" aria-hidden="true"></span></span>' +
-      '<span class="yt-title">' + esc(v.title) + '</span>' +
-      '<span class="n-meta"><span>' + esc(v.channel || '') + '</span>' + (v.views ? '<span>조회 ' + fmtViews(v.views) + '</span>' : '') + '<span>' + (v.date ? ago(v.date) : esc(v.ago || '')) + '</span></span></a></li>';
-  }
-  function ytSearchCard(q) {
-    return '<li><a class="yt-card" href="https://www.youtube.com/results?search_query=' + encodeURIComponent(q) + '&sp=CAMSAggC" target="_blank" rel="noopener">' +
-      '<span class="thumb wide"><span class="thumb-fallback yt" style="--h:' + hueOf(q) + '"><span>' + esc(q) + '</span></span><span class="play" aria-hidden="true"></span></span>' +
-      '<span class="yt-title">' + esc(q) + ' 오늘 인기 영상</span><span class="n-meta"><span>YouTube 검색 · 조회수순</span></span></a></li>';
-  }
-  function igTag(q) { return q.replace(/[^0-9A-Za-z가-힣_]/g, ''); }
-
-  function renderNews(result) {
-    stories = result.stories; videos = result.videos || [];
-    newsSample = !!result.failed;
-    if (newsSample) stories = window.SAMPLE_NEWS;
-    $('news-panel').hidden = false;
-    $('news-note').hidden = !newsSample;
-    $('news-note').textContent = newsSample ? '뉴스 서버에 연결하지 못해 예시를 보여드려요. 링크를 누르면 실제 검색 결과로 이동해요.' : '';
-    $('news-top').innerHTML = stories.slice(0, 3).map(function (n) { return newsCard(n); }).join('');
-    $('news-empty').hidden = stories.length > 0;
-    $('news-more').hidden = false;
-    $('news-total').textContent = stories.length > 3 ? stories.length : '';
-    renderNewsDialog();
-  }
-  function renderNewsDialog() {
-    var src = newsKind === 'video' ? videos : newsKind === 'news' ? stories : [];
-    var interests = settings.interests.filter(function (i) { return src.some(function (n) { return n.interest === i; }); });
-    if (newsFilter !== 'all' && interests.indexOf(newsFilter) < 0) newsFilter = 'all';
-    $('news-filters').hidden = newsKind === 'ig' || !src.length;
-    $('news-filters').innerHTML = ['all'].concat(interests).map(function (i) {
-      var c = i === 'all' ? src.length : src.filter(function (n) { return n.interest === i; }).length;
-      return '<button type="button" class="chip" role="tab" data-f="' + esc(i) + '" aria-selected="' + (newsFilter === i) + '">' + (i === 'all' ? '전체' : esc(i)) + ' <span class="mono">' + c + '</span></button>';
-    }).join('');
-    var list = newsFilter === 'all' ? src : src.filter(function (n) { return n.interest === newsFilter; });
-    $('news-all').hidden = newsKind !== 'news';
-    $('yt-all').hidden = newsKind !== 'video';
-    $('ig-tags').hidden = newsKind !== 'ig';
-    $('news-hint').textContent = newsKind === 'news' ? '오늘 올라온 기사 중 여러 매체가 함께 다룬 순서예요.'
-      : newsKind === 'video' ? (videos.length ? '오늘 올라온 영상을 조회수 순으로 모았어요.' : '영상을 불러오지 못해 유튜브 검색으로 연결해요. 설정에 유튜브 API 키를 넣으면 오늘 영상을 조회수 순으로 보여줘요.')
-      : '인스타그램은 게시물을 가져올 공개 방법이 없어 해시태그 페이지로 연결해요.';
-    if (newsKind === 'news') $('news-all').innerHTML = list.length ? list.map(function (n) { return newsCard(n); }).join('') : '<li class="empty">오늘 올라온 소식이 아직 없어요.</li>';
-    if (newsKind === 'video') $('yt-all').innerHTML = list.length ? list.map(videoCard).join('') : settings.interests.map(ytSearchCard).join('');
-    if (newsKind === 'ig') $('ig-tags').innerHTML = settings.interests.map(function (q) {
-      var t = igTag(q);
-      return t ? '<a class="ig-tag" href="https://www.instagram.com/explore/tags/' + encodeURIComponent(t) + '/" target="_blank" rel="noopener">#' + esc(t) + '</a>' : '';
-    }).join('');
-    Array.prototype.forEach.call(document.querySelectorAll('#news-dialog .seg-btn'), function (b) { b.setAttribute('aria-selected', String(b.dataset.kind === newsKind)); });
-  }
-  function initNews() {
-    document.addEventListener('click', function (e) {
-      var a = e.target.closest('.news-card, .yt-card');
-      if (!a || !a.dataset.id) return;
-      readSet.add(a.dataset.id);
-      store.set('newsRead', Array.from(readSet).slice(-400));
-      a.classList.add('read');
-    });
-    $('news-filters').addEventListener('click', function (e) {
-      var b = e.target.closest('.chip');
-      if (b) { newsFilter = b.dataset.f; renderNewsDialog(); }
-    });
-    document.querySelector('#news-dialog .seg').addEventListener('click', function (e) {
-      var b = e.target.closest('.seg-btn');
-      if (b) { newsKind = b.dataset.kind; newsFilter = 'all'; renderNewsDialog(); }
-    });
-    $('news-more').onclick = function () { newsKind = 'news'; newsFilter = 'all'; renderNewsDialog(); openDialog($('news-dialog')); };
-    loadNews().then(renderNews);
-  }
-
   /* ---------- 설정 ---------- */
   // 도시 검색 결과 목록 (설정·날씨 상세 공용)
   function searchCity(q, list) {
@@ -2417,7 +2234,7 @@
     var dlg = $('settings');
     var draft;
     function renderTags() {
-      $('set-tags').innerHTML = draft.interests.map(function (t, i) {
+      $('set-tags').innerHTML = draft.enKeywords.map(function (t, i) {
         return '<li>' + esc(t) + '<button type="button" data-i="' + i + '" aria-label="' + esc(t) + ' 삭제">✕</button></li>';
       }).join('');
       var l = draft.location;
@@ -2434,7 +2251,6 @@
       renderPushStatus();
       draft = JSON.parse(JSON.stringify(settings));
       $('set-name').value = draft.name;
-      $('set-ytkey').value = draft.ytKey || '';
       $('set-wxapp').value = draft.weatherApp || 'apple';
       $('set-lang').value = draft.lang || 'ko';
       $('set-interest').value = ''; $('set-city').value = ''; $('city-results').innerHTML = '';
@@ -2443,14 +2259,14 @@
     };
     $('set-tags').addEventListener('click', function (e) {
       var b = e.target.closest('button');
-      if (b) { draft.interests.splice(+b.dataset.i, 1); renderTags(); }
+      if (b) { draft.enKeywords.splice(+b.dataset.i, 1); renderTags(); }
     });
     $('set-interest').addEventListener('keydown', function (e) {
       if (e.key !== 'Enter' || e.isComposing) return;
       e.preventDefault();
       var v = e.target.value.trim();
-      if (v && draft.interests.indexOf(v) < 0 && draft.interests.length < 8) { draft.interests.push(v); renderTags(); }
-      else if (draft.interests.length >= 8) toast('관심사는 8개까지 등록할 수 있어요');
+      if (v && draft.enKeywords.indexOf(v) < 0 && draft.enKeywords.length < 8) { draft.enKeywords.push(v); renderTags(); }
+      else if (draft.enKeywords.length >= 8) toast('키워드는 8개까지 등록할 수 있어요');
       e.target.value = '';
     });
     var ct;
@@ -2477,13 +2293,12 @@
     $('settings-save').addEventListener('click', function (e) {
       e.preventDefault();
       var pending = $('set-interest').value.trim();
-      if (pending && draft.interests.indexOf(pending) < 0) draft.interests.push(pending);
+      if (pending && draft.enKeywords.indexOf(pending) < 0) draft.enKeywords.push(pending);
       draft.name = $('set-name').value.trim();
-      draft.ytKey = $('set-ytkey').value.trim();
       draft.weatherApp = $('set-wxapp').value;
       var langChanged = $('set-lang').value !== (settings.lang || 'ko');
       draft.lang = $('set-lang').value;
-      var interestsChanged = draft.interests.join('|') !== settings.interests.join('|') || draft.ytKey !== (settings.ytKey || '');
+      var kwChanged = draft.enKeywords.join('|') !== settings.enKeywords.join('|');
       var locChanged = JSON.stringify(draft.location) !== JSON.stringify(settings.location);
       settings = draft;
       store.set('settings', settings);
@@ -2491,7 +2306,7 @@
       dlg.close ? dlg.close() : dlg.removeAttribute('open');
       renderGreeting();
       if (locChanged) loadWeather().then(renderWeather);
-      if (interestsChanged) loadNews().then(renderNews);
+      if (kwChanged) { enRepick(); renderPhrase(); }
       toast('설정을 저장했어요');
     });
   }
@@ -2499,7 +2314,7 @@
   /* ---------- 섹션 순서 ---------- */
   var SECTIONS = [
     { id: 'weather-panel', name: '날씨 · 옷차림' }, { id: 'check-panel', name: '체크리스트' },
-    { id: 'schedule-panel', name: '일정' }, { id: 'news-panel', name: '관심 소식' }, { id: 'english-panel', name: '업무 영어' }
+    { id: 'schedule-panel', name: '일정' }, { id: 'english-panel', name: '오늘의 영어' }
   ];
   function sectionOrder() {
     var saved = store.get('sectionOrder', []), ids = SECTIONS.map(function (x) { return x.id; });
@@ -2622,7 +2437,6 @@
   }
   setTimeout(hideSplash, 8000);
   loadWeather().then(renderWeather).then(hideSplash, hideSplash);
-  initNews();
 
   scheduleReminders();
   document.addEventListener('visibilitychange', function () { if (!document.hidden) scheduleReminders(); });

@@ -123,21 +123,10 @@
         <div class="kw-row"><span class="kw-label">챙기기</span><ul class="chips-s" id="bring"></ul></div>
       </section>
 
-      <!-- 관심 소식: 오늘 가장 많이 보도된 3건 -->
-      <section class="panel" id="news-panel" aria-labelledby="news-h" hidden>
-        <header class="panel-head">
-          <h2 id="news-h">오늘의 관심 소식</h2>
-          <button type="button" class="link-btn" id="news-more" hidden>전체보기 <span class="mono" id="news-total"></span></button>
-        </header>
-        <p class="note" id="news-note" hidden></p>
-        <ul class="news-cards" id="news-top"></ul>
-        <p class="empty" id="news-empty" hidden>오늘 올라온 관심사 소식이 아직 없어요.</p>
-      </section>
-
       <!-- 영어 -->
       <section class="panel english" id="english-panel" aria-labelledby="en-h">
         <header class="panel-head">
-          <h2 id="en-h">오늘의 업무 영어</h2>
+          <h2 id="en-h">오늘의 영어</h2>
           <button type="button" class="link-btn" id="en-history">공부한 표현 ›</button>
         </header>
         <p class="en-when" id="en-when"></p>
@@ -152,24 +141,6 @@
   </div>
 </main>
 
-<!-- 관심 소식 전체보기 -->
-<dialog class="sheet wide" id="news-dialog" aria-labelledby="nd-h">
-  <div class="sheet-body">
-    <header class="panel-head">
-      <h2 id="nd-h">오늘의 관심 소식</h2>
-    </header>
-    <div class="seg" role="tablist" aria-label="소식 종류">
-      <button type="button" role="tab" class="seg-btn" data-kind="news" aria-selected="true">뉴스</button>
-      <button type="button" role="tab" class="seg-btn" data-kind="video" aria-selected="false">영상</button>
-      <button type="button" role="tab" class="seg-btn" data-kind="ig" aria-selected="false">인스타그램</button>
-    </div>
-    <div class="chips" id="news-filters" role="tablist" aria-label="관심사 필터"></div>
-    <p class="hint" id="news-hint"></p>
-    <ul class="news-list big" id="news-all"></ul>
-    <ul class="yt-grid" id="yt-all" hidden></ul>
-    <div class="ig-tags" id="ig-tags" hidden></div>
-  </div>
-</dialog>
 
 <!-- 시즌 목록 -->
 <dialog class="sheet wide" id="season-dialog" aria-labelledby="sd-h">
@@ -358,12 +329,12 @@
       <input id="set-name" type="text" maxlength="20" placeholder="예: 지은">
     </div>
     <div class="field">
-      <label for="set-interest">관심사</label>
+      <label for="set-interest">영어 키워드</label>
       <div class="tag-input">
         <ul class="tags" id="set-tags"></ul>
-        <input id="set-interest" type="text" maxlength="20" placeholder="입력 후 Enter (예: 디자인 시스템)">
+        <input id="set-interest" type="text" maxlength="20" placeholder="입력 후 Enter (예: 호텔, 디자인)">
       </div>
-      <p class="hint">관심사마다 최근 7일 뉴스와 영상을 모아요.</p>
+      <p class="hint">매일 이 중 하나를 골라, 그 상황에 맞는 영어 문장을 보여줘요.</p>
     </div>
     <div class="field">
       <label for="set-city">날씨 지역</label>
@@ -381,11 +352,6 @@
         <option value="shortcut">'날씨날씨' 단축어 실행</option>
       </select>
       <p class="hint">'날씨날씨'로 열려면 단축어 앱에서 [앱 열기 → 날씨날씨] 동작 하나로 된 단축어를 만들고 이름을 <b>날씨날씨</b>로 저장하세요.</p>
-    </div>
-    <div class="field">
-      <label for="set-ytkey">유튜브 API 키 (선택)</label>
-      <input id="set-ytkey" type="text" autocomplete="off" spellcheck="false" placeholder="AIza…">
-      <p class="hint">넣으면 관심사별 최신 영상을 더 안정적으로 가져와요. Google Cloud 콘솔에서 YouTube Data API v3 키를 무료로 만들 수 있어요.</p>
     </div>
     <div class="field">
       <span class="field-label">섹션 순서</span>
@@ -546,6 +512,7 @@
 <script src="i18n.js"></script>
 <script src="data.js"></script>
 <script src="i18n-data.js"></script>
+<script src="phrases.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
