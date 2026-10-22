@@ -3235,7 +3235,8 @@ window.EN_DATA = {
       var dLat = (c.lat - w.lat) * 111, dLon = (c.lon - w.lon) * 111 * Math.cos(w.lat * Math.PI / 180), km = Math.sqrt(dLat * dLat + dLon * dLon);
       if (km <= c.r && km < best) { best = km; city = c; }
     });
-    var kw = (city ? city.kw : t.kw).slice(0, 3), place = city ? city.name : w.place;
+    var cur = CURRENCY[cc];
+    var kw = (city ? city.kw : t.kw).slice(0, cur ? 2 : 3), place = city ? city.name : w.place;
     var root = document.documentElement;
     var fc = (window.FLAG_COLORS || {})[cc] || ['#1d4e89', '#4f86c6', '#e8f4ff'];
     root.style.setProperty('--season', fc[2]);
@@ -3247,10 +3248,32 @@ window.EN_DATA = {
     $('season-phase').dataset.phase = 'travel';
     $('season-kw').innerHTML = kw.map(function (k) {
       return '<a class="kw-chip" href="https://www.google.com/maps/search/' + encodeURIComponent(k + ' ' + place) + '" target="_blank" rel="noopener">' + esc(k) + '</a>';
-    }).join('');
+    }).join('') + (cur ? '<a class="kw-chip fx-chip" id="fx-chip" href="shortcuts://run-shortcut?name=' + encodeURIComponent('계산기') + '">💱 ' + (window.IS_EN ? 'Loading rate' : '환율 불러오는 중') + '</a>' : '');
+    if (cur) loadRate(cur[0]).then(function (krw) {
+      var el = $('fx-chip'); if (!el || !krw) { if (el) el.remove(); return; }
+      var amt = Math.round(krw * cur[2]).toLocaleString('ko-KR');
+      el.textContent = '💱 ' + cur[1] + cur[2].toLocaleString('en-US') + ' = ' + (window.IS_EN ? '₩' + amt : amt + '원');
+    });
     $('hero-motif').innerHTML = '<span>' + flagOf(cc) + '</span>';
     // 흰색·연노랑 보케만, 크기는 다양하게
     scene.start({ type: 'lights', accent: fc[2], palette: ['#ffffff', '#fffdf2', '#fff6cc', '#ffefa8'], sizes: [1.5, 6] });
+  }
+  // 해외 환율: [통화, 기호, 보여줄 단위] — 1원 단위가 너무 작은 통화는 100·10,000 단위로
+  var CURRENCY = {
+    JP: ['JPY', '¥', 100], CN: ['CNY', '¥', 1], TW: ['TWD', 'NT$', 1], HK: ['HKD', 'HK$', 1], MO: ['MOP', 'MOP$', 1], TH: ['THB', '฿', 1],
+    VN: ['VND', '₫', 10000], PH: ['PHP', '₱', 1], SG: ['SGD', 'S$', 1], MY: ['MYR', 'RM', 1], ID: ['IDR', 'Rp', 10000], US: ['USD', '$', 1],
+    GU: ['USD', '$', 1], MP: ['USD', '$', 1], CA: ['CAD', 'C$', 1], GB: ['GBP', '£', 1], FR: ['EUR', '€', 1], IT: ['EUR', '€', 1],
+    ES: ['EUR', '€', 1], PT: ['EUR', '€', 1], DE: ['EUR', '€', 1], CH: ['CHF', 'CHF ', 1], AT: ['EUR', '€', 1], CZ: ['CZK', 'Kč', 100],
+    NL: ['EUR', '€', 1], TR: ['TRY', '₺', 1], AE: ['AED', 'AED ', 1], AU: ['AUD', 'A$', 1], NZ: ['NZD', 'NZ$', 1]
+  };
+  // 1 단위 = 몇 원인지. 6시간 동안 저장해 두고, 서버가 안 되면 마지막 값을 써요
+  function loadRate(code) {
+    var cache = store.get('fx', {}), hit = cache[code];
+    if (hit && Date.now() - hit.t < 6 * 3600e3) return Promise.resolve(hit.krw);
+    var save = function (krw) { if (krw) { cache[code] = { krw: krw, t: Date.now() }; store.set('fx', cache); } return krw; };
+    return getJSON('https://open.er-api.com/v6/latest/' + code).then(function (r) { return save(r && r.rates && r.rates.KRW); })
+      .catch(function () { return getJSON('https://api.frankfurter.app/latest?from=' + code + '&to=KRW').then(function (r) { return save(r && r.rates && r.rates.KRW); }); })
+      .catch(function () { return hit ? hit.krw : null; });
   }
   // 향후 일주일 (오늘 포함 8일)
   // 날씨 앱 열기: 아이폰 기본 날씨(weather://) 또는 '날씨날씨' 단축어
