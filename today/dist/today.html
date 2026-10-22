@@ -3765,6 +3765,41 @@ window.PHRASE_TOPICS = [
     });
     return { start: start, setWeather: setWeather };
   })();
+  // 지금 내리는 양(mm)까지 보고 판단: 날씨 코드는 '흐림'이어도 실제 강수량이 있으면 비로 봐요
+  function precipNow(c) {
+    var byCode = precipOf(c.weather_code);
+    var mm = c.precipitation || 0, snow = c.snowfall || 0;
+    if (mm < 0.1 && !byCode[0]) return [null, 0];
+    var kind = snow > 0 || byCode[0] === 'snow' ? 'snow' : 'rain';
+    var lv = mm >= 4 ? 3 : mm >= 1 ? 2 : mm >= 0.1 ? 1 : byCode[1];
+    return [kind, Math.max(lv, byCode[0] ? byCode[1] : 1)];
+  }
+  // RainViewer 레이더(약 10분 전 관측)에서 내 위치 주변 픽셀을 읽어 강수 세기 0~3 (못 읽으면 null)
+  function radarPrecip(lat, lon) {
+    return getJSON('https://api.rainviewer.com/public/weather-maps.json').then(function (m) {
+      var past = m && m.radar && m.radar.past; if (!past || !past.length) return null;
+      var f = past[past.length - 1], z = 7, n = Math.pow(2, z);
+      var xt = (lon + 180) / 360 * n, yt = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n;
+      var tx = Math.floor(xt), ty = Math.floor(yt), px = Math.floor((xt - tx) * 256), py = Math.floor((yt - ty) * 256);
+      return new Promise(function (resolve) {
+        var img = new Image(); img.crossOrigin = 'anonymous';
+        img.onload = function () {
+          try {
+            var cv = document.createElement('canvas'); cv.width = cv.height = 256;
+            var cx = cv.getContext('2d'); cx.drawImage(img, 0, 0);
+            var x0 = Math.max(0, px - 3), y0 = Math.max(0, py - 3), d = cx.getImageData(x0, y0, 7, 7).data, hit = 0, sum = 0;
+            for (var i = 0; i < d.length; i += 4) if (d[i + 3] > 0) { hit++; sum += d[i]; }
+            if (!hit) return resolve(0);
+            // 흑백 색표(0): 밝을수록 강한 비
+            var avg = sum / hit;
+            resolve(hit < 6 ? 1 : avg > 150 ? 3 : avg > 90 ? 2 : 1);
+          } catch (e) { resolve(null); }
+        };
+        img.onerror = function () { resolve(null); };
+        img.src = m.host + f.path + '/256/' + z + '/' + tx + '/' + ty + '/0/0_0.png';
+      });
+    }).catch(function () { return null; });
+  }
   // 날씨 코드 → 비/눈과 세기(1~3)
   function precipOf(code) {
     if ([71, 77, 85].indexOf(code) >= 0) return ['snow', 1];
@@ -3819,7 +3854,7 @@ window.PHRASE_TOPICS = [
     return locate().then(function (loc) {
       var q = 'latitude=' + loc.lat + '&longitude=' + loc.lon;
       var url = 'https://api.open-meteo.com/v1/forecast?' + q +
-        '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m' +
+        '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,precipitation,rain,showers,snowfall' +
         '&hourly=temperature_2m,precipitation_probability,weather_code' +
         '&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,snowfall_sum,uv_index_max,sunrise,sunset' +
         '&timezone=auto&forecast_days=8&wind_speed_unit=ms';
@@ -3869,8 +3904,14 @@ window.PHRASE_TOPICS = [
     var c = w.current, d = w.daily, info = wmo(c.weather_code);
     wxLoadedAt = Date.now();
     // 예시 날씨일 때는 비·눈 효과를 띄우지 않아요
-    var pr = w.sample ? [null, 0] : precipOf(c.weather_code);
+    var pr = w.sample ? [null, 0] : precipNow(c);
     scene.setWeather(pr[0], pr[1]);
+    // 레이더(실제 관측)로 한 번 더 확인해서, 모델이 놓친 비도 잡아요
+    if (!w.sample && w.lat != null) radarPrecip(w.lat, w.lon).then(function (lv) {
+      if (lv == null) return;
+      if (lv > 0) scene.setWeather(c.temperature_2m <= 1 ? 'snow' : 'rain', lv);
+      else if (!c.precipitation) scene.setWeather(null, 0);
+    });
     $('wx-icon').textContent = info[1];
     $('wx-temp').textContent = Math.round(c.temperature_2m) + '°';
     $('wx-cond').textContent = info[0] + ' · 체감 ' + Math.round(c.apparent_temperature) + '°';
