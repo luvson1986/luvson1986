@@ -999,7 +999,7 @@
     return log;
   }
   // IT 업계 UI/UX 디자이너의 업무 영어만: 디자인·업무·발표·IT·이메일·금융 서비스 주제
-  var WORK_TOPICS = ['design', 'work', 'presentation', 'tech', 'email', 'finance'];
+  var WORK_TOPICS = ['design', 'work', 'presentation', 'tech', 'email', 'finance', 'research', 'handoff', 'accessibility', 'product', 'collab'];
   function pickPhrase(day) {
     var log = enLog();
     if (log[day] && PHRASE_BY_EN[log[day]]) return PHRASE_BY_EN[log[day]];
