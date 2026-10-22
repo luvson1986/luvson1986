@@ -334,8 +334,9 @@
   }
 
   /* ---------- 계절 배경 장면 (canvas) ---------- */
-  var scene = (function () {
-    var canvas = $('hero-canvas'), ctx = canvas.getContext('2d');
+  // 같은 장면을 그리는 캔버스를 여러 개 만들 수 있어요 (메인 + 당겼을 때 보이는 위쪽)
+  function makeScene(canvas, active) {
+    var ctx = canvas.getContext('2d');
     var parts = [], type = 'petals', accent = '#fff', raf = 0, w = 0, h = 0, t0 = 0, emojis = [], floats = [], palOverride = null, sizeRange = null, lastCfg = null;
     // 실제 날씨: 지금 비·눈이 오면 시즌 배경 위에 겹쳐 내려요
     var wx = { kind: null, level: 0 }, wxParts = [];
@@ -499,7 +500,7 @@
       wx = { kind: kind, level: kind ? level : 0 };
       buildWx();
     }
-    function loop(time) { draw(time); raf = requestAnimationFrame(loop); }
+    function loop(time) { if (!active) { raf = 0; return; } draw(time); raf = requestAnimationFrame(loop); }
     function start(cfg) {
       lastCfg = cfg;
       type = cfg.type; accent = cfg.accent; emojis = cfg.emojis || []; palOverride = cfg.palette || null; sizeRange = cfg.sizes || null;
@@ -517,7 +518,12 @@
       buildWx();
       t0 = performance.now();
       if (reduce) { draw(t0 + 1000); return; }
-      raf = requestAnimationFrame(loop);
+      if (active) raf = requestAnimationFrame(loop);
+    }
+    function setActive(on) {
+      if (on === active) return;
+      active = on;
+      if (on && !reduce && !raf) { if (lastCfg && !w) start(lastCfg); else raf = requestAnimationFrame(loop); }
     }
     var rt;
     window.addEventListener('resize', function () {
@@ -525,11 +531,26 @@
       rt = setTimeout(function () { if (lastCfg) start(lastCfg); }, 200);
     });
     document.addEventListener('visibilitychange', function () {
-      if (document.hidden) cancelAnimationFrame(raf);
-      else if (!reduce) raf = requestAnimationFrame(loop);
+      if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+      else if (!reduce && active) raf = requestAnimationFrame(loop);
     });
-    return { start: start, setWeather: setWeather };
-  })();
+    return { start: start, setWeather: setWeather, setActive: setActive };
+  }
+  var sceneMain = makeScene($('hero-canvas'), true);
+  // 맨 위에서 당겼을 때 위로 드러나는 부분: 메인 배경을 뒤집어 이어 붙이고, 같은 효과(비·아이콘·보케)를 따로 그려요
+  var sceneExt = makeScene($('hero-ext-canvas'), false);
+  var scene = {
+    start: function (cfg) { sceneMain.start(cfg); sceneExt.start(cfg); setTimeout(syncHeroExt, 0); },
+    setWeather: function (k, l) { sceneMain.setWeather(k, l); sceneExt.setWeather(k, l); }
+  };
+  function syncHeroExt() {
+    var hero = $('hero'), bg = $('hero-ext-bg'); if (!hero || !bg) return;
+    var cs = getComputedStyle(hero);
+    bg.style.backgroundImage = cs.backgroundImage;
+    bg.style.backgroundColor = cs.backgroundColor;
+    bg.style.backgroundSize = '100% ' + hero.offsetHeight + 'px';
+    bg.classList.toggle('ink-dark', hero.classList.contains('ink-dark'));
+  }
   // 지금 내리는 양(mm)까지 보고 판단: 날씨 코드는 '흐림'이어도 실제 강수량이 있으면 비로 봐요
   function precipNow(c) {
     var byCode = precipOf(c.weather_code);
@@ -764,6 +785,7 @@
     });
     var hero = $('hero');
     hero.style.background = layers.join(', ') + ', ' + base;
+    setTimeout(syncHeroExt, 0);
     // 글자가 놓이는 위쪽은 앞쪽 색들이 덮어요 → 그 밝기로 글자색 결정
     var topCols = cols.slice(0, Math.min(2, cols.length));
     var topLum = topCols.reduce(function (s, b) { return s + lum(b[0]) * b[1]; }, 0) / topCols.reduce(function (s, b) { return s + b[1]; }, 0);
@@ -781,6 +803,7 @@
     document.documentElement.style.setProperty('--hero-a', cols[0]);
     document.documentElement.style.setProperty('--hero-b', cols[1]);
     var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', cols[0]);
+    setTimeout(syncHeroExt, 0);
   }
   if (window.matchMedia) {
     var mqDark = matchMedia('(prefers-color-scheme: dark)');
@@ -2517,7 +2540,18 @@
   scheduleReminders();
   document.addEventListener('visibilitychange', function () { if (!document.hidden) scheduleReminders(); });
   // 맨 위 근처에서는 바깥(당겼을 때 보이는) 배경을 메인 색으로
-  var syncTop = function () { document.documentElement.classList.toggle('at-top', window.scrollY < 120); };
+  // 뒤집어 붙인 배경의 아래 끝을 '지금 메인의 맨 위' 위치에 맞춰요 (당긴 만큼 내려와요)
+  var extBg = $('hero-ext-bg'), extH = 0;
+  var alignExt = function () {
+    if (!extBg) return;
+    if (!extH) extH = extBg.offsetHeight;
+    var topY = $('hero').getBoundingClientRect().top;
+    extBg.style.transform = 'translateY(' + (Math.round(topY - extH) + 2) + 'px) scaleY(-1)'; // 2px 겹쳐서 경계선이 안 보이게
+  };
+  var syncTop = function () { var top = window.scrollY < 120; document.documentElement.classList.toggle('at-top', top); sceneExt.setActive(top); if (top) alignExt(); };
+  document.addEventListener('touchmove', function () { if (window.scrollY < 120) requestAnimationFrame(alignExt); }, { passive: true });
+  window.addEventListener('resize', function () { extH = 0; });
+  window.addEventListener('resize', function () { setTimeout(syncHeroExt, 300); });
   window.addEventListener('scroll', syncTop, { passive: true }); syncTop();
   // 맨 위에서 아래로 당기면 새로고침 (날씨·레이더 다시 받기)
   (function () {

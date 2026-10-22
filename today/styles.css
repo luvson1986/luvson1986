@@ -46,10 +46,12 @@
 html { -webkit-text-size-adjust: 100%; background: var(--bg); }
 /* 맨 위에서 당길 때 드러나는 바깥 배경을 메인(히어로) 색으로 */
 /* 맨 위에서 당길 때 페이지 위쪽 바깥에 보이는 판: 메인 맨 위와 같은 색 (아이폰은 html 배경을 여기 안 쓰는 경우가 있어서 직접 깔아요) */
-.overscroll-top {
-  position: fixed; left: 0; right: 0; top: 0; height: 40vh; z-index: -1; pointer-events: none; display: none;
-  background: var(--hero-a); background: color-mix(in srgb, var(--hero-a) 70%, rgb(8, 12, 20));
-}
+.overscroll-top { position: fixed; left: 0; right: 0; top: 0; height: 45vh; z-index: -1; pointer-events: none; overflow: hidden; display: none; }
+/* 메인 배경을 위아래로 뒤집어 붙이면 경계(메인 맨 위)가 끊김 없이 이어져요 */
+.hero-ext-bg { position: absolute; inset: 0; transform: scaleY(-1); background-repeat: no-repeat; background-position: left top; }
+.hero-ext-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8, 12, 20, 0.3) 0%, rgba(8, 12, 20, 0) 45%, rgba(8, 12, 20, 0.35) 100%); }
+.hero-ext-bg.ink-dark::after { background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 45%, rgba(8, 12, 20, 0.18) 100%); }
+.hero-ext-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 /* 맨 위 근처에서만: 몸통 배경을 비워서, 당겼을 때 화면에 고정된 메인 색 판이 드러나게 */
 html.at-top .overscroll-top { display: block; }
 html.at-top body { background: transparent; }
