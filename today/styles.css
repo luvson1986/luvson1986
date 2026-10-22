@@ -33,9 +33,9 @@
 /* 다크 모드는 기기 설정(prefers-color-scheme)만 따라요 */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #171717; --surface: #121212; --surface-2: #1e1d1d; --ink: #efedeb; --ink-2: #b8b4b1; --ink-3: #888481;
+    --bg: #121212; --surface: #171717; --surface-2: #1e1d1d; --ink: #efedeb; --ink-2: #b8b4b1; --ink-3: #888481;
     --line: #2e2c2c; --accent: #e2645a; --accent-ink: #ffffff; --accent-soft: #2e2726;
-    --good: #84c295; --warn: #d9a463; --bad: #ee8a6c;
+    --good: #78a684; --warn: #d9a463; --bad: #ee8a6c;
     --cat-meeting: #6f9dff; --cat-focus: #b392ff; --cat-personal: #f0a050; --cat-health: #4cc48d;
     --thumb-l: 32%;
     color-scheme: dark;
