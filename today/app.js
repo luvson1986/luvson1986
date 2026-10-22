@@ -440,13 +440,30 @@
           if (type === 'lights' || type === 'fireflies' || type === 'sun') { parts[i].y = h + 10; if (type === 'fireflies') parts[i].y = rnd(h * 0.3, h); }
         }
       }
-      // 실제 비·눈
+      // 실제 비·눈: 멀고 가까운 층(z)으로 깊이감, 빗줄기는 꼬리가 흐려지게, 눈은 가장자리가 부드럽게
+      if (wx.kind && wxParts.length) {
+        // 비 오는 날은 위쪽이 살짝 뿌옇게
+        var mist = ctx.createLinearGradient(0, 0, 0, h);
+        mist.addColorStop(0, wx.kind === 'snow' ? 'rgba(235,242,255,0.10)' : 'rgba(190,205,225,0.10)');
+        mist.addColorStop(1, 'rgba(190,205,225,0)');
+        ctx.globalAlpha = 1; ctx.fillStyle = mist; ctx.fillRect(0, 0, w, h);
+      }
       for (var q = 0; q < wxParts.length; q++) {
         var r = wxParts[q];
-        r.x += r.vx; r.y += r.vy;
-        if (wx.kind === 'snow') { r.x += Math.sin(tt * 0.8 + r.ph) * 0.4; ctx.globalAlpha = r.o; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(r.x, r.y, r.s, 0, Math.PI * 2); ctx.fill(); }
-        else { ctx.globalAlpha = r.o; ctx.strokeStyle = '#fff'; ctx.lineWidth = r.wd; ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x + r.vx * 1.6, r.y + r.s); ctx.stroke(); }
-        if (r.y > h + 20 || r.x < -30) wxParts[q] = makeWx(false);
+        if (wx.kind === 'snow') {
+          r.x += r.vx + Math.sin(tt * 0.7 + r.ph) * 0.35 * r.z; r.y += r.vy;
+          var sg = ctx.createRadialGradient(r.x, r.y, 0, r.x, r.y, r.s);
+          sg.addColorStop(0, 'rgba(255,255,255,' + r.o + ')'); sg.addColorStop(0.55, 'rgba(255,255,255,' + (r.o * 0.6) + ')'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.globalAlpha = 1; ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(r.x, r.y, r.s, 0, Math.PI * 2); ctx.fill();
+        } else {
+          r.x += r.vx; r.y += r.vy;
+          var ex = r.x + r.vx * (r.s / r.vy), ey = r.y + r.s;
+          var rg2 = ctx.createLinearGradient(r.x, r.y, ex, ey);
+          rg2.addColorStop(0, 'rgba(255,255,255,0)'); rg2.addColorStop(1, 'rgba(235,242,255,' + r.o + ')');
+          ctx.globalAlpha = 1; ctx.strokeStyle = rg2; ctx.lineWidth = r.wd; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(ex, ey); ctx.stroke();
+        }
+        if (r.y > h + 30 || r.x < -40 || r.x > w + 40) wxParts[q] = makeWx(false);
       }
       // 시즌 아이콘(꽃게·억새 등)이 작게 둥둥 떠다녀요
       var fall = type === 'petals' || type === 'leaves' || type === 'snow' || type === 'rain';
@@ -466,14 +483,15 @@
       ctx.globalAlpha = 1;
     }
     function makeWx(initial) {
-      var lv = wx.level, y = initial ? rnd(-20, h) : rnd(-40, -10);
-      if (wx.kind === 'snow') return { x: rnd(-10, w + 10), y: y, s: rnd(1.4, 2.6 + lv * 0.8), vy: rnd(0.5, 1.1 + lv * 0.3), vx: rnd(-0.3, 0.3), ph: rnd(0, 6.28), o: rnd(0.55, 0.9) };
-      return { x: rnd(0, w + 40), y: y, s: rnd(9, 14 + lv * 6), vy: rnd(7, 9 + lv * 2), vx: -1.4 - lv * 0.4, wd: lv >= 2 ? 1.4 : 1, o: rnd(0.25, 0.4 + lv * 0.08) };
+      var lv = wx.level, z = Math.pow(Math.random(), 0.7) * 0.75 + 0.25, y = initial ? rnd(-20, h) : rnd(-60, -10);
+      if (wx.kind === 'snow') return { z: z, x: rnd(-10, w + 10), y: y, s: (1.2 + lv * 0.5) * (1 + z * 2.2), vy: (0.35 + lv * 0.15) + z * 0.9, vx: rnd(-0.15, 0.15), ph: rnd(0, 6.28), o: 0.35 + z * 0.55 };
+      var vy = (5 + lv * 1.6) * (0.55 + z * 0.6);
+      return { z: z, x: rnd(-10, w + 60), y: y, s: (10 + lv * 5) * (0.5 + z * 0.9), vy: vy, vx: -vy * 0.12, wd: 0.5 + z * 0.9, o: 0.12 + z * (0.28 + lv * 0.06) };
     }
     function buildWx() {
       wxParts = [];
       if (!wx.kind) return;
-      var n = Math.round((wx.kind === 'snow' ? [0, 35, 70, 120] : [0, 45, 95, 160])[wx.level] * Math.max(0.6, Math.min(1.4, w / 390)));
+      var n = Math.round((wx.kind === 'snow' ? [0, 45, 85, 140] : [0, 60, 120, 200])[wx.level] * Math.max(0.6, Math.min(1.4, w / 390)));
       for (var i = 0; i < n; i++) wxParts.push(makeWx(true));
     }
     function setWeather(kind, level) {
