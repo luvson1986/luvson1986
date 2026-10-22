@@ -2513,6 +2513,32 @@
 
   scheduleReminders();
   document.addEventListener('visibilitychange', function () { if (!document.hidden) scheduleReminders(); });
+  // 맨 위 근처에서는 바깥(당겼을 때 보이는) 배경을 메인 색으로
+  var syncTop = function () { document.documentElement.classList.toggle('at-top', window.scrollY < 200); };
+  window.addEventListener('scroll', syncTop, { passive: true }); syncTop();
+  // 맨 위에서 아래로 당기면 새로고침 (날씨·레이더 다시 받기)
+  (function () {
+    var ptr = $('ptr'), y0 = null, pull = 0, busy = false;
+    var show = function (p) { ptr.style.opacity = Math.min(1, p); ptr.style.transform = 'translateY(' + Math.min(30, p * 30 - 10) + 'px) scale(' + (0.6 + Math.min(1, p) * 0.4) + ')'; ptr.querySelector('i').style.transform = 'rotate(' + p * 300 + 'deg)'; };
+    var hide = function () { ptr.style.opacity = ''; ptr.style.transform = ''; ptr.classList.remove('spin'); };
+    document.addEventListener('touchstart', function (e) {
+      if (busy || document.documentElement.classList.contains('modal-open') || window.scrollY > 0 || e.touches.length !== 1) { y0 = null; return; }
+      y0 = e.touches[0].clientY; pull = 0;
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (y0 == null) return;
+      pull = Math.max(0, e.touches[0].clientY - y0);
+      if (window.scrollY > 0) { y0 = null; hide(); return; }
+      show(pull / 110);
+    }, { passive: true });
+    document.addEventListener('touchend', function () {
+      if (y0 == null) return; y0 = null;
+      if (pull < 110) { hide(); return; }
+      busy = true; ptr.classList.add('spin'); ptr.querySelector('i').style.transform = '';
+      var done = function () { busy = false; hide(); };
+      loadWeather().then(renderWeather).then(function () { renderSchedule(); toast(window.IS_EN ? 'Updated' : '새로 불러왔어요'); }).then(done, done);
+    });
+  })();
   // 날씨는 15분마다(앱으로 돌아왔을 때 10분 넘었으면 바로) 다시 받아서 비·눈 효과도 맞춰요
   setInterval(function () { if (!document.hidden) loadWeather().then(renderWeather); }, 15 * 60 * 1000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - wxLoadedAt > 10 * 60 * 1000) loadWeather().then(renderWeather); });
