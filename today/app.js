@@ -2517,7 +2517,7 @@
   scheduleReminders();
   document.addEventListener('visibilitychange', function () { if (!document.hidden) scheduleReminders(); });
   // 맨 위 근처에서는 바깥(당겼을 때 보이는) 배경을 메인 색으로
-  var syncTop = function () { document.documentElement.classList.toggle('at-top', window.scrollY < 200); };
+  var syncTop = function () { document.documentElement.classList.toggle('at-top', window.scrollY < 120); };
   window.addEventListener('scroll', syncTop, { passive: true }); syncTop();
   // 맨 위에서 아래로 당기면 새로고침 (날씨·레이더 다시 받기)
   (function () {

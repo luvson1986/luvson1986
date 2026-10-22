@@ -45,12 +45,14 @@
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; background: var(--bg); }
 /* 맨 위에서 당길 때 드러나는 바깥 배경을 메인(히어로) 색으로 */
-html.at-top { background: var(--hero-a); background: color-mix(in srgb, var(--hero-a) 70%, rgb(8, 12, 20)); } /* 히어로 위쪽은 30% 어둡게 덮여 있어서 같은 톤으로 */
 /* 맨 위에서 당길 때 페이지 위쪽 바깥에 보이는 판: 메인 맨 위와 같은 색 (아이폰은 html 배경을 여기 안 쓰는 경우가 있어서 직접 깔아요) */
 .overscroll-top {
-  position: absolute; left: 0; right: 0; top: -100vh; height: 100vh; pointer-events: none;
+  position: fixed; left: 0; right: 0; top: 0; height: 40vh; z-index: -1; pointer-events: none; display: none;
   background: var(--hero-a); background: color-mix(in srgb, var(--hero-a) 70%, rgb(8, 12, 20));
 }
+/* 맨 위 근처에서만: 몸통 배경을 비워서, 당겼을 때 화면에 고정된 메인 색 판이 드러나게 */
+html.at-top .overscroll-top { display: block; }
+html.at-top body { background: transparent; }
 /* 당겨서 새로고침 */
 .ptr {
   position: fixed; z-index: 50; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 8px); width: 34px; height: 34px; margin-left: -17px;
