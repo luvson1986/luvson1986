@@ -69,8 +69,8 @@
 /* 다크 모드는 기기 설정(prefers-color-scheme)만 따라요 */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #121212; --surface: #1c1c1c; --surface-2: #262525; --ink: #efedeb; --ink-2: #b8b4b1; --ink-3: #888481;
-    --line: #343232; --accent: #e2645a; --accent-ink: #ffffff; --accent-soft: #2e2726;
+    --bg: #1c1c1c; --surface: #121212; --surface-2: #1e1d1d; --ink: #efedeb; --ink-2: #b8b4b1; --ink-3: #888481;
+    --line: #2e2c2c; --accent: #e2645a; --accent-ink: #ffffff; --accent-soft: #2e2726;
     --good: #84c295; --warn: #d9a463; --bad: #ee8a6c;
     --cat-meeting: #6f9dff; --cat-focus: #b392ff; --cat-personal: #f0a050; --cat-health: #4cc48d;
     --thumb-l: 32%;
@@ -4045,7 +4045,7 @@ window.PHRASE_TOPICS = [
     agg = agg.filter(function (a) { return !isWhite(a[0]); }).concat(agg.filter(function (a) { return isWhite(a[0]); }));
     var cols = agg.map(function (a) {
       var c = a[0], x = toHsl(c);
-      if (dark) c = isWhite(c) ? mixHex(main[0], '#121212', 0.8) : fromHsl(x[0], Math.min(1, x[1] * 0.9), Math.max(0.1, x[2] * 0.42));
+      if (dark) c = isWhite(c) ? mixHex(main[0], '#1c1c1c', 0.8) : fromHsl(x[0], Math.min(1, x[1] * 0.9), Math.max(0.1, x[2] * 0.42));
       else c = isWhite(c) ? mixHex('#ffffff', main[0], 0.1) : fromHsl(x[0], x[1], Math.min(0.62, Math.max(0.34, x[2])));
       return [c, a[1]];
     });

@@ -761,7 +761,7 @@
     agg = agg.filter(function (a) { return !isWhite(a[0]); }).concat(agg.filter(function (a) { return isWhite(a[0]); }));
     var cols = agg.map(function (a) {
       var c = a[0], x = toHsl(c);
-      if (dark) c = isWhite(c) ? mixHex(main[0], '#121212', 0.8) : fromHsl(x[0], Math.min(1, x[1] * 0.9), Math.max(0.1, x[2] * 0.42));
+      if (dark) c = isWhite(c) ? mixHex(main[0], '#1c1c1c', 0.8) : fromHsl(x[0], Math.min(1, x[1] * 0.9), Math.max(0.1, x[2] * 0.42));
       else c = isWhite(c) ? mixHex('#ffffff', main[0], 0.1) : fromHsl(x[0], x[1], Math.min(0.62, Math.max(0.34, x[2])));
       return [c, a[1]];
     });
