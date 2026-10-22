@@ -725,11 +725,13 @@
     $('season-phase').dataset.phase = 'travel';
     $('season-kw').innerHTML = kw.map(function (k) {
       return '<a class="kw-chip" href="https://www.google.com/maps/search/' + encodeURIComponent(k + ' ' + place) + '" target="_blank" rel="noopener">' + esc(k) + '</a>';
-    }).join('') + (cur ? '<a class="kw-chip fx-chip" id="fx-chip" href="shortcuts://run-shortcut?name=' + encodeURIComponent('계산기') + '">' + (window.IS_EN ? 'Loading rate' : '환율 불러오는 중') + '</a>' : '');
+    }).join('') + (cur ? '<button type="button" class="kw-chip fx-chip" id="fx-chip">' + (window.IS_EN ? 'Loading rate' : '환율 불러오는 중') + '</button>' : '');
     if (cur) loadRate(cur[0]).then(function (krw) {
       var el = $('fx-chip'); if (!el || !krw) { if (el) el.remove(); return; }
-      var amt = Math.round(krw * cur[2]).toLocaleString('ko-KR');
-      el.textContent = cur[1] + cur[2].toLocaleString('en-US') + ' = ' + (window.IS_EN ? '₩' + amt : amt + '원');
+      fx = { code: cur[0], sym: cur[1], unit: cur[2], krw: krw, t: (store.get('fx', {})[cur[0]] || {}).t || Date.now() };
+      el.textContent = cur[1] + cur[2].toLocaleString('en-US') + ' = ' + won(krw * cur[2]);
+      // 누르면 앱 안 환율 계산기
+      el.onclick = function (e) { e.stopPropagation(); openFx(); };
     });
     $('hero-motif').innerHTML = '<span>' + flagOf(cc) + '</span>';
     // 흰색·연노랑 보케만, 크기는 다양하게
@@ -743,6 +745,32 @@
     ES: ['EUR', '€', 1], PT: ['EUR', '€', 1], DE: ['EUR', '€', 1], CH: ['CHF', 'CHF ', 1], AT: ['EUR', '€', 1], CZ: ['CZK', 'Kč', 100],
     NL: ['EUR', '€', 1], TR: ['TRY', '₺', 1], AE: ['AED', 'AED ', 1], AU: ['AUD', 'A$', 1], NZ: ['NZD', 'NZ$', 1]
   };
+  var fx = null;
+  var won = function (v) { var a = Math.round(v).toLocaleString('ko-KR'); return window.IS_EN ? '₩' + a : a + '원'; };
+  var num = function (v) { return parseFloat(String(v).replace(/[^\d.]/g, '')) || 0; };
+  var fmtNum = function (v, dec) { return v ? v.toLocaleString('en-US', { maximumFractionDigits: dec }) : ''; };
+  // 1·2·5 단위로 보기 좋은 금액
+  var nice = function (x) { var p = Math.pow(10, Math.floor(Math.log10(x))), m = x / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; };
+  function openFx() {
+    if (!fx) return;
+    $('fx-cur-local').textContent = fx.sym.trim() + ' ' + fx.code;
+    $('fx-local').value = ''; $('fx-krw').value = '';
+    // 원화로 대략 1만·5만·10만·50만 원쯤 되는 현지 금액
+    $('fx-quick').innerHTML = [10000, 50000, 100000, 500000].map(function (w) { var a = nice(w / fx.krw); return '<button type="button" class="ghost-btn sm" data-amt="' + a + '">' + fx.sym + a.toLocaleString('en-US') + '</button>'; }).join('');
+    var d = new Date(fx.t);
+    $('fx-rate').textContent = fx.sym + fx.unit.toLocaleString('en-US') + ' = ' + won(fx.krw * fx.unit) + ' · ' + (window.IS_EN ? 'updated ' : '') + pad(d.getHours()) + ':' + pad(d.getMinutes()) + (window.IS_EN ? '' : ' 기준');
+    openDialog($('fx-dialog'));
+  }
+  function initFx() {
+    var local = $('fx-local'), krw = $('fx-krw');
+    // 입력하는 쪽 숫자에 쉼표를 넣고, 반대쪽을 바로 계산
+    local.addEventListener('input', function () { var v = num(local.value); local.value = v ? fmtNum(v, 2) + (/\.$/.test(local.value) ? '.' : '') : local.value.replace(/[^\d.]/g, ''); krw.value = v ? fmtNum(Math.round(v * fx.krw), 0) : ''; });
+    krw.addEventListener('input', function () { var v = num(krw.value); krw.value = v ? fmtNum(v, 0) : ''; local.value = v ? fmtNum(v / fx.krw, 2) : ''; });
+    $('fx-quick').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-amt]'); if (!b) return;
+      var a = +b.dataset.amt; local.value = fmtNum(a, 2); krw.value = fmtNum(Math.round(a * fx.krw), 0);
+    });
+  }
   // 1 단위 = 몇 원인지. 6시간 동안 저장해 두고, 서버가 안 되면 마지막 값을 써요
   function loadRate(code) {
     var cache = store.get('fx', {}), hit = cache[code];
@@ -2543,6 +2571,7 @@
   initPhrase();
   initCats();
   initInlineEdit();
+  initFx();
   initSchedule();
   initChecklist();
   initSettings();

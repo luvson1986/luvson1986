@@ -273,6 +273,28 @@
 </dialog>
 
 <!-- 공부한 영어 표현 -->
+<!-- 환율 계산기 (해외) -->
+<dialog class="sheet" id="fx-dialog" aria-labelledby="fx-h">
+  <div class="sheet-body">
+    <header class="panel-head">
+      <h2 id="fx-h">환율 계산기</h2>
+    </header>
+    <div class="fx-box">
+      <label class="fx-row">
+        <span class="fx-cur" id="fx-cur-local"></span>
+        <input id="fx-local" type="text" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="현지 금액">
+      </label>
+      <div class="fx-eq" aria-hidden="true">=</div>
+      <label class="fx-row">
+        <span class="fx-cur">원 KRW</span>
+        <input id="fx-krw" type="text" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="원화 금액">
+      </label>
+    </div>
+    <div class="fx-quick" id="fx-quick"></div>
+    <p class="hint" id="fx-rate"></p>
+  </div>
+</dialog>
+
 <dialog class="sheet" id="en-dialog" aria-labelledby="eh-h">
   <div class="sheet-body">
     <header class="panel-head">

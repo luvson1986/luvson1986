@@ -879,3 +879,13 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .dt-place-row .map-link { margin-top: 0; padding: 4px 10px; font-size: 12.5px; color: #03a64b; }
 .dt-place-row .map-link.google { color: #1a73e8; }
 dialog.sheet:focus { outline: none; }
+
+/* 환율 계산기 */
+.fx-box { display: grid; gap: 6px; }
+.fx-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-s); background: var(--surface-2); }
+.fx-cur { font-size: 13px; font-weight: 700; color: var(--ink-2); white-space: nowrap; }
+.fx-row input { border: 0; background: none; color: var(--ink); font: 600 26px/1.2 var(--f-mono); text-align: right; min-width: 0; width: 100%; padding: 0; font-variant-numeric: tabular-nums; }
+.fx-row input:focus { outline: none; }
+.fx-row:focus-within { box-shadow: inset 0 0 0 2px var(--accent); }
+.fx-eq { text-align: center; color: var(--ink-3); font-weight: 700; line-height: 1; }
+.fx-quick { display: flex; flex-wrap: wrap; gap: 6px; }

@@ -900,6 +900,16 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .dt-place-row .map-link.google { color: #1a73e8; }
 dialog.sheet:focus { outline: none; }
 
+/* 환율 계산기 */
+.fx-box { display: grid; gap: 6px; }
+.fx-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-s); background: var(--surface-2); }
+.fx-cur { font-size: 13px; font-weight: 700; color: var(--ink-2); white-space: nowrap; }
+.fx-row input { border: 0; background: none; color: var(--ink); font: 600 26px/1.2 var(--f-mono); text-align: right; min-width: 0; width: 100%; padding: 0; font-variant-numeric: tabular-nums; }
+.fx-row input:focus { outline: none; }
+.fx-row:focus-within { box-shadow: inset 0 0 0 2px var(--accent); }
+.fx-eq { text-align: center; color: var(--ink-3); font-weight: 700; line-height: 1; }
+.fx-quick { display: flex; flex-wrap: wrap; gap: 6px; }
+
 </style>
 </head>
 <body>
@@ -1156,6 +1166,28 @@ dialog.sheet:focus { outline: none; }
 </dialog>
 
 <!-- 공부한 영어 표현 -->
+<!-- 환율 계산기 (해외) -->
+<dialog class="sheet" id="fx-dialog" aria-labelledby="fx-h">
+  <div class="sheet-body">
+    <header class="panel-head">
+      <h2 id="fx-h">환율 계산기</h2>
+    </header>
+    <div class="fx-box">
+      <label class="fx-row">
+        <span class="fx-cur" id="fx-cur-local"></span>
+        <input id="fx-local" type="text" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="현지 금액">
+      </label>
+      <div class="fx-eq" aria-hidden="true">=</div>
+      <label class="fx-row">
+        <span class="fx-cur">원 KRW</span>
+        <input id="fx-krw" type="text" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="원화 금액">
+      </label>
+    </div>
+    <div class="fx-quick" id="fx-quick"></div>
+    <p class="hint" id="fx-rate"></p>
+  </div>
+</dialog>
+
 <dialog class="sheet" id="en-dialog" aria-labelledby="eh-h">
   <div class="sheet-body">
     <header class="panel-head">
@@ -1563,6 +1595,7 @@ dialog.sheet:focus { outline: none; }
     '연말정산 서류 미리 챙기기': 'Prep year-end tax papers', '디자인 시스템 버튼 컴포넌트 정리': 'Tidy design-system buttons', '건강검진 예약': 'Book a health check-up',
     '영어로 디자인 리뷰 진행하기': 'Run a design review in English', '포트폴리오 업데이트': 'Update portfolio', '책 12권 읽기': 'Read 12 books',
     '하프 마라톤 완주': 'Finish a half marathon', 'UX 리서치 강의 수료': 'Complete a UX research course', '예시 뉴스': 'Sample news',
+    '환율 계산기': 'Currency converter', '현지 금액': 'Local amount', '원화 금액': 'Amount in KRW', '원 KRW': '₩ KRW', '환율 불러오는 중': 'Loading rate',
     'UX 디자인': 'UX design', '핀테크': 'Fintech', '디지털 금융': 'Digital finance', 'AI 서비스': 'AI services'
   };
 
@@ -3248,11 +3281,13 @@ window.EN_DATA = {
     $('season-phase').dataset.phase = 'travel';
     $('season-kw').innerHTML = kw.map(function (k) {
       return '<a class="kw-chip" href="https://www.google.com/maps/search/' + encodeURIComponent(k + ' ' + place) + '" target="_blank" rel="noopener">' + esc(k) + '</a>';
-    }).join('') + (cur ? '<a class="kw-chip fx-chip" id="fx-chip" href="shortcuts://run-shortcut?name=' + encodeURIComponent('계산기') + '">' + (window.IS_EN ? 'Loading rate' : '환율 불러오는 중') + '</a>' : '');
+    }).join('') + (cur ? '<button type="button" class="kw-chip fx-chip" id="fx-chip">' + (window.IS_EN ? 'Loading rate' : '환율 불러오는 중') + '</button>' : '');
     if (cur) loadRate(cur[0]).then(function (krw) {
       var el = $('fx-chip'); if (!el || !krw) { if (el) el.remove(); return; }
-      var amt = Math.round(krw * cur[2]).toLocaleString('ko-KR');
-      el.textContent = cur[1] + cur[2].toLocaleString('en-US') + ' = ' + (window.IS_EN ? '₩' + amt : amt + '원');
+      fx = { code: cur[0], sym: cur[1], unit: cur[2], krw: krw, t: (store.get('fx', {})[cur[0]] || {}).t || Date.now() };
+      el.textContent = cur[1] + cur[2].toLocaleString('en-US') + ' = ' + won(krw * cur[2]);
+      // 누르면 앱 안 환율 계산기
+      el.onclick = function (e) { e.stopPropagation(); openFx(); };
     });
     $('hero-motif').innerHTML = '<span>' + flagOf(cc) + '</span>';
     // 흰색·연노랑 보케만, 크기는 다양하게
@@ -3266,6 +3301,32 @@ window.EN_DATA = {
     ES: ['EUR', '€', 1], PT: ['EUR', '€', 1], DE: ['EUR', '€', 1], CH: ['CHF', 'CHF ', 1], AT: ['EUR', '€', 1], CZ: ['CZK', 'Kč', 100],
     NL: ['EUR', '€', 1], TR: ['TRY', '₺', 1], AE: ['AED', 'AED ', 1], AU: ['AUD', 'A$', 1], NZ: ['NZD', 'NZ$', 1]
   };
+  var fx = null;
+  var won = function (v) { var a = Math.round(v).toLocaleString('ko-KR'); return window.IS_EN ? '₩' + a : a + '원'; };
+  var num = function (v) { return parseFloat(String(v).replace(/[^\d.]/g, '')) || 0; };
+  var fmtNum = function (v, dec) { return v ? v.toLocaleString('en-US', { maximumFractionDigits: dec }) : ''; };
+  // 1·2·5 단위로 보기 좋은 금액
+  var nice = function (x) { var p = Math.pow(10, Math.floor(Math.log10(x))), m = x / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; };
+  function openFx() {
+    if (!fx) return;
+    $('fx-cur-local').textContent = fx.sym.trim() + ' ' + fx.code;
+    $('fx-local').value = ''; $('fx-krw').value = '';
+    // 원화로 대략 1만·5만·10만·50만 원쯤 되는 현지 금액
+    $('fx-quick').innerHTML = [10000, 50000, 100000, 500000].map(function (w) { var a = nice(w / fx.krw); return '<button type="button" class="ghost-btn sm" data-amt="' + a + '">' + fx.sym + a.toLocaleString('en-US') + '</button>'; }).join('');
+    var d = new Date(fx.t);
+    $('fx-rate').textContent = fx.sym + fx.unit.toLocaleString('en-US') + ' = ' + won(fx.krw * fx.unit) + ' · ' + (window.IS_EN ? 'updated ' : '') + pad(d.getHours()) + ':' + pad(d.getMinutes()) + (window.IS_EN ? '' : ' 기준');
+    openDialog($('fx-dialog'));
+  }
+  function initFx() {
+    var local = $('fx-local'), krw = $('fx-krw');
+    // 입력하는 쪽 숫자에 쉼표를 넣고, 반대쪽을 바로 계산
+    local.addEventListener('input', function () { var v = num(local.value); local.value = v ? fmtNum(v, 2) + (/\.$/.test(local.value) ? '.' : '') : local.value.replace(/[^\d.]/g, ''); krw.value = v ? fmtNum(Math.round(v * fx.krw), 0) : ''; });
+    krw.addEventListener('input', function () { var v = num(krw.value); krw.value = v ? fmtNum(v, 0) : ''; local.value = v ? fmtNum(v / fx.krw, 2) : ''; });
+    $('fx-quick').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-amt]'); if (!b) return;
+      var a = +b.dataset.amt; local.value = fmtNum(a, 2); krw.value = fmtNum(Math.round(a * fx.krw), 0);
+    });
+  }
   // 1 단위 = 몇 원인지. 6시간 동안 저장해 두고, 서버가 안 되면 마지막 값을 써요
   function loadRate(code) {
     var cache = store.get('fx', {}), hit = cache[code];
@@ -5066,6 +5127,7 @@ window.EN_DATA = {
   initPhrase();
   initCats();
   initInlineEdit();
+  initFx();
   initSchedule();
   initChecklist();
   initSettings();

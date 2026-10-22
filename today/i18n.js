@@ -158,6 +158,7 @@
     '연말정산 서류 미리 챙기기': 'Prep year-end tax papers', '디자인 시스템 버튼 컴포넌트 정리': 'Tidy design-system buttons', '건강검진 예약': 'Book a health check-up',
     '영어로 디자인 리뷰 진행하기': 'Run a design review in English', '포트폴리오 업데이트': 'Update portfolio', '책 12권 읽기': 'Read 12 books',
     '하프 마라톤 완주': 'Finish a half marathon', 'UX 리서치 강의 수료': 'Complete a UX research course', '예시 뉴스': 'Sample news',
+    '환율 계산기': 'Currency converter', '현지 금액': 'Local amount', '원화 금액': 'Amount in KRW', '원 KRW': '₩ KRW', '환율 불러오는 중': 'Loading rate',
     'UX 디자인': 'UX design', '핀테크': 'Fintech', '디지털 금융': 'Digital finance', 'AI 서비스': 'AI services'
   };
 
