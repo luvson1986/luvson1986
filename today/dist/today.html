@@ -900,15 +900,24 @@ textarea { font-family: var(--f-body); line-height: 1.5; }
 .dt-place-row .map-link.google { color: #1a73e8; }
 dialog.sheet:focus { outline: none; }
 
-/* 환율 계산기 */
-.fx-box { display: grid; gap: 6px; }
-.fx-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-s); background: var(--surface-2); }
-.fx-cur { font-size: 13px; font-weight: 700; color: var(--ink-2); white-space: nowrap; }
-.fx-row input { border: 0; background: none; color: var(--ink); font: 600 26px/1.2 var(--f-mono); text-align: right; min-width: 0; width: 100%; padding: 0; font-variant-numeric: tabular-nums; }
-.fx-row input:focus { outline: none; }
-.fx-row:focus-within { box-shadow: inset 0 0 0 2px var(--accent); }
-.fx-eq { text-align: center; color: var(--ink-3); font-weight: 700; line-height: 1; }
-.fx-quick { display: flex; flex-wrap: wrap; gap: 6px; }
+/* 환율 계산기: 아이폰 계산기 구조, 앱 톤 */
+.fx-display { display: grid; gap: 4px; padding: 6px 2px 4px; }
+.fx-line { display: flex; align-items: baseline; justify-content: flex-end; gap: 8px; min-width: 0; }
+.fx-line output { font: 500 30px/1.15 var(--f-mono); color: var(--ink-3); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fx-line.main output { font-size: 46px; color: var(--ink); }
+.fx-code { font: 600 13px var(--f-body); color: var(--ink-3); min-width: 34px; }
+.fx-mid { display: flex; align-items: center; gap: 10px; }
+.fx-swap { border: 0; background: var(--accent-soft); color: var(--accent); width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; flex: none; }
+.fx-rule { flex: 1; height: 1px; background: var(--line); }
+.fx-pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.fx-pad button {
+  border: 0; cursor: pointer; aspect-ratio: 1.25; border-radius: 18px; font: 500 24px/1 var(--f-mono);
+  background: var(--surface-2); color: var(--ink); -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.fx-pad button:active { filter: brightness(0.92); transform: scale(0.97); }
+.fx-pad .fn { background: var(--line); font-size: 20px; font-family: var(--f-body); font-weight: 600; }
+.fx-pad .op { background: var(--accent); color: var(--accent-ink, #fff); font-size: 28px; }
+.fx-pad .op.on { background: var(--surface); color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
 
 </style>
 </head>
@@ -1172,18 +1181,18 @@ dialog.sheet:focus { outline: none; }
     <header class="panel-head">
       <h2 id="fx-h">환율 계산기</h2>
     </header>
-    <div class="fx-box">
-      <label class="fx-row">
-        <span class="fx-cur" id="fx-cur-local"></span>
-        <input id="fx-local" type="text" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="현지 금액">
-      </label>
-      <div class="fx-eq" aria-hidden="true">=</div>
-      <label class="fx-row">
-        <span class="fx-cur">원 KRW</span>
-        <input id="fx-krw" type="text" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="원화 금액">
-      </label>
+    <div class="fx-display">
+      <div class="fx-line main"><output id="fx-a" aria-live="polite">0</output><span class="fx-code" id="fx-a-code"></span></div>
+      <div class="fx-mid"><button type="button" class="fx-swap" id="fx-swap" aria-label="통화 바꾸기">⇅</button><span class="fx-rule"></span></div>
+      <div class="fx-line"><output id="fx-b">0</output><span class="fx-code" id="fx-b-code"></span></div>
     </div>
-    <div class="fx-quick" id="fx-quick"></div>
+    <div class="fx-pad" id="fx-pad">
+      <button type="button" class="fn" data-k="back" aria-label="지우기">⌫</button><button type="button" class="fn" data-k="ac">AC</button><button type="button" class="fn" data-k="%">%</button><button type="button" class="op" data-k="÷">÷</button>
+      <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button><button type="button" class="op" data-k="×">×</button>
+      <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button><button type="button" class="op" data-k="−">−</button>
+      <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button><button type="button" class="op" data-k="+">+</button>
+      <button type="button" data-k="neg" aria-label="부호 바꾸기">±</button><button type="button" data-k="0">0</button><button type="button" data-k=".">.</button><button type="button" class="op eq" data-k="=">=</button>
+    </div>
     <p class="hint" id="fx-rate"></p>
   </div>
 </dialog>
@@ -1595,7 +1604,7 @@ dialog.sheet:focus { outline: none; }
     '연말정산 서류 미리 챙기기': 'Prep year-end tax papers', '디자인 시스템 버튼 컴포넌트 정리': 'Tidy design-system buttons', '건강검진 예약': 'Book a health check-up',
     '영어로 디자인 리뷰 진행하기': 'Run a design review in English', '포트폴리오 업데이트': 'Update portfolio', '책 12권 읽기': 'Read 12 books',
     '하프 마라톤 완주': 'Finish a half marathon', 'UX 리서치 강의 수료': 'Complete a UX research course', '예시 뉴스': 'Sample news',
-    '환율 계산기': 'Currency converter', '현지 금액': 'Local amount', '원화 금액': 'Amount in KRW', '원 KRW': '₩ KRW', '환율 불러오는 중': 'Loading rate',
+    '환율 계산기': 'Currency converter', '현지 금액': 'Local amount', '원화 금액': 'Amount in KRW', '원 KRW': '₩ KRW', '환율 불러오는 중': 'Loading rate', '통화 바꾸기': 'Swap currencies', '지우기': 'Backspace', '부호 바꾸기': 'Plus/minus',
     'UX 디자인': 'UX design', '핀테크': 'Fintech', '디지털 금융': 'Digital finance', 'AI 서비스': 'AI services'
   };
 
@@ -3307,25 +3316,58 @@ window.EN_DATA = {
   var fmtNum = function (v, dec) { return v ? v.toLocaleString('en-US', { maximumFractionDigits: dec }) : ''; };
   // 1·2·5 단위로 보기 좋은 금액
   var nice = function (x) { var p = Math.pow(10, Math.floor(Math.log10(x))), m = x / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; };
+  // 환율 계산기: 아이폰 계산기처럼 위는 입력(사칙연산 가능), 아래는 바뀐 통화. ⇅ 로 방향 바꾸기
+  var calc = { acc: null, op: null, cur: '0', fresh: true, toKrw: true };
+  var OPS = { '+': function (a, b) { return a + b; }, '−': function (a, b) { return a - b; }, '×': function (a, b) { return a * b; }, '÷': function (a, b) { return b ? a / b : 0; } };
+  function calcShow() {
+    var v = calc.fresh && calc.acc != null ? calc.acc : parseFloat(calc.cur) || 0;
+    var shown = calc.fresh && calc.acc != null ? fmtNum(calc.acc, 6) || '0' : (function () {
+      var p = calc.cur.split('.'), i = Number(p[0].replace('-', '') || 0).toLocaleString('en-US');
+      return (calc.cur[0] === '-' ? '-' : '') + i + (p.length > 1 ? '.' + p[1] : '');
+    })();
+    var out = calc.toKrw ? v * fx.krw : v / fx.krw;
+    $('fx-a').textContent = shown;
+    $('fx-b').textContent = fmtNum(Math.round(out * (calc.toKrw ? 1 : 100)) / (calc.toKrw ? 1 : 100), 2) || '0';
+    $('fx-a-code').textContent = calc.toKrw ? fx.code : 'KRW';
+    $('fx-b-code').textContent = calc.toKrw ? 'KRW' : fx.code;
+    // 길어지면 글자를 줄여요
+    $('fx-a').style.fontSize = shown.length > 11 ? '30px' : shown.length > 8 ? '38px' : '';
+    Array.prototype.forEach.call(document.querySelectorAll('#fx-pad .op'), function (b) { b.classList.toggle('on', calc.fresh && calc.op === b.dataset.k); });
+  }
+  function calcKey(k) {
+    if (/^\d$/.test(k)) { calc.cur = calc.fresh || calc.cur === '0' ? k : calc.cur.length < 12 ? calc.cur + k : calc.cur; calc.fresh = false; }
+    else if (k === '.') { if (calc.fresh) { calc.cur = '0.'; calc.fresh = false; } else if (calc.cur.indexOf('.') < 0) calc.cur += '.'; }
+    else if (k === 'back') { if (!calc.fresh) { calc.cur = calc.cur.slice(0, -1) || '0'; if (calc.cur === '-') calc.cur = '0'; } }
+    else if (k === 'ac') { calc = { acc: null, op: null, cur: '0', fresh: true, toKrw: calc.toKrw }; }
+    else if (k === 'neg') { if (calc.fresh && calc.acc != null) { calc.acc = -calc.acc; } else calc.cur = calc.cur[0] === '-' ? calc.cur.slice(1) : calc.cur === '0' ? '0' : '-' + calc.cur; }
+    else if (k === '%') { var pv = (calc.fresh && calc.acc != null ? calc.acc : parseFloat(calc.cur) || 0) / 100; calc.cur = String(pv); calc.fresh = false; if (calc.op == null) calc.acc = null; }
+    else if (OPS[k] || k === '=') {
+      if (!calc.fresh || calc.acc == null) {
+        var x = parseFloat(calc.cur) || 0;
+        calc.acc = calc.acc != null && calc.op ? OPS[calc.op](calc.acc, x) : x;
+        calc.acc = Math.round(calc.acc * 1e8) / 1e8;
+      }
+      calc.op = k === '=' ? null : k; calc.fresh = true; calc.cur = '0';
+    }
+    calcShow();
+  }
   function openFx() {
     if (!fx) return;
-    $('fx-cur-local').textContent = fx.sym.trim() + ' ' + fx.code;
-    $('fx-local').value = ''; $('fx-krw').value = '';
-    // 원화로 대략 1만·5만·10만·50만 원쯤 되는 현지 금액
-    $('fx-quick').innerHTML = [10000, 50000, 100000, 500000].map(function (w) { var a = nice(w / fx.krw); return '<button type="button" class="ghost-btn sm" data-amt="' + a + '">' + fx.sym + a.toLocaleString('en-US') + '</button>'; }).join('');
+    calc = { acc: null, op: null, cur: '0', fresh: true, toKrw: calc.toKrw };
     var d = new Date(fx.t);
     $('fx-rate').textContent = fx.sym + fx.unit.toLocaleString('en-US') + ' = ' + won(fx.krw * fx.unit) + ' · ' + (window.IS_EN ? 'updated ' : '') + pad(d.getHours()) + ':' + pad(d.getMinutes()) + (window.IS_EN ? '' : ' 기준');
+    calcShow();
     openDialog($('fx-dialog'));
   }
   function initFx() {
-    var local = $('fx-local'), krw = $('fx-krw');
-    // 입력하는 쪽 숫자에 쉼표를 넣고, 반대쪽을 바로 계산
-    local.addEventListener('input', function () { var v = num(local.value); local.value = v ? fmtNum(v, 2) + (/\.$/.test(local.value) ? '.' : '') : local.value.replace(/[^\d.]/g, ''); krw.value = v ? fmtNum(Math.round(v * fx.krw), 0) : ''; });
-    krw.addEventListener('input', function () { var v = num(krw.value); krw.value = v ? fmtNum(v, 0) : ''; local.value = v ? fmtNum(v / fx.krw, 2) : ''; });
-    $('fx-quick').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-amt]'); if (!b) return;
-      var a = +b.dataset.amt; local.value = fmtNum(a, 2); krw.value = fmtNum(Math.round(a * fx.krw), 0);
-    });
+    $('fx-pad').addEventListener('click', function (e) { var b = e.target.closest('[data-k]'); if (b) calcKey(b.dataset.k); });
+    // 위아래 바꾸기: 지금 아래에 보이는 값을 위로 올려서 이어서 계산
+    $('fx-swap').onclick = function () {
+      var v = parseFloat($('fx-b').textContent.replace(/,/g, '')) || 0;
+      calc = { acc: null, op: null, cur: String(v), fresh: false, toKrw: !calc.toKrw };
+      if (!v) { calc.cur = '0'; calc.fresh = true; }
+      calcShow();
+    };
   }
   // 1 단위 = 몇 원인지. 6시간 동안 저장해 두고, 서버가 안 되면 마지막 값을 써요
   function loadRate(code) {

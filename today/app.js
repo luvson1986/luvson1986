@@ -751,25 +751,58 @@
   var fmtNum = function (v, dec) { return v ? v.toLocaleString('en-US', { maximumFractionDigits: dec }) : ''; };
   // 1·2·5 단위로 보기 좋은 금액
   var nice = function (x) { var p = Math.pow(10, Math.floor(Math.log10(x))), m = x / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; };
+  // 환율 계산기: 아이폰 계산기처럼 위는 입력(사칙연산 가능), 아래는 바뀐 통화. ⇅ 로 방향 바꾸기
+  var calc = { acc: null, op: null, cur: '0', fresh: true, toKrw: true };
+  var OPS = { '+': function (a, b) { return a + b; }, '−': function (a, b) { return a - b; }, '×': function (a, b) { return a * b; }, '÷': function (a, b) { return b ? a / b : 0; } };
+  function calcShow() {
+    var v = calc.fresh && calc.acc != null ? calc.acc : parseFloat(calc.cur) || 0;
+    var shown = calc.fresh && calc.acc != null ? fmtNum(calc.acc, 6) || '0' : (function () {
+      var p = calc.cur.split('.'), i = Number(p[0].replace('-', '') || 0).toLocaleString('en-US');
+      return (calc.cur[0] === '-' ? '-' : '') + i + (p.length > 1 ? '.' + p[1] : '');
+    })();
+    var out = calc.toKrw ? v * fx.krw : v / fx.krw;
+    $('fx-a').textContent = shown;
+    $('fx-b').textContent = fmtNum(Math.round(out * (calc.toKrw ? 1 : 100)) / (calc.toKrw ? 1 : 100), 2) || '0';
+    $('fx-a-code').textContent = calc.toKrw ? fx.code : 'KRW';
+    $('fx-b-code').textContent = calc.toKrw ? 'KRW' : fx.code;
+    // 길어지면 글자를 줄여요
+    $('fx-a').style.fontSize = shown.length > 11 ? '30px' : shown.length > 8 ? '38px' : '';
+    Array.prototype.forEach.call(document.querySelectorAll('#fx-pad .op'), function (b) { b.classList.toggle('on', calc.fresh && calc.op === b.dataset.k); });
+  }
+  function calcKey(k) {
+    if (/^\d$/.test(k)) { calc.cur = calc.fresh || calc.cur === '0' ? k : calc.cur.length < 12 ? calc.cur + k : calc.cur; calc.fresh = false; }
+    else if (k === '.') { if (calc.fresh) { calc.cur = '0.'; calc.fresh = false; } else if (calc.cur.indexOf('.') < 0) calc.cur += '.'; }
+    else if (k === 'back') { if (!calc.fresh) { calc.cur = calc.cur.slice(0, -1) || '0'; if (calc.cur === '-') calc.cur = '0'; } }
+    else if (k === 'ac') { calc = { acc: null, op: null, cur: '0', fresh: true, toKrw: calc.toKrw }; }
+    else if (k === 'neg') { if (calc.fresh && calc.acc != null) { calc.acc = -calc.acc; } else calc.cur = calc.cur[0] === '-' ? calc.cur.slice(1) : calc.cur === '0' ? '0' : '-' + calc.cur; }
+    else if (k === '%') { var pv = (calc.fresh && calc.acc != null ? calc.acc : parseFloat(calc.cur) || 0) / 100; calc.cur = String(pv); calc.fresh = false; if (calc.op == null) calc.acc = null; }
+    else if (OPS[k] || k === '=') {
+      if (!calc.fresh || calc.acc == null) {
+        var x = parseFloat(calc.cur) || 0;
+        calc.acc = calc.acc != null && calc.op ? OPS[calc.op](calc.acc, x) : x;
+        calc.acc = Math.round(calc.acc * 1e8) / 1e8;
+      }
+      calc.op = k === '=' ? null : k; calc.fresh = true; calc.cur = '0';
+    }
+    calcShow();
+  }
   function openFx() {
     if (!fx) return;
-    $('fx-cur-local').textContent = fx.sym.trim() + ' ' + fx.code;
-    $('fx-local').value = ''; $('fx-krw').value = '';
-    // 원화로 대략 1만·5만·10만·50만 원쯤 되는 현지 금액
-    $('fx-quick').innerHTML = [10000, 50000, 100000, 500000].map(function (w) { var a = nice(w / fx.krw); return '<button type="button" class="ghost-btn sm" data-amt="' + a + '">' + fx.sym + a.toLocaleString('en-US') + '</button>'; }).join('');
+    calc = { acc: null, op: null, cur: '0', fresh: true, toKrw: calc.toKrw };
     var d = new Date(fx.t);
     $('fx-rate').textContent = fx.sym + fx.unit.toLocaleString('en-US') + ' = ' + won(fx.krw * fx.unit) + ' · ' + (window.IS_EN ? 'updated ' : '') + pad(d.getHours()) + ':' + pad(d.getMinutes()) + (window.IS_EN ? '' : ' 기준');
+    calcShow();
     openDialog($('fx-dialog'));
   }
   function initFx() {
-    var local = $('fx-local'), krw = $('fx-krw');
-    // 입력하는 쪽 숫자에 쉼표를 넣고, 반대쪽을 바로 계산
-    local.addEventListener('input', function () { var v = num(local.value); local.value = v ? fmtNum(v, 2) + (/\.$/.test(local.value) ? '.' : '') : local.value.replace(/[^\d.]/g, ''); krw.value = v ? fmtNum(Math.round(v * fx.krw), 0) : ''; });
-    krw.addEventListener('input', function () { var v = num(krw.value); krw.value = v ? fmtNum(v, 0) : ''; local.value = v ? fmtNum(v / fx.krw, 2) : ''; });
-    $('fx-quick').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-amt]'); if (!b) return;
-      var a = +b.dataset.amt; local.value = fmtNum(a, 2); krw.value = fmtNum(Math.round(a * fx.krw), 0);
-    });
+    $('fx-pad').addEventListener('click', function (e) { var b = e.target.closest('[data-k]'); if (b) calcKey(b.dataset.k); });
+    // 위아래 바꾸기: 지금 아래에 보이는 값을 위로 올려서 이어서 계산
+    $('fx-swap').onclick = function () {
+      var v = parseFloat($('fx-b').textContent.replace(/,/g, '')) || 0;
+      calc = { acc: null, op: null, cur: String(v), fresh: false, toKrw: !calc.toKrw };
+      if (!v) { calc.cur = '0'; calc.fresh = true; }
+      calcShow();
+    };
   }
   // 1 단위 = 몇 원인지. 6시간 동안 저장해 두고, 서버가 안 되면 마지막 값을 써요
   function loadRate(code) {
