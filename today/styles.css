@@ -23,7 +23,7 @@
   --hero-b: #f0a070;
   --thumb-l: 52%;
 
-  --f-display: "Song Myung", "AppleMyungjo", serif;
+  --f-display: "Chiron Sung HK", "Song Myung", "AppleMyungjo", serif; /* 한글은 Chiron에 없어서 송명으로 */
   --f-body: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", system-ui, sans-serif;
   --f-mono: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", system-ui, sans-serif; /* 숫자는 같은 폰트에 고정폭 숫자(tnum)로 */
 
