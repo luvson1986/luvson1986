@@ -86,7 +86,6 @@
 
   var DEFAULT_SETTINGS = {
     name: '',
-    enKeywords: ['디자인', '업무'],
     location: { mode: 'auto', name: '서울특별시', lat: 37.5665, lon: 126.978, cc: 'KR' }
   };
   var settings = Object.assign({}, DEFAULT_SETTINGS, store.get('settings', {}));
@@ -974,7 +973,7 @@
     $('bring').innerHTML = bring.map(chip).join('');
   }
 
-  /* ---------- 오늘의 영어: 설정의 키워드 중 하나를 골라 그 상황에 맞는 문장 하루 하나 ---------- */
+  /* ---------- 오늘의 업무 영어: 하루 한 문장 ---------- */
   function dayIndex() { var n = new Date(); return Math.floor(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) / 864e5); }
   // 같은 날엔 같은 값이 나오는 간단한 난수
   var hashDay = function (d, salt) { var x = Math.sin(d * 12.9898 + salt * 78.233) * 43758.5453; return x - Math.floor(x); };
@@ -987,16 +986,6 @@
     (window.PHRASE_TOPICS || []).forEach(function (t) { t.phrases.forEach(function (p) { add(p, t); }); });
     (window.PHRASES || []).forEach(function (p) { add(p, null); });
   })();
-  // 키워드 → 주제 (한글·영어 비슷한 말까지)
-  function topicsFor(kw) {
-    var k = String(kw || '').toLowerCase().replace(/\s+/g, '');
-    var hit = (window.PHRASE_TOPICS || []).filter(function (t) {
-      return t.tags.some(function (g) { g = g.toLowerCase().replace(/\s+/g, ''); return k && (k.indexOf(g) >= 0 || (k.length >= 2 && g.indexOf(k) >= 0)); });
-    });
-    if (hit.length) return hit;
-    var daily = (window.PHRASE_TOPICS || []).filter(function (t) { return t.id === 'daily'; });
-    return daily.length ? daily : (window.PHRASE_TOPICS || []);
-  }
   // 날짜별로 보여준 문장을 저장해요 (공부한 표현은 여기서 쌓여요)
   function enLog() {
     var log = store.get('enLog', null);
@@ -1009,23 +998,23 @@
     }
     return log;
   }
+  // IT 업계 UI/UX 디자이너의 업무 영어만: 디자인·업무·발표·IT·이메일·금융 서비스 주제
+  var WORK_TOPICS = ['design', 'work', 'presentation', 'tech', 'email', 'finance'];
   function pickPhrase(day) {
     var log = enLog();
     if (log[day] && PHRASE_BY_EN[log[day]]) return PHRASE_BY_EN[log[day]];
-    var kws = (settings.enKeywords && settings.enKeywords.length) ? settings.enKeywords : ['디자인', '업무'];
-    var kw = kws[Math.floor(hashDay(day, 1) * kws.length)];
     var pool = [];
-    topicsFor(kw).forEach(function (t) { t.phrases.forEach(function (p) { if (pool.indexOf(p.en) < 0) pool.push(p.en); }); });
-    if (!pool.length) pool = Object.keys(PHRASE_BY_EN);
-    var used = {}; Object.keys(log).forEach(function (d) { used[log[d]] = 1; });
-    var fresh = pool.filter(function (en) { return !used[en]; });
-    var from = fresh.length ? fresh : pool;
-    var en = from[Math.floor(hashDay(day, 2) * from.length)];
+    (window.PHRASE_TOPICS || []).filter(function (t) { return WORK_TOPICS.indexOf(t.id) >= 0; })
+      .forEach(function (t) { t.phrases.forEach(function (p) { if (pool.indexOf(p.en) < 0) pool.push(p.en); }); });
+    (window.PHRASES || []).forEach(function (p) { if (pool.indexOf(p.en) < 0) pool.push(p.en); });
+    // 아직 안 본 문장 중에서 하나. 다 봤으면 가장 오래전에 본 문장부터 다시 (복습)
+    var last = {}; Object.keys(log).forEach(function (d) { last[log[d]] = Math.max(last[log[d]] || 0, +d); });
+    var fresh = pool.filter(function (en) { return !last[en]; });
+    var en = fresh.length ? fresh[Math.floor(hashDay(day, 2) * fresh.length)]
+      : pool.slice().sort(function (a, b) { return last[a] - last[b]; })[0];
     log[day] = en; store.set('enLog', log);
     return PHRASE_BY_EN[en];
   }
-  // 키워드를 바꾸면 오늘 문장을 새로 골라요
-  function enRepick() { var log = enLog(); delete log[dayIndex()]; store.set('enLog', log); }
   function renderPhrase() {
     var p = pickPhrase(dayIndex());
     var html = esc(p.en);
@@ -2234,9 +2223,6 @@
     var dlg = $('settings');
     var draft;
     function renderTags() {
-      $('set-tags').innerHTML = draft.enKeywords.map(function (t, i) {
-        return '<li>' + esc(t) + '<button type="button" data-i="' + i + '" aria-label="' + esc(t) + ' 삭제">✕</button></li>';
-      }).join('');
       var l = draft.location;
       $('set-city-current').textContent = '현재: ' + (l.mode === 'auto' ? '내 위치 자동 (실패 시 서울특별시)' : l.name);
     }
@@ -2253,22 +2239,10 @@
       $('set-name').value = draft.name;
       $('set-wxapp').value = draft.weatherApp || 'apple';
       $('set-lang').value = draft.lang || 'ko';
-      $('set-interest').value = ''; $('set-city').value = ''; $('city-results').innerHTML = '';
+      $('set-city').value = ''; $('city-results').innerHTML = '';
       renderTags();
       openDialog(dlg);
     };
-    $('set-tags').addEventListener('click', function (e) {
-      var b = e.target.closest('button');
-      if (b) { draft.enKeywords.splice(+b.dataset.i, 1); renderTags(); }
-    });
-    $('set-interest').addEventListener('keydown', function (e) {
-      if (e.key !== 'Enter' || e.isComposing) return;
-      e.preventDefault();
-      var v = e.target.value.trim();
-      if (v && draft.enKeywords.indexOf(v) < 0 && draft.enKeywords.length < 8) { draft.enKeywords.push(v); renderTags(); }
-      else if (draft.enKeywords.length >= 8) toast('키워드는 8개까지 등록할 수 있어요');
-      e.target.value = '';
-    });
     var ct;
     $('set-city').addEventListener('input', function (e) {
       clearTimeout(ct);
@@ -2292,13 +2266,10 @@
     $('settings-form').addEventListener('submit', function (e) { e.preventDefault(); $('settings-save').click(); });
     $('settings-save').addEventListener('click', function (e) {
       e.preventDefault();
-      var pending = $('set-interest').value.trim();
-      if (pending && draft.enKeywords.indexOf(pending) < 0) draft.enKeywords.push(pending);
       draft.name = $('set-name').value.trim();
       draft.weatherApp = $('set-wxapp').value;
       var langChanged = $('set-lang').value !== (settings.lang || 'ko');
       draft.lang = $('set-lang').value;
-      var kwChanged = draft.enKeywords.join('|') !== settings.enKeywords.join('|');
       var locChanged = JSON.stringify(draft.location) !== JSON.stringify(settings.location);
       settings = draft;
       store.set('settings', settings);
@@ -2306,7 +2277,6 @@
       dlg.close ? dlg.close() : dlg.removeAttribute('open');
       renderGreeting();
       if (locChanged) loadWeather().then(renderWeather);
-      if (kwChanged) { enRepick(); renderPhrase(); }
       toast('설정을 저장했어요');
     });
   }
@@ -2314,7 +2284,7 @@
   /* ---------- 섹션 순서 ---------- */
   var SECTIONS = [
     { id: 'weather-panel', name: '날씨 · 옷차림' }, { id: 'check-panel', name: '체크리스트' },
-    { id: 'schedule-panel', name: '일정' }, { id: 'english-panel', name: '오늘의 영어' }
+    { id: 'schedule-panel', name: '일정' }, { id: 'english-panel', name: '업무 영어' }
   ];
   function sectionOrder() {
     var saved = store.get('sectionOrder', []), ids = SECTIONS.map(function (x) { return x.id; });
