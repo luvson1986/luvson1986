@@ -126,7 +126,7 @@
     '예시 일정을 지웠어요': 'Sample events cleared', '복사할 수 없는 환경이에요. 직접 선택해서 복사해 주세요': "Can't copy here. Please select and copy manually",
     '일정 카테고리': 'Event categories', '새 카테고리 (예: 스터디)': 'New category (e.g. Study)', '새 카테고리 색': 'New category color', '새 카테고리 이름': 'New category name',
     '카테고리 이름': 'Category name', '카테고리는 하나 이상 있어야 해요': 'You need at least one category',
-    "색을 눌러 바꾸고, 이름을 눌러 고칠 수 있어요. ↑↓로 순서를 바꾸면 범례와 선택 목록에 그대로 반영돼요. 맨 위 카테고리는 빠른 추가의 기본값이에요. 삭제한 카테고리의 일정은 '기타'(회색)로 보여요.": "Tap a color to change it, or a name to edit it. Reorder with ↑↓. The top category is the default for quick add. Events in a deleted category show as 'Other' (gray).",
+    "색을 눌러 바꾸고, 이름을 눌러 고칠 수 있어요. ≡를 길게 눌러 끌어서 순서를 바꾸면 범례와 선택 목록에 그대로 반영돼요. 맨 위 카테고리는 빠른 추가의 기본값이에요. 삭제한 카테고리의 일정은 '기타'(회색)로 보여요.": "Tap a color to change it, or a name to edit it. Press and drag ≡ to reorder. The top category is the default for quick add. Events in a deleted category show as 'Other' (gray).",
     '회의': 'Meeting', '집중 업무': 'Focus work', '개인': 'Personal', '운동·건강': 'Health', '기타': 'Other', '기본': 'Default',
     '데이트': 'Date', '집안일': 'Chores', '운동': 'Workout', '업무': 'Work', '약속': 'Plans', '여행': 'Travel',
 

@@ -313,7 +313,7 @@ a { color: var(--accent); }
 .cat-row, .cat-new { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
 .cat-color, #cat-new-color { width: 40px; height: 34px; padding: 2px; border: 1px solid var(--line); border-radius: var(--r-s); background: var(--surface); cursor: pointer; }
 .cat-name, #cat-new-name { padding: 8px 10px; border-radius: var(--r-s); border: 1px solid var(--line); background: var(--surface); min-width: 0; }
-.cat-new { padding-top: 10px; border-top: 1px dashed var(--line); }
+.cat-new { padding-top: 10px; padding-left: 40px; border-top: 1px dashed var(--line); }
 
 /* 체크리스트 접기 */
 .cl-fold {
@@ -812,10 +812,7 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .cal-btn > span { display: none; } .cal-btn { text-align: center; justify-items: center; padding: 12px 6px; } .cal-btn b { white-space: nowrap; }
 @media (max-width: 360px) { .cal-btn b { font-size: 12px; } .cal-grid { gap: 6px; } }
 
-.cat-row { grid-template-columns: 40px minmax(0, 1fr) auto auto; }
-.cat-move { display: flex; gap: 4px; }
-.cat-move button { width: 32px; height: 34px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; cursor: pointer; color: var(--ink); font-size: 14px; }
-.cat-move button:disabled { opacity: 0.3; cursor: default; }
+.cat-row { grid-template-columns: 32px 40px minmax(0, 1fr) auto; }
 
 .cl-item { align-items: start; }
 .cl-item .cl-check { margin-top: 5px; }
@@ -1215,7 +1212,7 @@ dialog.sheet:focus { outline: none; }
     <header class="panel-head">
       <h2 id="cat-h">일정 카테고리</h2>
     </header>
-    <p class="hint">색을 눌러 바꾸고, 이름을 눌러 고칠 수 있어요. ↑↓로 순서를 바꾸면 범례와 선택 목록에 그대로 반영돼요. 맨 위 카테고리는 빠른 추가의 기본값이에요. 삭제한 카테고리의 일정은 '기타'(회색)로 보여요.</p>
+    <p class="hint">색을 눌러 바꾸고, 이름을 눌러 고칠 수 있어요. ≡를 길게 눌러 끌어서 순서를 바꾸면 범례와 선택 목록에 그대로 반영돼요. 맨 위 카테고리는 빠른 추가의 기본값이에요. 삭제한 카테고리의 일정은 '기타'(회색)로 보여요.</p>
     <ul class="cat-list" id="cat-list"></ul>
     <form class="cat-new" id="cat-new">
       <input type="color" id="cat-new-color" value="#d64a7a" aria-label="새 카테고리 색">
@@ -1563,7 +1560,7 @@ dialog.sheet:focus { outline: none; }
     '예시 일정을 지웠어요': 'Sample events cleared', '복사할 수 없는 환경이에요. 직접 선택해서 복사해 주세요': "Can't copy here. Please select and copy manually",
     '일정 카테고리': 'Event categories', '새 카테고리 (예: 스터디)': 'New category (e.g. Study)', '새 카테고리 색': 'New category color', '새 카테고리 이름': 'New category name',
     '카테고리 이름': 'Category name', '카테고리는 하나 이상 있어야 해요': 'You need at least one category',
-    "색을 눌러 바꾸고, 이름을 눌러 고칠 수 있어요. ↑↓로 순서를 바꾸면 범례와 선택 목록에 그대로 반영돼요. 맨 위 카테고리는 빠른 추가의 기본값이에요. 삭제한 카테고리의 일정은 '기타'(회색)로 보여요.": "Tap a color to change it, or a name to edit it. Reorder with ↑↓. The top category is the default for quick add. Events in a deleted category show as 'Other' (gray).",
+    "색을 눌러 바꾸고, 이름을 눌러 고칠 수 있어요. ≡를 길게 눌러 끌어서 순서를 바꾸면 범례와 선택 목록에 그대로 반영돼요. 맨 위 카테고리는 빠른 추가의 기본값이에요. 삭제한 카테고리의 일정은 '기타'(회색)로 보여요.": "Tap a color to change it, or a name to edit it. Press and drag ≡ to reorder. The top category is the default for quick add. Events in a deleted category show as 'Other' (gray).",
     '회의': 'Meeting', '집중 업무': 'Focus work', '개인': 'Personal', '운동·건강': 'Health', '기타': 'Other', '기본': 'Default',
     '데이트': 'Date', '집안일': 'Chores', '운동': 'Workout', '업무': 'Work', '약속': 'Plans', '여행': 'Travel',
 
@@ -4489,14 +4486,11 @@ window.PHRASE_TOPICS = [
     $('cat-legend').innerHTML = cats.map(function (c) {
       return '<span class="cat-chip" style="--c:' + c.color + '"><i></i>' + esc(c.name) + '</span>';
     }).join('') + '<button type="button" class="link-btn sm" data-open-cats>편집</button>';
-    $('cat-list').innerHTML = cats.map(function (c, i) {
+    $('cat-list').innerHTML = cats.map(function (c) {
       return '<li class="cat-row" data-id="' + esc(c.id) + '">' +
+        '<span class="grip" aria-label="길게 눌러 순서 바꾸기">' + GRIP + '</span>' +
         '<input type="color" class="cat-color" value="' + c.color + '" aria-label="' + esc(c.name) + ' 색">' +
         '<input class="cat-name" value="' + esc(c.name) + '" maxlength="12" aria-label="카테고리 이름">' +
-        '<span class="cat-move">' +
-          '<button type="button" data-cat-move="-1" aria-label="' + esc(c.name) + ' 위로"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
-          '<button type="button" data-cat-move="1" aria-label="' + esc(c.name) + ' 아래로"' + (i === cats.length - 1 ? ' disabled' : '') + '>↓</button>' +
-        '</span>' +
         '<button type="button" class="icon-mini" data-del-cat aria-label="' + esc(c.name) + ' 삭제">✕</button></li>';
     }).join('');
     $('cat-new-color').value = CAT_PALETTE[cats.length % CAT_PALETTE.length];
@@ -4512,21 +4506,21 @@ window.PHRASE_TOPICS = [
       saveCats(); renderCats(); renderSchedule();
     });
     $('cat-list').addEventListener('click', function (e) {
-      var mv = e.target.closest('[data-cat-move]');
-      if (mv && !mv.disabled) {
-        var id0 = mv.closest('.cat-row').dataset.id, i0 = cats.findIndex(function (c) { return c.id === id0; }), j0 = i0 + +mv.dataset.catMove;
-        var moved = cats.splice(i0, 1)[0]; cats.splice(j0, 0, moved);
-        saveCats(); renderCats(); renderSchedule();
-        var again = document.querySelector('#cat-list .cat-row[data-id="' + id0 + '"] [data-cat-move="' + mv.dataset.catMove + '"]');
-        if (again && !again.disabled) again.focus();
-        return;
-      }
       var b = e.target.closest('[data-del-cat]'); if (!b) return;
       if (cats.length <= 1) { toast('카테고리는 하나 이상 있어야 해요'); return; }
       if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = '삭제?'; b.classList.add('armed'); return; }
       var id = b.closest('.cat-row').dataset.id;
       cats = cats.filter(function (c) { return c.id !== id; });
       saveCats(); renderCats(); renderSchedule();
+    });
+    // 손잡이를 끌거나, 줄을 길게 눌러서 순서 바꾸기
+    makeSortable($('cat-list'), {
+      item: '.cat-row', handle: '.grip', longPress: true,
+      onEnd: function () {
+        var ids = Array.prototype.map.call($('cat-list').children, function (li) { return li.dataset.id; });
+        cats.sort(function (a, b) { return ids.indexOf(a.id) - ids.indexOf(b.id); });
+        saveCats(); renderCats(); renderSchedule();
+      }
     });
     $('cat-new').addEventListener('submit', function (e) {
       e.preventDefault();
