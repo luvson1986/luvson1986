@@ -3962,14 +3962,14 @@ window.PHRASE_TOPICS = [
     var c = w.current, d = w.daily, info = wmo(c.weather_code);
     wxLoadedAt = Date.now();
     // 예시 날씨일 때는 비·눈 효과를 띄우지 않아요
+    // 비·눈은 예보 모델의 지금 강수량과 레이더(실제 관측)가 둘 다 '온다'고 할 때만 띄워요.
+    // 레이더를 못 읽은 경우에만 모델 값을 따라요
     var pr = w.sample ? [null, 0] : precipNow(c);
-    scene.setWeather(pr[0], pr[1]);
-    // 비·눈은 실제 강수량이 있을 때만 띄워요. 레이더(실제 관측)는 그때 세기만 맞추는 데 써요
-    var hint = (c.precipitation || 0) >= 0.1 || (c.snowfall || 0) > 0;
-    if (!w.sample && w.lat != null) radarWait = radarPrecip(w.lat, w.lon).then(function (lv) {
-      if (lv == null) return;
-      if (lv > 0 && hint) scene.setWeather(c.temperature_2m <= 1 ? 'snow' : 'rain', lv);
-      else if (!hint) scene.setWeather(null, 0);
+    if (w.sample || w.lat == null || !pr[0]) scene.setWeather(null, 0);
+    else radarWait = radarPrecip(w.lat, w.lon).then(function (lv) {
+      if (lv == null) scene.setWeather(pr[0], pr[1]);
+      else if (lv > 0) scene.setWeather(pr[0], lv);
+      else scene.setWeather(null, 0);
     });
     $('wx-icon').textContent = info[1];
     $('wx-temp').textContent = Math.round(c.temperature_2m) + '°';
