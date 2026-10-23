@@ -5538,10 +5538,18 @@ window.PHRASE_TOPICS = [
       g.items.push({ id: uid(), text: v, done: false });
       touch(g); renderLists(g.id);
     });
-    // 아이폰 키보드 위 '완료(✓)'를 누르면 입력칸에서 빠져나가요 → 적어 둔 글이 있으면 그대로 추가
+    // 아이폰 키보드 위 '완료(✓)'로 빠져나가면 추가, 화면 다른 곳을 눌러 빠져나가면 취소(지워요).
+    // 완료 버튼은 화면 터치 없이 포커스만 빠지고, 다른 곳을 누르면 바로 앞에 터치가 있어요
+    var lastTap = 0;
+    document.addEventListener('pointerdown', function () { lastTap = Date.now(); }, true);
+    document.addEventListener('touchstart', function () { lastTap = Date.now(); }, { capture: true, passive: true });
+    // 입력칸을 눌러 들어온 터치는 세지 않아요 (글자를 치면 초기화)
+    root.addEventListener('input', function (e) { if (e.target.classList.contains('cl-new-input')) lastTap = 0; });
     root.addEventListener('focusout', function (e) {
       if (!e.target.classList.contains('cl-new-input')) return;
+      if (document.hidden) return; // 앱을 잠깐 내렸을 때는 그대로 둬요
       var v = e.target.value.trim(); if (!v) return;
+      if (Date.now() - lastTap < 800) { e.target.value = ''; return; }
       var gEl = e.target.closest('.cl-group'), g = gEl && findGroup(gEl.dataset.g); if (!g) return;
       e.target.value = '';
       g.items.push({ id: uid(), text: v, done: false });
