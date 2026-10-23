@@ -2250,8 +2250,18 @@
       var gEl = e.target.closest('.cl-group'), g = findGroup(gEl.dataset.g);
       var inp = e.target.querySelector('.cl-new-input'), v = inp.value.trim();
       if (!v) return;
+      inp.value = ''; // 다시 그릴 때 아래 focusout이 한 번 더 추가하지 않게
       g.items.push({ id: uid(), text: v, done: false });
       touch(g); renderLists(g.id);
+    });
+    // 아이폰 키보드 위 '완료(✓)'를 누르면 입력칸에서 빠져나가요 → 적어 둔 글이 있으면 그대로 추가
+    root.addEventListener('focusout', function (e) {
+      if (!e.target.classList.contains('cl-new-input')) return;
+      var v = e.target.value.trim(); if (!v) return;
+      var gEl = e.target.closest('.cl-group'), g = gEl && findGroup(gEl.dataset.g); if (!g) return;
+      e.target.value = '';
+      g.items.push({ id: uid(), text: v, done: false });
+      touch(g); renderLists();
     });
     root.addEventListener('click', function (e) {
       var b = e.target.closest('[data-act]'); if (!b) return;
