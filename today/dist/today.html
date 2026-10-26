@@ -4765,25 +4765,20 @@ window.PHRASE_TOPICS = [
     orderDay(all).forEach(function (s) {
       var k = seqMin(s, all.indexOf(s));
       if (!s.start) {
-        rows.push({ html: card(s, diff < 0 || s.done ? 'past' : '', '미정', '', k), behind: !!s.done, open: !s.done });
+        rows.push({ html: card(s, diff < 0 || s.done ? 'past' : '', '미정', '', k), behind: !!s.done });
         return;
       }
       var st = toMin(s.start), en = s.end ? toMin(s.end) : null;
       // 종료 시간이 없으면 다음 시간 일정이 시작될 때까지(그 뒤 일정이 없으면 '완료'를 누를 때까지) 진행 중
       if (en == null) en = implicitEnd(s, all);
       var state = s.done || diff < 0 ? 'past' : diff > 0 ? '' : en != null && en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
-      rows.push({ html: card(s, state, s.start, '', k), started: st <= nowMin, behind: s.done || st <= nowMin });
+      rows.push({ html: card(s, state, s.start, '', k), behind: s.done || st <= nowMin });
     });
     var at = -1;
     if (diff === 0 && list.length) {
-      // 현재 줄은 이미 시작한 마지막 시간 일정 뒤(바로 이어지는 완료 일정까지 포함).
-      // 그 위쪽에 끼어 있던 안 끝낸 미정 일정은 줄 아래로 옮겨요
-      var last = -1;
-      rows.forEach(function (r, i) { if (r.started) last = i; });
-      while (last + 1 < rows.length && rows[last + 1].behind && !rows[last + 1].open) last++;
-      var above = rows.slice(0, last + 1), moved = above.filter(function (r) { return r.open; });
-      above = above.filter(function (r) { return !r.open; });
-      rows = above.concat(moved, rows.slice(last + 1));
+      // 현재 줄 위: 완료했거나 이미 시작한 일정. 줄 아래: 아직 남은 일정 (각자 순서는 그대로)
+      var above = rows.filter(function (r) { return r.behind; });
+      rows = above.concat(rows.filter(function (r) { return !r.behind; }));
       at = above.length;
     }
     var html = rows.map(function (r, i) { return (i === at ? nowRow(now) : '') + r.html; }).join('') + (at === rows.length ? nowRow(now) : '');
