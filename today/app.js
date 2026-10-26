@@ -1481,22 +1481,29 @@
     // 일정을 순서대로 그리고, 현재 시각 줄은 '아직 남은 첫 일정' 바로 앞에 넣어요.
     // 지난 일: 완료했거나, 시작 시각이 지났거나(진행 중 포함). 아직 안 끝낸 시간 미정 일정은 항상 현재 줄 아래로
     var rows = [];
+    // 끝낸 시각(오늘 몇 분째). 예전에 끝내서 기록이 없으면 원래 자리 값
+    var doneMin = function (s, fallback) {
+      if (!s.doneAt) return fallback;
+      var d = new Date(s.doneAt);
+      return ymd(d) === key ? d.getHours() * 60 + d.getMinutes() : ymd(d) < key ? -1 : fallback;
+    };
     orderDay(all).forEach(function (s) {
       var k = seqMin(s, all.indexOf(s));
       if (!s.start) {
-        rows.push({ html: card(s, diff < 0 || s.done ? 'past' : '', '미정', '', k), behind: !!s.done });
+        rows.push({ html: card(s, diff < 0 || s.done ? 'past' : '', '미정', '', k), behind: !!s.done, when: doneMin(s, k) });
         return;
       }
       var st = toMin(s.start), en = s.end ? toMin(s.end) : null;
       // 종료 시간이 없으면 다음 시간 일정이 시작될 때까지(그 뒤 일정이 없으면 '완료'를 누를 때까지) 진행 중
       if (en == null) en = implicitEnd(s, all);
       var state = s.done || diff < 0 ? 'past' : diff > 0 ? '' : en != null && en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
-      rows.push({ html: card(s, state, s.start, '', k), behind: s.done || st <= nowMin });
+      rows.push({ html: card(s, state, s.start, '', k), behind: s.done || st <= nowMin, when: st <= nowMin ? st : doneMin(s, st) });
     });
     var at = -1;
     if (diff === 0 && list.length) {
-      // 현재 줄 위: 완료했거나 이미 시작한 일정. 줄 아래: 아직 남은 일정 (각자 순서는 그대로)
-      var above = rows.filter(function (r) { return r.behind; });
+      // 현재 줄 위: 완료했거나 이미 시작한 일정을 '지나간 순서'(시작한 시각·끝낸 시각)대로. 줄 아래: 아직 남은 일정 (순서 그대로)
+      var above = rows.map(function (r, i) { r.i = i; return r; }).filter(function (r) { return r.behind; })
+        .sort(function (a, b) { return a.when - b.when || a.i - b.i; });
       rows = above.concat(rows.filter(function (r) { return !r.behind; }));
       at = above.length;
     }
@@ -2029,7 +2036,10 @@
       var d = e.target.closest('[data-done]');
       if (d) {
         var it = findItem(ymd(viewDate), d.dataset.done); if (!it) return;
-        it.done = !it.done; saveSchedules(); renderSchedule();
+        it.done = !it.done;
+        // 언제 끝냈는지 기억해 두면, 타임라인 위쪽(지난 일)을 끝낸 순서대로 쌓을 수 있어요
+        if (it.done) it.doneAt = Date.now(); else delete it.doneAt;
+        saveSchedules(); renderSchedule();
         toast(it.done ? '“' + it.title + '” 완료!' : '완료를 취소했어요');
         return;
       }
