@@ -1490,23 +1490,23 @@
     orderDay(all).forEach(function (s) {
       var k = seqMin(s, all.indexOf(s));
       if (!s.start) {
-        rows.push({ html: card(s, diff < 0 || s.done ? 'past' : '', '미정', '', k), behind: !!s.done, when: doneMin(s, k) });
+        rows.push({ html: card(s, diff < 0 || s.done ? 'past' : '', '미정', '', k), behind: !!s.done, done: !!s.done, when: doneMin(s, k) });
         return;
       }
       var st = toMin(s.start), en = s.end ? toMin(s.end) : null;
       // 종료 시간이 없으면 다음 시간 일정이 시작될 때까지(그 뒤 일정이 없으면 '완료'를 누를 때까지) 진행 중
       if (en == null) en = implicitEnd(s, all);
       var state = s.done || diff < 0 ? 'past' : diff > 0 ? '' : en != null && en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
-      rows.push({ html: card(s, state, s.start, '', k), behind: s.done || st <= nowMin, when: st <= nowMin ? st : doneMin(s, st) });
+      rows.push({ html: card(s, state, s.start, '', k), behind: s.done || st <= nowMin, done: !!s.done, when: diff === 0 && st <= nowMin ? st : doneMin(s, st) });
     });
+    // 위쪽: 끝낸 일정(오늘은 이미 시작한 시간 일정 포함)을 '지나간 순서'(시작한 시각·끝낸 시각)대로.
+    // 아래쪽: 아직 남은 일정 (순서 그대로). 오늘이고 시간 일정이 있으면 그 사이에 현재 시각 줄
     var at = -1;
-    if (diff === 0 && list.length) {
-      // 현재 줄 위: 완료했거나 이미 시작한 일정을 '지나간 순서'(시작한 시각·끝낸 시각)대로. 줄 아래: 아직 남은 일정 (순서 그대로)
-      var above = rows.map(function (r, i) { r.i = i; return r; }).filter(function (r) { return r.behind; })
-        .sort(function (a, b) { return a.when - b.when || a.i - b.i; });
-      rows = above.concat(rows.filter(function (r) { return !r.behind; }));
-      at = above.length;
-    }
+    var isPast = function (r) { return diff === 0 ? r.behind : r.done; };
+    var above = rows.map(function (r, i) { r.i = i; return r; }).filter(isPast)
+      .sort(function (a, b) { return a.when - b.when || a.i - b.i; });
+    rows = above.concat(rows.filter(function (r) { return !isPast(r); }));
+    if (diff === 0 && list.length) at = above.length;
     var html = rows.map(function (r, i) { return (i === at ? nowRow(now) : '') + r.html; }).join('') + (at === rows.length ? nowRow(now) : '');
     $('timeline').innerHTML = html;
     renderNowNext();
