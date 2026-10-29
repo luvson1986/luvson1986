@@ -107,7 +107,7 @@ h2 { margin: 0; font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
 .wk { list-style: none; margin: 0; padding: 0; display: grid; }
 .wk li { display: grid; grid-template-columns: 74px 30px 38px 1fr; align-items: center; gap: 8px; padding-block: 8px; }
 .wk li + li { border-top: 1px solid var(--line); }
-.wk-day { display: grid; line-height: 1.25; } .wk-day b { font-size: 14px; } .wk-day span { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.wk-day { display: grid; line-height: 1.25; } .wk-day b { font-size: 14px; white-space: nowrap; } .wk-day span { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .wk-ico { font-size: 21px; text-align: center; }
 .wk-pop { font-size: 12px; color: var(--accent); font-variant-numeric: tabular-nums; }
 .wk-temp { display: grid; grid-template-columns: 36px 1fr 36px; align-items: center; gap: 8px; font-size: 14px; }
@@ -115,6 +115,8 @@ h2 { margin: 0; font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
 .wk-bar { position: relative; height: 6px; border-radius: 3px; background: var(--surface-2); }
 .wk-bar i { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: linear-gradient(90deg, #6fa8ff, #ffb04a); }
 .wx-off { padding: 10px 12px; border-radius: var(--r-s); background: var(--surface-2); color: var(--ink-2); font-size: 13.5px; margin: 0; }
+.stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.stack[hidden] { display: none; }
 .col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; min-width: 0; }
 
 /* What to wear */
@@ -214,7 +216,7 @@ body.locked { overflow: hidden; }
 }
 .foot { padding-block: 0 40px; font-size: 12.5px; color: var(--ink-3); }
 .foot a { color: inherit; }
-@media (max-width: 420px) { .wx-temp { font-size: 44px; } .season-box { padding-right: 70px; } .wk li { grid-template-columns: 62px 28px 34px 1fr; gap: 6px; } }
+@media (max-width: 420px) { .wx-temp { font-size: 44px; } .season-box { padding-right: 70px; } .wk li { grid-template-columns: 76px 26px 32px 1fr; gap: 6px; } }
 @media (prefers-reduced-motion: reduce) { .hero { transition: none; } }
 </style>
 </head>
@@ -229,7 +231,6 @@ body.locked { overflow: hidden; }
       <h1 class="season-name" id="season-name">Korea in Season</h1>
       <div class="chips"><span class="phase" id="season-phase"></span><span class="hangul ko" id="season-ko"></span></div>
       <p class="season-line" id="season-line"></p>
-      <button type="button" class="glass" data-open="season-sheet">📅 All seasons</button>
     </div>
     <div class="wx" id="wx">
       <div class="wx-place"><span id="wx-place">Seoul</span><span class="seg" role="group" aria-label="Temperature unit"><button type="button" id="u-c" aria-pressed="true">°C</button><button type="button" id="u-f" aria-pressed="false">°F</button></span></div>
@@ -238,7 +239,6 @@ body.locked { overflow: hidden; }
         <span class="wx-temp" id="wx-temp">--°</span>
         <span class="wx-meta"><span class="wx-cond" id="wx-cond">Loading weather…</span><span class="wx-sub" id="wx-sub"></span></span>
       </div>
-      <div class="loc-row"><button type="button" class="glass" data-open="year-sheet">🌡️ A year in Seoul</button></div>
       <div class="loc-row" id="loc-row" role="group" aria-label="Choose a place">
         <button type="button" class="glass" data-city="seoul">Seoul</button>
         <button type="button" class="glass" data-city="busan">Busan</button>
@@ -255,31 +255,27 @@ body.locked { overflow: hidden; }
 </section>
 
 <main class="board wrap">
-  <div class="col">
   <section class="panel" aria-labelledby="ow-h">
-    <div class="panel-h"><h2 id="ow-h">What to wear</h2><span class="note" id="ow-note"></span></div>
+    <div class="panel-h"><h2 id="ow-h">Weather &amp; what to wear</h2><button type="button" class="more-btn" data-open="year-sheet">A year in Seoul ›</button></div>
+    <p class="note" id="ow-note"></p>
+    <p class="wx-off" id="wx-off" hidden></p>
     <div class="band" id="ow-band"></div>
     <p class="sub-h">Wear</p>
     <ul class="tags" id="ow-wear"></ul>
     <p class="sub-h">Bring</p>
     <ul class="tags" id="ow-bring"></ul>
     <p class="why" id="ow-why"></p>
-  </section>
-
-  <section class="panel" aria-labelledby="fc-h">
-    <div class="panel-h"><h2 id="fc-h">Forecast</h2><span class="note" id="fc-place"></span></div>
-    <p class="wx-off" id="wx-off" hidden></p>
-    <div id="wx-live">
+    <div id="wx-live" class="stack">
+      <p class="sub-h">Next 12 hours</p>
       <div class="hourly" id="hourly" aria-label="Next 12 hours"></div>
-      <dl class="facts" id="facts" style="margin-top:12px"></dl>
-      <p class="sub-h" style="margin-top:14px">Next 8 days</p>
+      <dl class="facts" id="facts"></dl>
+      <p class="sub-h">Next 8 days</p>
       <ul class="wk" id="week"></ul>
     </div>
     <div id="wx-typical" hidden>
       <dl class="facts" id="typ-facts"></dl>
     </div>
   </section>
-  </div>
 
   <section class="panel" aria-labelledby="now-h">
     <div class="panel-h"><h2 id="now-h">In season in Korea</h2><button type="button" class="more-btn" data-open="season-sheet">All seasons ›</button></div>
@@ -577,7 +573,7 @@ window.SEASONS = [{"id":"sunrise","name":"New Year sunrise","ko":"새해 해돋�
   }
   function load() {
     var q = 'latitude=' + place.lat + '&longitude=' + place.lon;
-    $('wx-place').textContent = place.name; $('fc-place').textContent = place.name;
+    $('wx-place').textContent = place.name;
     $('wx-cond').textContent = 'Loading weather…';
     var url = 'https://api.open-meteo.com/v1/forecast?' + q +
       '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m' +
@@ -680,8 +676,8 @@ window.SEASONS = [{"id":"sunrise","name":"New Year sunrise","ko":"새해 해돋�
     $('wx-temp').textContent = deg((n[0] + n[1]) / 2);
     $('wx-cond').textContent = 'Typical ' + MONTH_FULL[m] + ' in Seoul';
     $('wx-sub').textContent = 'H ' + deg(n[0]) + '  L ' + deg(n[1]) + ' · ~' + n[2] + ' rainy days';
-    $('wx-place').textContent = 'Seoul · typical'; $('fc-place').textContent = 'Seoul · ' + MONTH_FULL[m];
-    $('typ-facts').innerHTML = [['Avg high', deg(n[0])], ['Avg low', deg(n[1])], ['Rainy days', '~' + n[2]], ['Outfit', band.name]]
+    $('wx-place').textContent = 'Seoul · typical';
+    $('typ-facts').innerHTML = [['Avg high', deg(n[0])], ['Avg low', deg(n[1])], ['Rainy days', '~' + n[2]]]
       .map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('');
     renderOutfit(t.am, t.pm, t.mid, typicalBring(m), 'Typical ' + MONTH_FULL[m] + ' in Seoul');
   }
@@ -702,7 +698,7 @@ window.SEASONS = [{"id":"sunrise","name":"New Year sunrise","ko":"새해 해돋�
     if (!last) { if (!$('wx-typical').hidden) renderTypical(); return; }
     var d = last.d, c = d.current, dy = d.daily, info = wmo(c.weather_code);
     $('wx-live').hidden = false; $('wx-off').hidden = true; $('wx-typical').hidden = true; $('loc-row').hidden = false;
-    $('wx-place').textContent = place.name; $('fc-place').textContent = place.name;
+    $('wx-place').textContent = place.name;
     outfitLive(d, last.air);
     $('wx-icon').textContent = info[1];
     $('wx-temp').textContent = deg(c.temperature_2m);
