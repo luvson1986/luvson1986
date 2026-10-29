@@ -100,7 +100,11 @@ h2 { margin: 0; font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
 .hour .h-t { font: 500 13.5px var(--f-mono); color: var(--ink); }
 .hour .h-p { color: var(--accent); min-height: 1.2em; }
 .hour.now .h-time { font-weight: 700; color: var(--ink); }
-.facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr)); gap: 8px; margin: 0; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.facts .sun { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 8px 10px; }
+.part-h { margin: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.part-h::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.later { margin-top: 18px; padding-top: 18px; border-top: 6px solid var(--surface-2); margin-inline: -16px; padding-inline: 16px; }
 .facts div { padding: 8px 10px; border-radius: var(--r-s); background: var(--surface-2); }
 .facts dt { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
 .facts dd { margin: 0; font: 500 14px var(--f-mono); }
@@ -267,19 +271,20 @@ body.locked { overflow: hidden; }
       <a class="live-link" href="https://luvson1986.github.io/luvson1986/korea/" target="_blank" rel="noopener">Open live weather ›</a>
     </div>
     <div id="wx-body" class="stack">
-    <div class="band" id="ow-band"></div>
-    <p class="sub-h">Wear</p>
-    <ul class="tags" id="ow-wear"></ul>
-    <p class="sub-h">Bring</p>
-    <ul class="tags" id="ow-bring"></ul>
-    <p class="why" id="ow-why"></p>
-    <div id="wx-live" class="stack">
+      <h3 class="part-h">Today</h3>
       <p class="sub-h">Next 12 hours</p>
       <div class="hourly" id="hourly" aria-label="Next 12 hours"></div>
+      <div class="band" id="ow-band"></div>
+      <p class="sub-h">Wear</p>
+      <ul class="tags" id="ow-wear"></ul>
+      <p class="sub-h">Bring</p>
+      <ul class="tags" id="ow-bring"></ul>
+      <p class="why" id="ow-why"></p>
       <dl class="facts" id="facts"></dl>
-      <p class="sub-h">Next 8 days</p>
-      <ul class="wk" id="week"></ul>
-    </div>
+      <div class="later stack">
+        <h3 class="part-h">Next 7 days</h3>
+        <ul class="wk" id="week"></ul>
+      </div>
     </div>
   </section>
 
@@ -665,7 +670,7 @@ window.SEASONS = [{"id":"sunrise","name":"New Year sunrise","ko":"새해 해돋�
     if (uv >= 7 || dy.temperature_2m_max[0] >= 30) bring.push({ ico: '🧢', t: 'Hat', v: uv >= 7 ? 'UV ' + Math.round(uv) : deg(dy.temperature_2m_max[0]), lvl: 'mid' });
     if (d.current.wind_speed_10m >= 29) bring.push({ ico: '🌬️', t: 'Windbreaker', v: unit === 'f' ? Math.round(d.current.wind_speed_10m * 0.621) + ' mph' : Math.round(d.current.wind_speed_10m) + ' km/h', lvl: 'mid' });
     if (dy.temperature_2m_min[0] <= 0) bring.push({ ico: '🔥', t: 'Hand warmers', v: deg(dy.temperature_2m_min[0]), lvl: 'mid' });
-    renderOutfit(at(10), at(20), mid, bring, 'Today in ' + place.name);
+    renderOutfit(at(10), at(20), mid, bring, '📍 ' + place.name);
   }
   function renderMonths() {
     var cur = today.getMonth();
@@ -700,11 +705,12 @@ window.SEASONS = [{"id":"sunrise","name":"New Year sunrise","ko":"새해 해돋�
     }).join('');
     var wind = unit === 'f' ? Math.round(c.wind_speed_10m * 0.621) + ' mph' : Math.round(c.wind_speed_10m) + ' km/h';
     var facts = [['Humidity', c.relative_humidity_2m + '%'], ['Wind', wind], ['UV index', dy.uv_index_max[0] != null ? Math.round(dy.uv_index_max[0]) : '–'],
-      ['Sunrise', hm(dy.sunrise[0])], ['Sunset', hm(dy.sunset[0])]];
-    if (last.air && last.air.us_aqi != null) facts.push(['Air quality', last.air.us_aqi + ' · ' + aqiWord(last.air.us_aqi)]);
-    $('facts').innerHTML = facts.map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('');
-    var lo = Math.min.apply(null, dy.temperature_2m_min), hi = Math.max.apply(null, dy.temperature_2m_max), span = Math.max(1, hi - lo);
+      ['Air quality', last.air && last.air.us_aqi != null ? last.air.us_aqi + ' · ' + aqiWord(last.air.us_aqi) : '–']];
+    $('facts').innerHTML = facts.map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') +
+      '<div class="sun"><span><dt>Sunrise</dt><dd>' + hm(dy.sunrise[0]) + '</dd></span><span><dt>Sunset</dt><dd>' + hm(dy.sunset[0]) + '</dd></span></div>';
+    var lo = Math.min.apply(null, dy.temperature_2m_min.slice(1)), hi = Math.max.apply(null, dy.temperature_2m_max.slice(1)), span = Math.max(1, hi - lo);
     $('week').innerHTML = dy.time.map(function (t, i) {
+      if (i === 0) return '';
       var p = t.split('-'), day = new Date(+p[0], +p[1] - 1, +p[2]), wi = wmo(dy.weather_code[i]), mn = dy.temperature_2m_min[i], mx = dy.temperature_2m_max[i], pop = dy.precipitation_probability_max[i] || 0;
       return '<li><span class="wk-day"><b>' + (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : DAY[day.getDay()]) + '</b><span>' + MON[day.getMonth()] + ' ' + day.getDate() + '</span></span>' +
         '<span class="wk-ico" title="' + esc(wi[0]) + '" aria-label="' + esc(wi[0]) + '">' + wi[1] + '</span><span class="wk-pop">' + (pop >= 20 ? pop + '%' : '') + '</span>' +
