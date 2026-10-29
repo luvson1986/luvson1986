@@ -114,7 +114,11 @@ h2 { margin: 0; font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
 .wk-temp .lo { color: var(--ink-3); text-align: right; }
 .wk-bar { position: relative; height: 6px; border-radius: 3px; background: var(--surface-2); }
 .wk-bar i { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: linear-gradient(90deg, #6fa8ff, #ffb04a); }
-.wx-off { padding: 10px 12px; border-radius: var(--r-s); background: var(--surface-2); color: var(--ink-2); font-size: 13.5px; margin: 0; }
+.wx-off { display: grid; gap: 10px; justify-items: start; padding: 14px; border-radius: var(--r-s); background: var(--surface-2); color: var(--ink-2); font-size: 14px; }
+.wx-off p { margin: 0; max-width: 52ch; }
+.live-link { display: inline-block; padding: 8px 14px; border-radius: 999px; background: var(--accent); color: var(--surface); font-weight: 600; font-size: 14px; text-decoration: none; }
+.live-link:hover { filter: brightness(1.08); }
+.hero-link { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
 .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .stack[hidden] { display: none; }
 .col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; min-width: 0; }
@@ -258,7 +262,11 @@ body.locked { overflow: hidden; }
   <section class="panel" aria-labelledby="ow-h">
     <div class="panel-h"><h2 id="ow-h">Weather &amp; what to wear</h2><button type="button" class="more-btn" data-open="year-sheet">A year in Seoul ›</button></div>
     <p class="note" id="ow-note"></p>
-    <p class="wx-off" id="wx-off" hidden></p>
+    <div class="wx-off" id="wx-off" hidden>
+      <p>Live weather can’t load inside this preview. Open the full page for today’s weather, the next 7 days and what to wear.</p>
+      <a class="live-link" href="https://luvson1986.github.io/luvson1986/korea/" target="_blank" rel="noopener">Open live weather ›</a>
+    </div>
+    <div id="wx-body" class="stack">
     <div class="band" id="ow-band"></div>
     <p class="sub-h">Wear</p>
     <ul class="tags" id="ow-wear"></ul>
@@ -272,8 +280,6 @@ body.locked { overflow: hidden; }
       <p class="sub-h">Next 8 days</p>
       <ul class="wk" id="week"></ul>
     </div>
-    <div id="wx-typical" hidden>
-      <dl class="facts" id="typ-facts"></dl>
     </div>
   </section>
 
@@ -586,9 +592,10 @@ window.SEASONS = [{"id":"sunrise","name":"New Year sunrise","ko":"새해 해돋�
   }
   function offline() {
     last = null;
-    $('wx-live').hidden = true; $('wx-off').hidden = false; $('wx-typical').hidden = false; $('loc-row').hidden = true; $('loc-form').hidden = true;
-    $('wx-off').textContent = 'The live forecast can’t load in this view, so this shows a typical ' + MONTH_FULL[today.getMonth()] + ' in Seoul instead.';
-    renderTypical();
+    $('wx-body').hidden = true; $('wx-off').hidden = false; $('loc-row').hidden = true; $('loc-form').hidden = true;
+    $('wx-icon').textContent = '🌤️'; $('wx-temp').textContent = '--°'; $('ow-note').textContent = '';
+    $('wx-cond').innerHTML = '<a class="hero-link" href="https://luvson1986.github.io/luvson1986/korea/" target="_blank" rel="noopener">See live weather ›</a>';
+    $('wx-sub').textContent = 'Opens the full page with today’s forecast';
   }
 
   /* ---------- What to wear (the assistant app's 8 temperature bands; °C, rounded, checked top-down) ---------- */
@@ -660,27 +667,6 @@ window.SEASONS = [{"id":"sunrise","name":"New Year sunrise","ko":"새해 해돋�
     if (dy.temperature_2m_min[0] <= 0) bring.push({ ico: '🔥', t: 'Hand warmers', v: deg(dy.temperature_2m_min[0]), lvl: 'mid' });
     renderOutfit(at(10), at(20), mid, bring, 'Today in ' + place.name);
   }
-  function typicalBring(m) {
-    var n = NORMALS[m], bring = [];
-    if (n[2] >= 12) bring.push({ ico: '☂️', t: 'Umbrella', v: 'monsoon', lvl: 'high', why: 'About ' + n[2] + ' rainy days this month' });
-    else if (n[2] >= 8) bring.push({ ico: '🌂', t: 'Folding umbrella', v: '~' + n[2] + ' rainy days', lvl: 'mid' });
-    if (m >= 1 && m <= 4) bring.push({ ico: '😷', t: 'Mask', v: 'spring dust', why: 'Fine dust and yellow dust are most common in spring' });
-    if (m >= 4 && m <= 8) bring.push({ ico: '🕶️', t: 'Sunglasses', v: 'strong UV', lvl: 'mid' });
-    if (n[0] >= 28) bring.push({ ico: '🪭', t: 'Hand fan', v: 'humid', lvl: 'mid' });
-    if (n[1] <= 0) bring.push({ ico: '🔥', t: 'Hand warmers', v: deg(n[1]), lvl: 'mid' });
-    return bring;
-  }
-  function renderTypical() {
-    var m = today.getMonth(), n = NORMALS[m], t = typicalDay(n), band = OUTFIT[bandIndex(t.am)];
-    $('wx-icon').textContent = band.emoji;
-    $('wx-temp').textContent = deg((n[0] + n[1]) / 2);
-    $('wx-cond').textContent = 'Typical ' + MONTH_FULL[m] + ' in Seoul';
-    $('wx-sub').textContent = 'H ' + deg(n[0]) + '  L ' + deg(n[1]) + ' · ~' + n[2] + ' rainy days';
-    $('wx-place').textContent = 'Seoul · typical';
-    $('typ-facts').innerHTML = [['Avg high', deg(n[0])], ['Avg low', deg(n[1])], ['Rainy days', '~' + n[2]]]
-      .map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('');
-    renderOutfit(t.am, t.pm, t.mid, typicalBring(m), 'Typical ' + MONTH_FULL[m] + ' in Seoul');
-  }
   function renderMonths() {
     var cur = today.getMonth();
     $('months12').innerHTML = NORMALS.map(function (n, m) {
@@ -695,9 +681,9 @@ window.SEASONS = [{"id":"sunrise","name":"New Year sunrise","ko":"새해 해돋�
   function aqiWord(v) { return v <= 50 ? 'Good' : v <= 100 ? 'Moderate' : v <= 150 ? 'Unhealthy for some' : v <= 200 ? 'Unhealthy' : 'Very unhealthy'; }
   function render() {
     renderMonths();
-    if (!last) { if (!$('wx-typical').hidden) renderTypical(); return; }
+    if (!last) return;
     var d = last.d, c = d.current, dy = d.daily, info = wmo(c.weather_code);
-    $('wx-live').hidden = false; $('wx-off').hidden = true; $('wx-typical').hidden = true; $('loc-row').hidden = false;
+    $('wx-body').hidden = false; $('wx-off').hidden = true; $('loc-row').hidden = false;
     $('wx-place').textContent = place.name;
     outfitLive(d, last.air);
     $('wx-icon').textContent = info[1];
