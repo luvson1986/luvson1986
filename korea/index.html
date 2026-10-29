@@ -83,8 +83,14 @@ a { color: var(--accent); }
 }
 
 /* ---------- Board ---------- */
-.board { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding-block: 16px 48px; }
-@media (min-width: 880px) { .board { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 18px; align-items: start; } .span { grid-column: 1 / -1; } }
+.board { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding-block: 14px 48px; max-width: 760px; }
+/* Tabs under the hero: Weather / Seasons */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.tabbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.tabs { max-width: 760px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding-block: 8px; }
+.tabs button { border: 0; cursor: pointer; padding: 10px 12px; border-radius: 12px; background: transparent; color: var(--ink-2); font-size: 15px; font-weight: 600; }
+.tabs button:hover { background: var(--surface-2); }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); }
 .panel { background: var(--surface); border-radius: var(--r); padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
 .panel-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 h2 { margin: 0; font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
@@ -222,7 +228,7 @@ body.locked { overflow: hidden; }
   .yc-bar { top: 7px; } .yc-peak { top: 6px; }
   .yc-months span { padding-left: 2px; font-size: 10px; }
 }
-.foot { padding-block: 0 40px; font-size: 12.5px; color: var(--ink-3); }
+.foot { max-width: 760px; padding-block: 0 40px; font-size: 12.5px; color: var(--ink-3); }
 .foot a { color: inherit; }
 @media (max-width: 420px) { .wx-temp { font-size: 44px; } .season-box { padding-right: 70px; } .wk li { grid-template-columns: 76px 26px 32px 1fr; gap: 6px; } }
 @media (prefers-reduced-motion: reduce) { .hero { transition: none; } }
@@ -262,8 +268,15 @@ body.locked { overflow: hidden; }
   </div>
 </section>
 
+<nav class="tabbar" aria-label="Sections">
+  <div class="wrap tabs" role="tablist">
+    <button type="button" role="tab" id="tab-weather" aria-controls="pane-weather" aria-selected="true">🌤️ Weather</button>
+    <button type="button" role="tab" id="tab-seasons" aria-controls="pane-seasons" aria-selected="false">🍁 Seasons</button>
+  </div>
+</nav>
+
 <main class="board wrap">
-  <section class="panel" aria-labelledby="ow-h">
+  <section class="panel" id="pane-weather" role="tabpanel" aria-labelledby="tab-weather">
     <div class="panel-h"><h2 id="ow-h">Weather &amp; what to wear</h2><button type="button" class="more-btn" data-open="year-sheet">A year in Seoul ›</button></div>
     <p class="note" id="ow-note"></p>
     <div class="wx-off" id="wx-off" hidden>
@@ -272,9 +285,9 @@ body.locked { overflow: hidden; }
     </div>
     <div id="wx-body" class="stack">
       <h3 class="part-h">Today</h3>
+      <div class="band" id="ow-band"></div>
       <p class="sub-h">Next 12 hours</p>
       <div class="hourly" id="hourly" aria-label="Next 12 hours"></div>
-      <div class="band" id="ow-band"></div>
       <p class="sub-h">Wear</p>
       <ul class="tags" id="ow-wear"></ul>
       <p class="sub-h">Bring</p>
@@ -288,7 +301,7 @@ body.locked { overflow: hidden; }
     </div>
   </section>
 
-  <section class="panel" aria-labelledby="now-h">
+  <section class="panel" id="pane-seasons" role="tabpanel" aria-labelledby="tab-seasons" hidden>
     <div class="panel-h"><h2 id="now-h">In season in Korea</h2><button type="button" class="more-btn" data-open="season-sheet">All seasons ›</button></div>
     <ul class="cards" id="now"></ul>
     <p class="sub-h">Coming up</p>
@@ -765,6 +778,27 @@ window.SEASONS = [{"id":"sunrise","name":"New Year sunrise","ko":"새해 해돋�
     choose({ name: b.dataset.name, lat: +b.dataset.lat, lon: +b.dataset.lon });
     $('loc-form').hidden = true; $('loc-search').setAttribute('aria-expanded', 'false'); $('loc-q').value = ''; $('loc-results').innerHTML = '';
   });
+
+  /* ---------- Tabs ---------- */
+  function setTab(name, keepScroll) {
+    ['weather', 'seasons'].forEach(function (n) {
+      $('tab-' + n).setAttribute('aria-selected', String(n === name));
+      $('pane-' + n).hidden = n !== name;
+    });
+    store.set('tab', name);
+    if (!keepScroll) {
+      var top = $('hero').offsetHeight;
+      if (window.scrollY > top) window.scrollTo(0, top);
+    }
+  }
+  $('tab-weather').onclick = function () { setTab('weather'); };
+  $('tab-seasons').onclick = function () { setTab('seasons'); };
+  document.querySelector('.tabs').addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    var next = $('tab-weather').getAttribute('aria-selected') === 'true' ? 'seasons' : 'weather';
+    setTab(next); $('tab-' + next).focus();
+  });
+  setTab(location.hash === '#seasons' ? 'seasons' : location.hash === '#weather' ? 'weather' : store.get('tab', 'weather'), true);
 
   showHero(); renderNow(); renderCal(); setUnit(unit); load();
 })();
