@@ -130,6 +130,24 @@ h2 { margin: 0; font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
 .tags li b { font: 500 12px var(--f-mono); color: var(--ink-2); }
 .why { margin: 0; font-size: 12.5px; color: var(--ink-3); }
 
+.more-btn { border: 0; background: none; padding: 4px 0; cursor: pointer; color: var(--accent); font-size: 13.5px; font-weight: 600; }
+.more-btn:hover { text-decoration: underline; }
+
+/* Bottom sheets */
+.sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 760px; max-height: 86vh; overflow-y: auto; overscroll-behavior: contain;
+  border: 0; border-radius: 20px 20px 0 0; background: var(--surface); color: var(--ink);
+  padding-block: 8px calc(20px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25); }
+.sheet[open] { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; animation: up 0.24s ease-out; }
+.sheet::before { content: ""; justify-self: center; width: 40px; height: 4px; border-radius: 2px; background: var(--line); }
+.sheet::backdrop { background: rgba(8, 12, 20, 0.5); }
+@keyframes up { from { transform: translateY(40px); opacity: 0.4; } }
+.sheet-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; position: sticky; top: -8px; background: var(--surface); padding-block: 6px; z-index: 3; }
+.sheet-h .note { margin-top: 2px; }
+.x { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 0; cursor: pointer; background: var(--surface-2); color: var(--ink-2); font-size: 15px; }
+body.locked { overflow: hidden; }
+@media (prefers-reduced-motion: reduce) { .sheet[open] { animation: none; } }
+
 /* Seoul month by month */
 .months12 { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(92px, 100%), 1fr)); gap: 6px; }
 .months12 li { display: grid; gap: 1px; padding: 9px 10px; border-radius: var(--r-s); background: var(--surface-2); font-variant-numeric: tabular-nums; }
@@ -185,6 +203,15 @@ h2 { margin: 0; font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
 .yc-row.active .yc-peak { opacity: 1; }
 .yc-today { top: 0; bottom: 0; width: 2px; background: var(--accent); }
 .detail { min-height: 1px; }
+@media (max-width: 560px) {
+  .ycal { min-width: 0; }
+  .yc-row { grid-template-columns: minmax(0, 1fr); padding-block: 4px 0; }
+  .yc-head .yc-name { display: none; }
+  .yc-name { padding-left: 2px; }
+  .yc-track { height: 22px; }
+  .yc-bar { top: 7px; } .yc-peak { top: 6px; }
+  .yc-months span { padding-left: 2px; font-size: 10px; }
+}
 .foot { padding-block: 0 40px; font-size: 12.5px; color: var(--ink-3); }
 .foot a { color: inherit; }
 @media (max-width: 420px) { .wx-temp { font-size: 44px; } .season-box { padding-right: 70px; } .wk li { grid-template-columns: 62px 28px 34px 1fr; gap: 6px; } }
@@ -202,6 +229,7 @@ h2 { margin: 0; font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
       <h1 class="season-name" id="season-name">Korea in Season</h1>
       <div class="chips"><span class="phase" id="season-phase"></span><span class="hangul ko" id="season-ko"></span></div>
       <p class="season-line" id="season-line"></p>
+      <button type="button" class="glass" data-open="season-sheet">📅 All seasons</button>
     </div>
     <div class="wx" id="wx">
       <div class="wx-place"><span id="wx-place">Seoul</span><span class="seg" role="group" aria-label="Temperature unit"><button type="button" id="u-c" aria-pressed="true">°C</button><button type="button" id="u-f" aria-pressed="false">°F</button></span></div>
@@ -210,6 +238,7 @@ h2 { margin: 0; font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
         <span class="wx-temp" id="wx-temp">--°</span>
         <span class="wx-meta"><span class="wx-cond" id="wx-cond">Loading weather…</span><span class="wx-sub" id="wx-sub"></span></span>
       </div>
+      <div class="loc-row"><button type="button" class="glass" data-open="year-sheet">🌡️ A year in Seoul</button></div>
       <div class="loc-row" id="loc-row" role="group" aria-label="Choose a place">
         <button type="button" class="glass" data-city="seoul">Seoul</button>
         <button type="button" class="glass" data-city="busan">Busan</button>
@@ -253,24 +282,25 @@ h2 { margin: 0; font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
   </div>
 
   <section class="panel" aria-labelledby="now-h">
-    <div class="panel-h"><h2 id="now-h">In season in Korea</h2><span class="note" id="today-note"></span></div>
+    <div class="panel-h"><h2 id="now-h">In season in Korea</h2><button type="button" class="more-btn" data-open="season-sheet">All seasons ›</button></div>
     <ul class="cards" id="now"></ul>
     <p class="sub-h">Coming up</p>
     <ul class="soon" id="soon"></ul>
   </section>
 
-  <section class="panel span" aria-labelledby="mo-h">
-    <div class="panel-h"><h2 id="mo-h">Seoul weather and outfits, month by month</h2><span class="note">Typical highs and lows, 1991–2020 averages</span></div>
-    <ul class="months12" id="months12"></ul>
-  </section>
-
-  <section class="panel span" aria-labelledby="yr-h">
-    <div class="panel-h"><h2 id="yr-h">The Korean year, season by season</h2><span class="note">Tap a row for details</span></div>
-    <div class="legend"><span><i class="lg-bar"></i>In season</span><span><i class="lg-peak"></i>Best time</span><span><i class="lg-today"></i>Today</span></div>
-    <div class="cal-box"><div class="ycal" id="ycal"></div></div>
-    <div class="detail" id="detail" aria-live="polite"></div>
-  </section>
 </main>
+
+<dialog class="sheet" id="year-sheet" aria-labelledby="mo-h">
+  <div class="sheet-h"><div><h2 id="mo-h">A year in Seoul</h2><p class="note">Typical highs and lows (1991–2020 averages) and what to wear</p></div><button type="button" class="x" data-close aria-label="Close">✕</button></div>
+  <ul class="months12" id="months12"></ul>
+</dialog>
+
+<dialog class="sheet" id="season-sheet" aria-labelledby="yr-h">
+  <div class="sheet-h"><div><h2 id="yr-h">All seasons</h2><p class="note">Tap a row for details</p></div><button type="button" class="x" data-close aria-label="Close">✕</button></div>
+  <div class="legend"><span><i class="lg-bar"></i>In season</span><span><i class="lg-peak"></i>Best time</span><span><i class="lg-today"></i>Today</span></div>
+  <div class="cal-box"><div class="ycal" id="ycal"></div></div>
+  <div class="detail" id="detail" aria-live="polite"></div>
+</dialog>
 <p class="foot wrap">Season dates are typical for Korea and shift by a week or two with the year's weather; flowers bloom in the south first. Weather by <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>.</p>
 
 <script>
@@ -455,7 +485,6 @@ window.SEASONS = [{"id":"sunrise","name":"New Year sunrise","ko":"새해 해돋�
       '<ul class="todo" aria-label="Things to try">' + s.todo.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></li>';
   }
   function renderNow() {
-    $('today-note').textContent = MON[today.getMonth()] + ' ' + today.getDate();
     $('now').innerHTML = ranked.length ? ranked.map(function (x) { return card(x.s, x.p); }).join('') : '<li class="note">Nothing is in season right now.</li>';
     var later = SEASONS.filter(function (s) { return activeIds.indexOf(s.id) < 0; })
       .sort(function (a, b) { return daysUntil(a.from) - daysUntil(b.from); }).slice(0, 5);
@@ -484,13 +513,41 @@ window.SEASONS = [{"id":"sunrise","name":"New Year sunrise","ko":"새해 해돋�
     var s = focusId && SEASONS.find(function (x) { return x.id === focusId; });
     $('detail').innerHTML = s ? '<ul class="cards">' + card(s, phase(s, today)) + '</ul>' : '';
   }
-  function focusSeason(id, scroll) {
-    focusId = focusId === id && !scroll ? null : id;
+  function focusSeason(id, fromList) {
+    focusId = focusId === id && !fromList ? null : id;
     renderCal();
-    if (scroll && focusId) $('detail').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Keep the chosen row and its details in view inside the sheet
+    var row = $('ycal').querySelector('.yc-row.on');
+    var sh = $('season-sheet');
+    if (row) setTimeout(function () {
+      var el = fromList ? row : $('detail'), r = el.getBoundingClientRect(), b = sh.getBoundingClientRect();
+      var delta = fromList ? r.top - b.top - sh.clientHeight / 3 : (r.bottom > b.bottom ? r.bottom - b.bottom + 16 : 0);
+      if (delta) sh.scrollTo({ top: sh.scrollTop + delta, behavior: fromList ? 'auto' : 'smooth' });
+    }, 40);
   }
   $('ycal').addEventListener('click', function (e) { var b = e.target.closest('[data-sid]'); if (b) focusSeason(b.dataset.sid); });
-  $('soon').addEventListener('click', function (e) { var b = e.target.closest('[data-sid]'); if (b) focusSeason(b.dataset.sid, true); });
+  $('soon').addEventListener('click', function (e) { var b = e.target.closest('[data-sid]'); if (b) { openSheet($('season-sheet')); focusSeason(b.dataset.sid, true); } });
+
+  /* ---------- Bottom sheets ---------- */
+  function openSheet(d) {
+    if (d.open) return;
+    if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+    d.scrollTop = 0; document.body.classList.add('locked');
+  }
+  function closeSheet(d) { if (d.close) d.close(); else d.removeAttribute('open'); }
+  document.addEventListener('click', function (e) {
+    var o = e.target.closest('[data-open]');
+    if (o) { var d = $(o.dataset.open); if (d.id === 'season-sheet') { focusId = null; renderCal(); } openSheet(d); return; }
+    if (e.target.closest('[data-close]')) { closeSheet(e.target.closest('dialog')); return; }
+    // A tap on the dimmed backdrop lands on the dialog itself
+    if (e.target.tagName === 'DIALOG') {
+      var r = e.target.getBoundingClientRect();
+      if (e.clientY < r.top || e.clientY > r.bottom || e.clientX < r.left || e.clientX > r.right) closeSheet(e.target);
+    }
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('dialog.sheet'), function (d) {
+    d.addEventListener('close', function () { if (!document.querySelector('dialog.sheet[open]')) document.body.classList.remove('locked'); });
+  });
 
   /* ---------- Weather (Open-Meteo, no key needed) ---------- */
   var WMO = {
