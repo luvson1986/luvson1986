@@ -565,11 +565,9 @@
             var cx = cv.getContext('2d'); cx.drawImage(img, 0, 0);
             var x0 = Math.max(0, px - 3), y0 = Math.max(0, py - 3), d = cx.getImageData(x0, y0, 7, 7).data, hit = 0, sum = 0;
             for (var i = 0; i < d.length; i += 4) if (d[i + 3] > 0) { hit++; sum += d[i]; }
-            // 주변 49칸 중 몇 칸만 걸리면 잡음(지형 반사 등)일 때가 많아서 비로 보지 않아요
-            if (hit < 10) return resolve(0);
-            // 흑백 색표(0): 밝을수록 강한 비
-            var avg = sum / hit;
-            resolve(hit < 20 ? 1 : avg > 150 ? 3 : avg > 90 ? 2 : 1);
+            // 주변 49칸(약 7km 안) 중 몇 칸이 비로 찍혔는지(hit)와 세기(lv 0~3). 흑백 색표(0): 밝을수록 강한 비
+            var avg = hit ? sum / hit : 0;
+            resolve({ hit: hit, lv: hit < 10 ? 0 : hit < 20 ? 1 : avg > 150 ? 3 : avg > 90 ? 2 : 1 });
           } catch (e) { resolve(null); }
         };
         img.onerror = function () { resolve(null); };
@@ -681,13 +679,17 @@
     var c = w.current, d = w.daily, info = wmo(c.weather_code);
     wxLoadedAt = Date.now();
     // 예시 날씨일 때는 비·눈 효과를 띄우지 않아요
-    // 비·눈은 예보 모델의 지금 강수량과 레이더(실제 관측)가 둘 다 '온다'고 할 때만 띄워요.
-    // 레이더를 못 읽은 경우에만 모델 값을 따라요
+    // 비·눈은 레이더(실제 관측)를 기준으로 띄워요.
+    // - 내 주변이 넓게 비로 찍혔으면(20칸 이상) 예보와 상관없이 비
+    // - 조금만 찍혔으면(10~19칸) 예보에도 비 낌새(강수량·비 코드·이번 시간 강수확률 40% 이상)가 있을 때만
+    // - 레이더를 못 읽었으면 예보 강수량을 따라요
     var pr = w.sample ? [null, 0] : precipNow(c);
-    if (w.sample || w.lat == null || !pr[0]) scene.setWeather(null, 0);
-    else radarWait = radarPrecip(w.lat, w.lon).then(function (lv) {
-      if (lv == null) scene.setWeather(pr[0], pr[1]);
-      else if (lv > 0) scene.setWeather(pr[0], lv);
+    var hint = !!pr[0] || c.weather_code >= 51 || !!(w.hours && w.hours[0] && w.hours[0].pop >= 40);
+    var kindNow = (c.snowfall || 0) > 0 || c.temperature_2m <= 1 || precipOf(c.weather_code)[0] === 'snow' ? 'snow' : 'rain';
+    if (w.sample || w.lat == null) scene.setWeather(null, 0);
+    else radarWait = radarPrecip(w.lat, w.lon).then(function (r) {
+      if (r == null) scene.setWeather(pr[0], pr[1]);
+      else if (r.hit >= 20 || (r.lv > 0 && hint)) scene.setWeather(kindNow, Math.max(r.lv, 1, pr[1] || 0));
       else scene.setWeather(null, 0);
     });
     $('wx-icon').textContent = info[1];
