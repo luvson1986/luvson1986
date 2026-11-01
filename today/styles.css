@@ -226,6 +226,8 @@ a { color: var(--accent); }
 .link-btn { border: 0; background: none; padding: 0; color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; }
 
 /* 날씨 · 옷차림 */
+.wx-why { margin: 6px 2px 0; font-size: 11.5px; color: var(--ink-3); line-height: 1.45; }
+.wx-why:empty { display: none; }
 .hourly {
   cursor: pointer;
   display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none;
