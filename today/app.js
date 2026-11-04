@@ -1379,7 +1379,8 @@
       var d = e.target.closest && e.target.closest('dialog.sheet[open]');
       if (!d || e.touches.length !== 1) return;
       if (e.target.closest('input, textarea, select, .tl-grip, .grip, [data-nodrag]')) return;
-      st = { d: d, sc: scroller(e.target, d), x: e.touches[0].clientX, y: e.touches[0].clientY, dy: 0, on: false, t: 0 };
+      // 손잡이를 잡았으면 안쪽 스크롤 위치와 상관없이 바로 끌어내려요
+      st = { d: d, sc: e.target.closest('.sheet-grab') ? null : scroller(e.target, d), x: e.touches[0].clientX, y: e.touches[0].clientY, dy: 0, on: false, t: 0 };
     }, { passive: true });
     document.addEventListener('touchmove', function (e) {
       if (!st) return;

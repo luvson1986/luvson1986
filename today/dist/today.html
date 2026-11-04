@@ -626,7 +626,10 @@ body.on-news::before {
 #up-dialog .sheet-body { display: flex; flex-direction: column; min-height: 0; flex: 0 1 auto; padding-bottom: 0; }
 #up-dialog .up-add { flex: none; }
 #up-dialog .up-scroll { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; max-width: none; margin-right: -16px; padding: 0 16px 20px 0; }
-.sheet-body::before { content: ""; justify-self: center; align-self: center; flex: none; width: 38px; height: 5px; border-radius: 3px; background: var(--line); margin: -8px 0 -6px; }
+/* 맨 위 손잡이: 시트 안을 스크롤해도 위에 붙어 있고, 여기를 잡고 내리면 바로 닫혀요 */
+.sheet-grab { position: sticky; top: 0; z-index: 5; flex: none; height: 30px; margin-bottom: -16px; background: var(--surface); touch-action: none; cursor: grab; }
+.sheet-grab::before { content: ""; position: absolute; left: 50%; top: 10px; width: 38px; height: 5px; margin-left: -19px; border-radius: 3px; background: var(--line); }
+.sheet-grab + .sheet-body { padding-top: 20px; }
 /* 아이폰 홈 화면 앱은 화면 고정 레이어가 아래쪽까지 닿지 않아(::backdrop도 마찬가지) 밝은 띠가 남아요.
    그래서 어둡게 덮는 막을 화면이 아니라 페이지 전체에 깔아요. 팝업이 열린 동안은 스크롤이 막혀 있어요. */
 html.modal-open body { position: relative; }
@@ -1075,6 +1078,7 @@ dialog.sheet:focus { outline: none; }
 
 <!-- 시즌 목록 -->
 <dialog class="sheet wide" id="season-dialog" aria-labelledby="sd-h">
+  <div class="sheet-grab" aria-hidden="true"></div>
   <div class="sheet-body">
     <header class="panel-head">
       <h2 id="sd-h">시즌 캘린더</h2>
@@ -1133,6 +1137,7 @@ dialog.sheet:focus { outline: none; }
 
 <!-- 다가오는 일정 -->
 <dialog class="sheet" id="up-dialog" aria-labelledby="up-h">
+  <div class="sheet-grab" aria-hidden="true"></div>
   <div class="sheet-body">
     <header class="panel-head">
       <h2 id="up-h">다가오는 일정</h2>
@@ -1155,6 +1160,7 @@ dialog.sheet:focus { outline: none; }
 
 <!-- 일주일 날씨 -->
 <dialog class="sheet" id="week-dialog" aria-labelledby="wk-h">
+  <div class="sheet-grab" aria-hidden="true"></div>
   <div class="sheet-body">
     <header class="panel-head">
       <h2 id="wk-h">일주일 날씨 <span class="pill" id="wk-place"></span></h2>
@@ -1179,6 +1185,7 @@ dialog.sheet:focus { outline: none; }
 <!-- 공부한 영어 표현 -->
 <!-- 환율 계산기 (해외) -->
 <dialog class="sheet" id="fx-dialog" aria-labelledby="fx-h">
+  <div class="sheet-grab" aria-hidden="true"></div>
   <div class="sheet-body">
     <header class="panel-head">
       <h2 id="fx-h">환율 계산기</h2>
@@ -1200,6 +1207,7 @@ dialog.sheet:focus { outline: none; }
 </dialog>
 
 <dialog class="sheet" id="en-dialog" aria-labelledby="eh-h">
+  <div class="sheet-grab" aria-hidden="true"></div>
   <div class="sheet-body">
     <header class="panel-head">
       <h2 id="eh-h">공부한 표현 <span class="pill mono" id="en-hist-count"></span></h2>
@@ -1211,6 +1219,7 @@ dialog.sheet:focus { outline: none; }
 
 <!-- 일정 카테고리 -->
 <dialog class="sheet" id="cat-dialog" aria-labelledby="cat-h">
+  <div class="sheet-grab" aria-hidden="true"></div>
   <div class="sheet-body">
     <header class="panel-head">
       <h2 id="cat-h">일정 카테고리</h2>
@@ -1227,6 +1236,7 @@ dialog.sheet:focus { outline: none; }
 
 <!-- 옷차림 룰 -->
 <dialog class="sheet" id="rule-dialog" aria-labelledby="rule-h">
+  <div class="sheet-grab" aria-hidden="true"></div>
   <form class="sheet-body" id="rule-form" novalidate>
     <header class="panel-head">
       <h2 id="rule-h">옷차림 룰</h2>
@@ -1243,6 +1253,7 @@ dialog.sheet:focus { outline: none; }
 
 <!-- 설정 -->
 <dialog class="sheet" id="settings">
+  <div class="sheet-grab" aria-hidden="true"></div>
   <form method="dialog" class="sheet-body" id="settings-form">
     <header class="panel-head">
       <h2>내 설정</h2>
@@ -1307,6 +1318,7 @@ dialog.sheet:focus { outline: none; }
 
 <!-- 일정 추가·수정 -->
 <dialog class="sheet" id="sch-dialog" aria-labelledby="sch-dialog-h">
+  <div class="sheet-grab" aria-hidden="true"></div>
   <form class="sheet-body" id="sch-form" novalidate>
     <header class="panel-head">
       <h2 id="sch-dialog-h">일정 추가</h2>
@@ -1365,6 +1377,7 @@ dialog.sheet:focus { outline: none; }
 
 <!-- 일정 상세 -->
 <dialog class="sheet" id="detail-dialog" aria-labelledby="dt-title">
+  <div class="sheet-grab" aria-hidden="true"></div>
   <div class="sheet-body">
     <div class="dt-nav">
       <button type="button" class="ghost-btn sm" id="dt-prev" aria-label="이전 일정">‹ 이전</button>
@@ -4663,7 +4676,8 @@ window.PHRASE_TOPICS = [
       var d = e.target.closest && e.target.closest('dialog.sheet[open]');
       if (!d || e.touches.length !== 1) return;
       if (e.target.closest('input, textarea, select, .tl-grip, .grip, [data-nodrag]')) return;
-      st = { d: d, sc: scroller(e.target, d), x: e.touches[0].clientX, y: e.touches[0].clientY, dy: 0, on: false, t: 0 };
+      // 손잡이를 잡았으면 안쪽 스크롤 위치와 상관없이 바로 끌어내려요
+      st = { d: d, sc: e.target.closest('.sheet-grab') ? null : scroller(e.target, d), x: e.touches[0].clientX, y: e.touches[0].clientY, dy: 0, on: false, t: 0 };
     }, { passive: true });
     document.addEventListener('touchmove', function (e) {
       if (!st) return;
