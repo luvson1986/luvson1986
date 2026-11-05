@@ -4000,14 +4000,33 @@ window.PHRASE_TOPICS = [
       el.textContent = '실시간 비 판단 · 예보 ' + mm.toFixed(1) + 'mm · 강수확률 ' + pop + '% · ' + wmo(c.weather_code)[0] +
         ' · 레이더 ' + (bad ? (bad === 'old' ? '오래된 관측(무시)' : '이상 이미지(무시)') : r == null ? '못 읽음' : r.hit + '/49칸') + ' → ' + (on ? (kindNow === 'snow' ? '눈 표시' : '비 표시') : '표시 안 함');
     };
+    var byRadar = function () {
+      return radarPrecip(w.lat, w.lon).then(function (r) {
+        if (r && r.bad) { bad = r.bad; r = null; }
+        var on = sure || (hint && r != null && r.hit >= 10) || (r != null && r.hit >= 25) || (r == null && mm >= 0.1);
+        // 레이더 세기는 넓게 찍혔을 때만 반영 (가장자리 몇 칸이면 그칠 무렵이라 약하게)
+        scene.setWeather(on ? kindNow : null, on ? Math.max(lvNow, r && r.hit >= 25 ? r.lv : 1) : 0);
+        why(r, on);
+      });
+    };
+    // 한국 안이고 알림 서버가 있으면: 가장 가까운 기상청 관측소(AWS)의 강수감지·15분 강수량을 그대로 따라요
+    var srv = ((store.get('push', {}) || {}).url || '').replace(/\/+$/, '');
+    var inKR = w.lat > 32.5 && w.lat < 39 && w.lon > 124 && w.lon < 132;
+    var byKma = function () {
+      return fetchWithTimeout(srv + '/kma?lat=' + w.lat + '&lon=' + w.lon, 6000).then(function (r) { return r.json(); }).then(function (k) {
+        if (!k || !k.ok || k.rain == null) {
+          return byRadar().then(function () { var el = $('wx-why'); if (el) el.textContent += ' · 기상청: ' + ((k && k.error) || '값 없음'); });
+        }
+        // 15분 강수량 ×4 = 시간당 양으로 세기 결정. 감지만 되고 양이 0이면 가랑비
+        var mmh = (k.rn15 || 0) * 4, on = !!k.rain;
+        scene.setWeather(on ? kindNow : null, on ? (mmh >= 4 ? 3 : mmh >= 1 ? 2 : 1) : 0);
+        var el = $('wx-why');
+        if (el) el.textContent = '실시간 비 판단 · 기상청 ' + (k.name || k.stn) + ' 관측소(' + k.km + 'km) · 강수감지 ' + (k.re == null ? '-' : k.re > 0 ? '있음' : '없음') +
+          ' · 15분 ' + (k.rn15 == null ? '-' : k.rn15.toFixed(1) + 'mm') + ' · ' + String(k.time || '').slice(-4).replace(/(\d\d)(\d\d)/, '$1:$2') + ' 관측 → ' + (on ? (kindNow === 'snow' ? '눈 표시' : '비 표시') : '표시 안 함');
+      }).catch(function () { return byRadar(); });
+    };
     if (w.sample || w.lat == null) { scene.setWeather(null, 0); why(null, false); }
-    else radarWait = radarPrecip(w.lat, w.lon).then(function (r) {
-      if (r && r.bad) { bad = r.bad; r = null; }
-      var on = sure || (hint && r != null && r.hit >= 10) || (r != null && r.hit >= 25) || (r == null && mm >= 0.1);
-      // 레이더 세기는 넓게 찍혔을 때만 반영 (가장자리 몇 칸이면 그칠 무렵이라 약하게)
-      scene.setWeather(on ? kindNow : null, on ? Math.max(lvNow, r && r.hit >= 25 ? r.lv : 1) : 0);
-      why(r, on);
-    });
+    else radarWait = srv && inKR ? byKma() : byRadar();
     $('wx-icon').textContent = info[1];
     $('wx-temp').textContent = Math.round(c.temperature_2m) + '°';
     $('wx-cond').textContent = info[0] + ' · 체감 ' + Math.round(c.apparent_temperature) + '°';

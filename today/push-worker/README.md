@@ -43,3 +43,17 @@ Worker 화면의 **Settings** 탭에서
 - 서버에는 알림 시간·일정 제목·장소만 올라가요. 메모는 올라가지 않아요.
 - 앱에서 일정을 바꾸면 몇 초 안에 서버 목록도 갱신돼요. 앞으로 7일치를 올려 두니,
   일주일에 한 번은 앱을 열어 주세요.
+
+## (선택) 실시간 비: 기상청 관측 연결
+한국에 있을 때 메인 화면의 비 효과를 가장 가까운 기상청 관측소(AWS)의 강수감지·15분 강수량으로 맞춰요.
+
+1. https://apihub.kma.go.kr 에 가입하고 로그인
+2. **지상관측 → 방재기상관측(AWS)** 에서 *매분자료* API와 *지점정보* API를 사용 신청
+3. 마이페이지에서 **인증키(authKey)** 복사
+4. Cloudflare의 Worker 화면 → **Settings → Variables and Secrets → Add**
+   - Type: `Secret` / Variable name: `KMA_KEY` / Value: 복사한 인증키 → 저장(Deploy)
+5. Worker 코드를 이 폴더의 최신 [`worker.js`](./worker.js)로 다시 붙여넣고 **Deploy**
+
+확인: 브라우저에서 아래 주소를 열어 보세요 (`내아이디` 부분은 본인 주소로).
+- `https://today-push.내아이디.workers.dev/kma?lat=37.57&lon=126.98` → `"ok": true` 와 관측소 이름이 나오면 성공
+- 안 되면 `.../kma/raw?what=stn` 과 `.../kma/raw?what=aws&stn=108` 화면을 캡처해서 보내 주세요 (기상청 응답 형식 확인용)

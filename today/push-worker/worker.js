@@ -8,7 +8,9 @@
    흐름
    GET  /vapid  → 푸시용 공개키 (처음 부르면 서버가 직접 만들어 저장해요)
    POST /sync   → 앱이 이 기기의 구독 정보와 앞으로 울릴 알림 목록을 보내요
-   매 분        → 시각이 된 알림을 Web Push로 보내요 */
+   매 분        → 시각이 된 알림을 Web Push로 보내요
+   GET  /kma?lat=&lon=  → 가장 가까운 기상청 AWS 관측소의 지금 강수 여부 (KMA_KEY 비밀값 필요)
+   GET  /kma/raw?what=aws|stn&stn=  → 기상청 응답 원문 일부 (형식 확인용) */
 
 const ALLOWED_ORIGIN = '*';
 const SUBJECT = 'https://luvson1986.github.io/luvson1986/today/';
@@ -38,6 +40,15 @@ export default {
         }
         await save(env, state);
         return cors(json({ ok: true, count: state.devices[body.token] ? state.devices[body.token].reminders.length : 0 }));
+      }
+      if (url.pathname === '/kma' && req.method === 'GET') {
+        return cors(json(await kmaNow(env, +url.searchParams.get('lat'), +url.searchParams.get('lon'))));
+      }
+      if (url.pathname === '/kma/raw' && req.method === 'GET') {
+        if (!env.KMA_KEY) return cors(json({ error: 'KMA_KEY 비밀값이 없어요' }, 400));
+        const what = url.searchParams.get('what') === 'stn' ? kmaStnUrl(env) : kmaAwsUrl(env, url.searchParams.get('stn') || '0');
+        const t = await kmaText(what);
+        return cors(new Response(t.slice(0, 6000), { headers: { 'content-type': 'text/plain; charset=utf-8' } }));
       }
       if (url.pathname === '/test' && req.method === 'POST') {
         const body = await req.json();
@@ -186,4 +197,86 @@ function unb64u(s) {
   const bin = atob(s), out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
+}
+
+/* ---------- 기상청 API허브: AWS 매분 관측 ---------- */
+// 응답은 '#'으로 시작하는 설명 줄과 공백으로 나뉜 값 줄로 와요.
+// 칸 순서를 가정하지 않고, 설명 줄에 적힌 칸 이름(STN, RE, RN-15m …)으로 찾아요.
+const KMA = 'https://apihub.kma.go.kr/api/typ01';
+function kst(minAgo) {
+  const d = new Date(Date.now() + 9 * 3600e3 - (minAgo || 0) * 60e3);
+  const p = n => String(n).padStart(2, '0');
+  return d.getUTCFullYear() + p(d.getUTCMonth() + 1) + p(d.getUTCDate()) + p(d.getUTCHours()) + p(d.getUTCMinutes());
+}
+function kmaAwsUrl(env, stn) { return KMA + '/cgi-bin/url/nph-aws2_min?tm2=' + kst(1) + '&stn=' + stn + '&disp=0&help=1&authKey=' + encodeURIComponent(env.KMA_KEY); }
+function kmaStnUrl(env) { return KMA + '/url/stn_inf.php?inf=AWS&stn=&tm=' + kst(0) + '&help=1&authKey=' + encodeURIComponent(env.KMA_KEY); }
+async function kmaText(u) {
+  const r = await fetch(u);
+  const buf = await r.arrayBuffer();
+  let t = new TextDecoder('utf-8').decode(buf);
+  if (t.includes('�')) { try { t = new TextDecoder('euc-kr').decode(buf); } catch (e) { /* 그대로 */ } }
+  if (!r.ok) throw new Error('기상청 응답 ' + r.status + ': ' + t.slice(0, 200));
+  return t;
+}
+// 설명 줄 중 칸 이름이 가장 많이 늘어선 줄을 머리글로 써요
+function kmaParse(text, must) {
+  const lines = text.split(/\r?\n/);
+  let head = null;
+  for (const l of lines) {
+    if (!l.startsWith('#')) continue;
+    const toks = l.replace(/^#+/, '').trim().split(/\s+/);
+    if (toks.some(t => must.test(t)) && (!head || toks.length > head.length)) head = toks;
+  }
+  const rows = lines.filter(l => l.trim() && !l.startsWith('#')).map(l => l.trim().split(/[\s,]+/));
+  return { head, rows };
+}
+const col = (head, re) => head ? head.findIndex(h => re.test(h)) : -1;
+const num = v => { const n = parseFloat(v); return isFinite(n) && n > -90 ? n : null; };
+
+async function kmaStations(env) {
+  const cached = await env.STORE.get('kma-stn', 'json');
+  if (cached && cached.at > Date.now() - 7 * 864e5 && cached.list.length) return cached.list;
+  const { head, rows } = kmaParse(await kmaText(kmaStnUrl(env)), /^STN/i);
+  const iS = Math.max(0, col(head, /^STN(_ID)?$/i)), iLon = col(head, /^LON/i), iLat = col(head, /^LAT/i), iName = col(head, /^STN_(KO|NM)|^NAME/i);
+  const list = rows.map(r => ({ id: r[iS], lon: num(r[iLon]), lat: num(r[iLat]), name: iName >= 0 ? r[iName] : '' }))
+    .filter(s => s.id && s.lat && s.lon && s.lat > 30 && s.lat < 40 && s.lon > 120 && s.lon < 135);
+  if (!list.length) throw new Error('관측소 목록을 읽지 못했어요 (머리글: ' + (head || []).join(' ') + ')');
+  await env.STORE.put('kma-stn', JSON.stringify({ at: Date.now(), list }));
+  return list;
+}
+function km(a, b, c, d) {
+  const R = 6371, r = Math.PI / 180, x = (d - b) * r * Math.cos((a + c) / 2 * r), y = (c - a) * r;
+  return Math.sqrt(x * x + y * y) * R;
+}
+async function kmaNow(env, lat, lon) {
+  if (!env.KMA_KEY) return { ok: false, error: 'KMA_KEY 비밀값이 없어요' };
+  if (!isFinite(lat) || !isFinite(lon)) return { ok: false, error: 'lat/lon' };
+  const key = 'kma-now:' + lat.toFixed(2) + ',' + lon.toFixed(2);
+  const hit = await env.STORE.get(key, 'json');
+  if (hit && hit.at > Date.now() - 3 * 60e3) return hit.v;
+  let v;
+  try {
+    const near = (await kmaStations(env)).map(s => Object.assign({ km: km(lat, lon, s.lat, s.lon) }, s))
+      .sort((a, b) => a.km - b.km).slice(0, 3).filter(s => s.km < 15);
+    if (!near.length) return { ok: false, error: '15km 안에 관측소가 없어요' };
+    const obs = [];
+    for (const s of near) {
+      const { head, rows } = kmaParse(await kmaText(kmaAwsUrl(env, s.id)), /^RN/i);
+      const last = rows.filter(r => r.length > 3).pop();
+      if (!head || !last) continue;
+      const g = re => { const i = col(head, re); return i >= 0 ? num(last[i]) : null; };
+      obs.push({ stn: s.id, name: s.name, km: Math.round(s.km * 10) / 10, time: last[col(head, /^YYMM|^TM/i)] || last[0],
+        re: g(/^RE$/i), rn15: g(/^RN-?15/i), rn60: g(/^RN-?60/i), rnDay: g(/^RN-?DAY/i), cols: head.join(' ') });
+    }
+    if (!obs.length) return { ok: false, error: '관측값을 읽지 못했어요' };
+    // 가장 가까운 관측소 기준. 강수감지(RE)는 1(감지)·0(없음)으로 오고, 없으면 15분 강수량으로 판단
+    const o = obs[0];
+    const rain = o.re != null ? o.re > 0 : o.rn15 != null ? o.rn15 > 0 : null;
+    v = { ok: true, rain, re: o.re, rn15: o.rn15, rn60: o.rn60, rnDay: o.rnDay, stn: o.stn, name: o.name, km: o.km, time: o.time,
+      nearby: obs.slice(1).map(x => ({ name: x.name, km: x.km, re: x.re, rn15: x.rn15 })), cols: o.cols };
+  } catch (e) {
+    return { ok: false, error: String(e && e.message || e) };
+  }
+  await env.STORE.put(key, JSON.stringify({ at: Date.now(), v }), { expirationTtl: 3600 });
+  return v;
 }
