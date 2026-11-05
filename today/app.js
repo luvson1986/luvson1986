@@ -724,7 +724,7 @@
         var mmh = (k.rn15 || 0) * 4, on = !!k.rain;
         scene.setWeather(on ? kindNow : null, on ? (mmh >= 4 ? 3 : mmh >= 1 ? 2 : 1) : 0);
         var el = $('wx-why');
-        if (el) el.textContent = '실시간 비 판단 · 기상청 ' + (k.name || k.stn) + ' 관측소(' + k.km + 'km) · 강수감지 ' + (k.re == null ? '-' : k.re > 0 ? '있음' : '없음') +
+        if (el) el.textContent = '실시간 비 판단 · 기상청 ' + (k.name || k.stn) + ' 관측소(' + k.km + 'km) · 강수감지 ' + (k.re == null ? '감지기 없음' : (k.re > 0 ? '있음' : '없음') + (k.reName && k.reName !== k.name ? '(' + k.reName + ' ' + k.reKm + 'km)' : '')) +
           ' · 15분 ' + (k.rn15 == null ? '-' : k.rn15.toFixed(1) + 'mm') + ' · ' + String(k.time || '').slice(-4).replace(/(\d\d)(\d\d)/, '$1:$2') + ' 관측 → ' + (on ? (kindNow === 'snow' ? '눈 표시' : '비 표시') : '표시 안 함');
       }).catch(function () { return byRadar(); });
     };
