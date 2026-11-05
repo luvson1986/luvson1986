@@ -231,7 +231,8 @@ function kmaParse(text, must) {
   return { head, rows };
 }
 const col = (head, re) => head ? head.findIndex(h => re.test(h)) : -1;
-const num = v => { const n = parseFloat(v); return isFinite(n) && n > -90 ? n : null; };
+// 기상청: -50 이하면 관측 없음·오류
+const num = v => { const n = parseFloat(v); return isFinite(n) && n > -50 ? n : null; };
 
 async function kmaStations(env) {
   const cached = await env.STORE.get('kma-stn', 'json');
@@ -257,23 +258,29 @@ async function kmaNow(env, lat, lon) {
   let v;
   try {
     const near = (await kmaStations(env)).map(s => Object.assign({ km: km(lat, lon, s.lat, s.lon) }, s))
-      .sort((a, b) => a.km - b.km).slice(0, 3).filter(s => s.km < 15);
-    if (!near.length) return { ok: false, error: '15km 안에 관측소가 없어요' };
-    const obs = [];
-    for (const s of near) {
-      const { head, rows } = kmaParse(await kmaText(kmaAwsUrl(env, s.id)), /^RN/i);
-      const last = rows.filter(r => r.length > 3).pop();
-      if (!head || !last) continue;
-      const g = re => { const i = col(head, re); return i >= 0 ? num(last[i]) : null; };
-      obs.push({ stn: s.id, name: s.name, km: Math.round(s.km * 10) / 10, time: last[col(head, /^YYMM|^TM/i)] || last[0],
-        re: g(/^RE$/i), rn15: g(/^RN-?15/i), rn60: g(/^RN-?60/i), rnDay: g(/^RN-?DAY/i), cols: head.join(' ') });
-    }
-    if (!obs.length) return { ok: false, error: '관측값을 읽지 못했어요' };
-    // 가장 가까운 관측소 기준. 강수감지(RE)는 1(감지)·0(없음)으로 오고, 없으면 15분 강수량으로 판단
-    const o = obs[0];
-    const rain = o.re != null ? o.re > 0 : o.rn15 != null ? o.rn15 > 0 : null;
-    v = { ok: true, rain, re: o.re, rn15: o.rn15, rn60: o.rn60, rnDay: o.rnDay, stn: o.stn, name: o.name, km: o.km, time: o.time,
-      nearby: obs.slice(1).map(x => ({ name: x.name, km: x.km, re: x.re, rn15: x.rn15 })), cols: o.cols };
+      .sort((a, b) => a.km - b.km).filter(s => s.km < 12).slice(0, 8);
+    if (!near.length) return { ok: false, error: '12km 안에 관측소가 없어요' };
+    // 전국 관측소의 이번 분 값을 한 번에 받아서 가까운 곳만 골라요
+    const { head, rows } = kmaParse(await kmaText(kmaAwsUrl(env, '0')), /^RN/i);
+    if (!head) return { ok: false, error: '관측값 머리글을 읽지 못했어요' };
+    const iStn = col(head, /^STN/i), iTm = col(head, /^YYMM|^TM/i);
+    const byStn = {};
+    for (const r of rows) if (r.length > 3) byStn[r[iStn]] = r;
+    const val = (r, re) => { const i = col(head, re); return i >= 0 ? num(r[i]) : null; };
+    const obs = near.filter(s => byStn[s.id]).map(s => {
+      const r = byStn[s.id];
+      return { stn: s.id, name: s.name, km: Math.round(s.km * 10) / 10, time: r[iTm] || r[0],
+        re: val(r, /^RE$/i), rn15: val(r, /^RN-?15/i), rn60: val(r, /^RN-?60/i), rnDay: val(r, /^RN-?DAY/i) };
+    });
+    if (!obs.length) return { ok: false, error: '가까운 관측소 값이 없어요' };
+    // 강수량은 가장 가까운 관측소, 강수감지는 감지기가 있는 가장 가까운 관측소(8km 안)를 써요.
+    // 감지기는 빗방울이 막 떨어지기 시작한 것도 잡지만, 강수량계는 0.5mm 단위라 이슬비는 0으로 나와요
+    const o = obs.find(x => x.rn15 != null) || obs[0];
+    const d = obs.find(x => x.re != null && x.km < 8);
+    const rain = (d ? d.re > 0 : false) || (o.rn15 != null && o.rn15 > 0);
+    v = { ok: true, rain, re: d ? d.re : null, reName: d ? d.name : null, reKm: d ? d.km : null,
+      rn15: o.rn15, rn60: o.rn60, rnDay: o.rnDay, stn: o.stn, name: o.name, km: o.km, time: o.time,
+      nearby: obs.slice(0, 5).map(x => ({ name: x.name, km: x.km, re: x.re, rn15: x.rn15 })), cols: head.join(' ') };
   } catch (e) {
     return { ok: false, error: String(e && e.message || e) };
   }
