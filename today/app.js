@@ -1979,7 +1979,8 @@
     renderPushStatus('연결하는 중…');
     var perm = 'Notification' in window && Notification.permission === 'default' ? Notification.requestPermission() : Promise.resolve();
     perm.then(function () {
-      if (Notification.permission !== 'granted') throw new Error('알림이 꺼져 있어요. 아이폰 설정 → 알림 → 오늘에서 허용해 주세요.');
+      if (Notification.permission === 'denied') throw new Error('예전에 알림을 거절해서 다시 물어볼 수 없어요. 백업 후 홈 화면 앱을 지우고 다시 추가하면 다시 물어봐요.');
+      if (Notification.permission !== 'granted') throw new Error('알림 허용 창이 뜨지 않았거나 닫혔어요. 연결을 한 번 더 눌러 주세요.');
       return fetch(url + '/vapid').then(function (r) { if (!r.ok) throw new Error('서버에 연결하지 못했어요. 주소를 확인해 주세요.'); return r.json(); });
     }).then(function (v) {
       return navigator.serviceWorker.ready.then(function (reg) {
@@ -1991,7 +1992,8 @@
       push.url = url; push.on = true; store.set('push', push);
       return syncPush(true);
     }).then(function () { renderPushStatus(); toast('알림 서버에 연결했어요'); })
-      .catch(function (e) { push.on = false; store.set('push', push); renderPushStatus('서버 주소는 저장했어요(실시간 비 사용). 알림 연결은 실패: ' + ((e && e.message) || '알 수 없는 오류')); });
+      .catch(function (e) { push.on = false; store.set('push', push); renderPushStatus('서버 주소는 저장했어요(실시간 비 사용). 알림 연결은 실패: ' + ((e && e.message) || '알 수 없는 오류') +
+        ' [알림 권한: ' + ('Notification' in window ? Notification.permission : '지원 안 됨') + ']'); });
   }
   function askNotifyPermission() {
     if (!('Notification' in window) || Notification.permission !== 'default') return Promise.resolve();
