@@ -495,7 +495,7 @@
     function buildWx() {
       wxParts = [];
       if (!wx.kind) return;
-      var n = Math.round((wx.kind === 'snow' ? [0, 45, 85, 140] : [0, 60, 120, 200])[wx.level] * Math.max(0.6, Math.min(1.4, w / 390)) * (h + ext) / Math.max(1, h));
+      var n = Math.round((wx.kind === 'snow' ? [0, 45, 85, 140] : [0, 28, 100, 190])[wx.level] * Math.max(0.6, Math.min(1.4, w / 390)) * (h + ext) / Math.max(1, h));
       for (var i = 0; i < n; i++) wxParts.push(makeWx(true));
     }
     function setWeather(kind, level) {
@@ -680,15 +680,17 @@
     wxLoadedAt = Date.now();
     // 예시 날씨일 때는 비·눈 효과를 띄우지 않아요
     // 비·눈은 예보(지금 강수량·날씨 코드·이번 시간 강수확률)와 레이더(약 10분 전 실제 관측)를 함께 봐요.
-    // - 예보가 확실히 비(지금 0.5mm 이상, 또는 비 코드 + 강수확률 70% 이상) → 비
-    // - 예보에 비 낌새만 있으면(강수량 조금·이슬비 코드·강수확률 40% 이상) → 레이더에도 찍혀야(10칸 이상) 비
-    // - 예보에 낌새가 없으면 → 레이더에 넓게 찍혀야(20칸 이상) 비 (예보가 놓친 소나기)
+    // - 지금 강수량이 확실하면(0.5mm 이상) → 비
+    // - 비 낌새만 있으면(강수량 조금·비 코드·강수확률 40% 이상) → 레이더에도 찍혀야(10칸 이상) 비.
+    //   강수확률은 한 시간 단위라 비가 그친 뒤에도 높게 남아서, 이것만으로는 띄우지 않아요
+    // - 낌새가 없으면 → 레이더에 넓게 찍혀야(25칸 이상) 비 (예보가 놓친 소나기)
+    // 세기는 날씨 코드가 아니라 실제 양(강수량·레이더)으로: 그칠 무렵의 한두 방울은 가볍게
     var pr = w.sample ? [null, 0] : precipNow(c);
     var mm = c.precipitation || 0, pop = (w.hours && w.hours[0] && w.hours[0].pop) || 0, rainCode = precipOf(c.weather_code)[0];
-    var sure = mm >= 0.5 || (c.snowfall || 0) >= 0.2 || (!!rainCode && pop >= 70);
+    var sure = mm >= 0.5 || (c.snowfall || 0) >= 0.2;
     var hint = sure || mm >= 0.1 || c.weather_code >= 51 || pop >= 40;
     var kindNow = (c.snowfall || 0) > 0 || c.temperature_2m <= 1 || rainCode === 'snow' ? 'snow' : 'rain';
-    var lvNow = Math.max(1, pr[1] || 0, rainCode ? precipOf(c.weather_code)[1] : 0);
+    var lvNow = mm >= 2 ? 3 : mm >= 0.5 ? 2 : 1;
     var why = function (r, on) {
       var el = $('wx-why'); if (!el) return;
       el.textContent = '실시간 비 판단 · 예보 ' + mm.toFixed(1) + 'mm · 강수확률 ' + pop + '% · ' + wmo(c.weather_code)[0] +
@@ -696,8 +698,9 @@
     };
     if (w.sample || w.lat == null) { scene.setWeather(null, 0); why(null, false); }
     else radarWait = radarPrecip(w.lat, w.lon).then(function (r) {
-      var on = sure || (hint && r != null && r.hit >= 10) || (r != null && r.hit >= 20) || (r == null && mm >= 0.1);
-      scene.setWeather(on ? kindNow : null, on ? Math.max(lvNow, r ? r.lv : 0) : 0);
+      var on = sure || (hint && r != null && r.hit >= 10) || (r != null && r.hit >= 25) || (r == null && mm >= 0.1);
+      // 레이더 세기는 넓게 찍혔을 때만 반영 (가장자리 몇 칸이면 그칠 무렵이라 약하게)
+      scene.setWeather(on ? kindNow : null, on ? Math.max(lvNow, r && r.hit >= 25 ? r.lv : 1) : 0);
       why(r, on);
     });
     $('wx-icon').textContent = info[1];
@@ -2599,7 +2602,7 @@
     });
   })();
   // 날씨는 15분마다(앱으로 돌아왔을 때 10분 넘었으면 바로) 다시 받아서 비·눈 효과도 맞춰요
-  setInterval(function () { if (!document.hidden) loadWeather().then(renderWeather); }, 15 * 60 * 1000);
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - wxLoadedAt > 10 * 60 * 1000) loadWeather().then(renderWeather); });
+  setInterval(function () { if (!document.hidden) loadWeather().then(renderWeather); }, 10 * 60 * 1000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - wxLoadedAt > 5 * 60 * 1000) loadWeather().then(renderWeather); });
   setInterval(function () { renderGreeting(); if (ymd(viewDate) === ymd(new Date())) renderSchedule(); else renderNowNext(); }, 60 * 1000);
 })();
