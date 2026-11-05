@@ -5261,7 +5261,7 @@ window.PHRASE_TOPICS = [
   }
   function renderPushStatus(msg) {
     if (!$('push-status')) return;
-    $('set-push').value = push.url || '';
+    if (push.url || !$('set-push').value) $('set-push').value = push.url || '';
     $('push-status').textContent = msg || (push.on ? '✅ 연결됨 · 앱이 꺼져 있어도 일정 알림이 제시간에 와요.' : '연결하면 앱이 꺼져 있어도 일정 알림이 제시간에 와요.');
     $('push-test').hidden = !push.on;
     $('push-connect').textContent = push.on ? '다시 연결' : '연결';
@@ -5269,6 +5269,9 @@ window.PHRASE_TOPICS = [
   function connectPush() {
     var url = $('set-push').value.trim().replace(/\/+$/, '');
     if (!/^https:\/\//.test(url)) { renderPushStatus('https:// 로 시작하는 서버 주소를 넣어 주세요.'); return; }
+    // 주소는 먼저 저장해요: 알림 연결이 안 되더라도 기상청 실시간 비는 이 서버로 받아요
+    push.url = url; store.set('push', push);
+    if (typeof loadWeather === 'function') loadWeather().then(renderWeather);
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) { renderPushStatus('이 화면에서는 푸시를 쓸 수 없어요. 홈 화면에 추가한 앱에서 연결해 주세요.'); return; }
     renderPushStatus('연결하는 중…');
     var perm = 'Notification' in window && Notification.permission === 'default' ? Notification.requestPermission() : Promise.resolve();
@@ -5285,7 +5288,7 @@ window.PHRASE_TOPICS = [
       push.url = url; push.on = true; store.set('push', push);
       return syncPush(true);
     }).then(function () { renderPushStatus(); toast('알림 서버에 연결했어요'); })
-      .catch(function (e) { push.on = false; store.set('push', push); renderPushStatus((e && e.message) || '연결하지 못했어요.'); });
+      .catch(function (e) { push.on = false; store.set('push', push); renderPushStatus('서버 주소는 저장했어요(실시간 비 사용). 알림 연결은 실패: ' + ((e && e.message) || '알 수 없는 오류')); });
   }
   function askNotifyPermission() {
     if (!('Notification' in window) || Notification.permission !== 'default') return Promise.resolve();
