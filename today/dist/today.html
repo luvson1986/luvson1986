@@ -3637,6 +3637,8 @@ window.PHRASE_TOPICS = [
     var parts = [], type = 'petals', accent = '#fff', raf = 0, w = 0, h = 0, ext = 0, t0 = 0, emojis = [], floats = [], palOverride = null, sizeRange = null, lastCfg = null;
     // 실제 날씨: 지금 비·눈이 오면 시즌 배경 위에 겹쳐 내려요
     var wx = { kind: null, level: 0 }, wxParts = [];
+    // 실제 바람: dx는 화면 가로로 밀리는 정도(px/프레임), sway는 흔들림 배율
+    var wind = { dx: 0, sway: 1, speed: 0 };
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var rnd = function (a, b) { return a + Math.random() * (b - a); };
     var PALETTE = {
@@ -3699,15 +3701,15 @@ window.PHRASE_TOPICS = [
         var p = parts[i];
         switch (type) {
           case 'petals':
-            p.x += p.vx + Math.sin(tt + p.ph) * 0.4; p.y += p.vy; p.a += p.va;
+            p.x += p.vx + wind.dx + Math.sin(tt + p.ph) * 0.4 * wind.sway; p.y += p.vy; p.a += p.va * wind.sway;
             ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.c; ctx.globalAlpha = 0.85;
             ctx.beginPath(); ctx.ellipse(0, 0, p.s, p.s * 0.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
             break;
           case 'leaves':
-            p.x += p.vx + Math.sin(tt * 0.8 + p.ph) * 0.8; p.y += p.vy; p.a += p.va * 1.5; drawLeaf(p);
+            p.x += p.vx + wind.dx * 1.2 + Math.sin(tt * 0.8 + p.ph) * 0.8 * wind.sway; p.y += p.vy; p.a += p.va * 1.5 * wind.sway; drawLeaf(p);
             break;
           case 'snow':
-            p.x += p.vx + Math.sin(tt + p.ph) * 0.3; p.y += p.vy;
+            p.x += p.vx + wind.dx + Math.sin(tt + p.ph) * 0.3 * wind.sway; p.y += p.vy;
             ctx.globalAlpha = 0.85; ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2); ctx.fill();
             break;
           case 'rain':
@@ -3716,12 +3718,12 @@ window.PHRASE_TOPICS = [
             ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.vx * 2, p.y + p.s); ctx.stroke();
             break;
           case 'sea': case 'sun':
-            p.x += p.vx + Math.sin(tt + p.ph) * 0.3; p.y += p.vy;
+            p.x += p.vx + wind.dx * 0.4 + Math.sin(tt + p.ph) * 0.3; p.y += p.vy;
             ctx.globalAlpha = 0.45; ctx.strokeStyle = p.c; ctx.lineWidth = 1;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2); type === 'sea' ? ctx.stroke() : (ctx.fillStyle = p.c, ctx.fill());
             break;
           case 'lights': case 'fireflies':
-            p.x += p.vx + Math.sin(tt * 0.7 + p.ph) * (type === 'fireflies' ? 0.4 : 0.25); p.y += p.vy;
+            p.x += p.vx + wind.dx * 0.3 + Math.sin(tt * 0.7 + p.ph) * (type === 'fireflies' ? 0.4 : 0.25); p.y += p.vy;
             var tw = 0.35 + 0.65 * Math.abs(Math.sin(tt * (type === 'fireflies' ? 1.4 : 0.6) + p.ph));
             var rg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.s * 3);
             rg.addColorStop(0, p.c); rg.addColorStop(1, 'rgba(255,255,255,0)');
@@ -3736,6 +3738,8 @@ window.PHRASE_TOPICS = [
             ctx.beginPath(); ctx.ellipse(p.x + sway, h - p.s, 3, 12, sway / 60, 0, Math.PI * 2); ctx.fill();
             break;
         }
+        // 바람에 옆으로 밀려 나가면 반대편에서 다시 들어와요
+        if (type !== 'grass' && (p.x > w + 40 || p.x < -40) && p.y < h && p.y > -ext) { p.x = p.x > w ? -30 : w + 30; continue; }
         if (p.y > h + 30 || p.y < -ext - 40 || p.x > w + 40 || p.x < -40) {
           if (type !== 'grass') parts[i] = make(false);
           if (type === 'lights' || type === 'fireflies' || type === 'sun') { parts[i].y = h + 10; if (type === 'fireflies') parts[i].y = rnd(h * 0.3, h); }
@@ -3752,7 +3756,7 @@ window.PHRASE_TOPICS = [
       for (var q = 0; q < wxParts.length; q++) {
         var r = wxParts[q];
         if (wx.kind === 'snow') {
-          r.x += r.vx + Math.sin(tt * 0.7 + r.ph) * 0.35 * r.z; r.y += r.vy;
+          r.x += r.vx + wind.dx * r.z + Math.sin(tt * 0.7 + r.ph) * 0.35 * r.z * wind.sway; r.y += r.vy;
           var sg = ctx.createRadialGradient(r.x, r.y, 0, r.x, r.y, r.s);
           sg.addColorStop(0, 'rgba(255,255,255,' + r.o + ')'); sg.addColorStop(0.55, 'rgba(255,255,255,' + (r.o * 0.6) + ')'); sg.addColorStop(1, 'rgba(255,255,255,0)');
           ctx.globalAlpha = 1; ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(r.x, r.y, r.s, 0, Math.PI * 2); ctx.fill();
@@ -3764,7 +3768,8 @@ window.PHRASE_TOPICS = [
           ctx.globalAlpha = 1; ctx.strokeStyle = rg2; ctx.lineWidth = r.wd; ctx.lineCap = 'round';
           ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(ex, ey); ctx.stroke();
         }
-        if (r.y > h + 30 || r.x < -40 || r.x > w + 40) wxParts[q] = makeWx(false);
+        if ((r.x < -60 || r.x > w + 60) && r.y < h) r.x = r.x > w ? -50 : w + 50;
+        else if (r.y > h + 30) wxParts[q] = makeWx(false);
       }
       // 시즌 아이콘(꽃게·억새 등)이 작게 둥둥 떠다녀요
       var fall = type === 'petals' || type === 'leaves' || type === 'snow' || type === 'rain';
@@ -3772,8 +3777,9 @@ window.PHRASE_TOPICS = [
       for (var j = 0; j < floats.length; j++) {
         var f = floats[j];
         f.y += fall ? f.v : -f.v;
-        f.x += Math.sin(tt * 0.7 + f.ph) * 0.35;
-        f.a = Math.sin(tt * 0.9 + f.ph) * 0.35;
+        f.x += Math.sin(tt * 0.7 + f.ph) * 0.35 * wind.sway + wind.dx * 0.8;
+        f.a = Math.sin(tt * 0.9 + f.ph) * 0.35 * Math.min(2, wind.sway) + wind.dx * 0.15;
+        if (f.x > w + 30) f.x = -24; else if (f.x < -30) f.x = w + 24;
         if (f.y > h + 30) { f.y = -ext - 24; f.x = rnd(0, w); }
         if (f.y < -ext - 30) { f.y = h + 24; f.x = rnd(0, w); }
         // 컬러 이모지는 fillStyle의 투명도를 따라가서, 불투명한 색으로 지정해요
@@ -3787,7 +3793,16 @@ window.PHRASE_TOPICS = [
       var lv = wx.level, z = Math.pow(Math.random(), 0.7) * 0.75 + 0.25, y = initial ? rnd(-ext - 20, h) : rnd(-ext - 60, -ext - 10);
       if (wx.kind === 'snow') return { z: z, x: rnd(-10, w + 10), y: y, s: (1.2 + lv * 0.5) * (1 + z * 2.2), vy: (0.35 + lv * 0.15) + z * 0.9, vx: rnd(-0.15, 0.15), ph: rnd(0, 6.28), o: 0.35 + z * 0.55 };
       var vy = (5 + lv * 1.6) * (0.55 + z * 0.6);
-      return { z: z, x: rnd(-10, w + 60), y: y, s: (10 + lv * 5) * (0.5 + z * 0.9), vy: vy, vx: -vy * 0.12, wd: 0.5 + z * 0.9, o: 0.12 + z * (0.28 + lv * 0.06) };
+      return { z: z, x: rnd(-60, w + 60), y: y, s: (10 + lv * 5) * (0.5 + z * 0.9), vy: vy, vx: vy * rainSlant(), wd: 0.5 + z * 0.9, o: 0.12 + z * (0.28 + lv * 0.06) };
+    }
+    // 빗줄기 기울기: 바람이 없으면 살짝 왼쪽, 바람이 불면 바람 쪽으로 (최대 약 30°)
+    function rainSlant() { return wind.speed < 0.5 ? -0.08 : Math.max(-0.6, Math.min(0.6, wind.dx * 0.12)); }
+    function setWind(speed, dir) {
+      speed = +speed || 0;
+      // dir은 '바람이 불어오는' 방위(0=북, 90=동). 서풍(270)은 화면 오른쪽으로 날려요
+      var side = dir == null ? 0 : -Math.sin(dir * Math.PI / 180);
+      wind = { speed: speed, dx: side * Math.min(speed, 15) * 0.16, sway: 1 + Math.min(speed, 15) / 8 };
+      wxParts.forEach(function (r) { if (wx.kind === 'rain') r.vx = r.vy * rainSlant(); });
     }
     function buildWx() {
       wxParts = [];
@@ -3834,7 +3849,7 @@ window.PHRASE_TOPICS = [
       if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
       else if (!reduce && active) raf = requestAnimationFrame(loop);
     });
-    return { start: start, setWeather: setWeather, setActive: setActive };
+    return { start: start, setWeather: setWeather, setActive: setActive, setWind: setWind };
   }
   var scene = makeScene($('hero-canvas'), true);
   // 지금 내리는 양(mm)까지 보고 판단: 날씨 코드는 '흐림'이어도 실제 강수량이 있으면 비로 봐요
@@ -3932,7 +3947,7 @@ window.PHRASE_TOPICS = [
     return locate().then(function (loc) {
       var q = 'latitude=' + loc.lat + '&longitude=' + loc.lon;
       var url = 'https://api.open-meteo.com/v1/forecast?' + q +
-        '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,precipitation,rain,showers,snowfall' +
+        '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation,rain,showers,snowfall' +
         '&hourly=temperature_2m,precipitation_probability,weather_code' +
         '&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,snowfall_sum,uv_index_max,sunrise,sunset' +
         '&timezone=auto&forecast_days=8&wind_speed_unit=ms';
@@ -3989,6 +4004,7 @@ window.PHRASE_TOPICS = [
     // - 낌새가 없으면 → 레이더에 넓게 찍혀야(25칸 이상) 비 (예보가 놓친 소나기)
     // 세기는 날씨 코드가 아니라 실제 양(강수량·레이더)으로: 그칠 무렵의 한두 방울은 가볍게
     var pr = w.sample ? [null, 0] : precipNow(c);
+    scene.setWind(w.sample ? 0 : c.wind_speed_10m, c.wind_direction_10m);
     var mm = c.precipitation || 0, pop = (w.hours && w.hours[0] && w.hours[0].pop) || 0, rainCode = precipOf(c.weather_code)[0];
     var sure = mm >= 0.5 || (c.snowfall || 0) >= 0.2;
     var hint = sure || mm >= 0.1 || c.weather_code >= 51 || pop >= 40;
