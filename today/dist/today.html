@@ -5267,8 +5267,11 @@ window.PHRASE_TOPICS = [
     $('push-connect').textContent = push.on ? '다시 연결' : '연결';
   }
   function connectPush() {
-    var url = $('set-push').value.trim().replace(/\/+$/, '');
-    if (!/^https:\/\//.test(url)) { renderPushStatus('https:// 로 시작하는 서버 주소를 넣어 주세요.'); return; }
+    // https:// 를 빼먹거나 /kma 같은 뒷부분을 같이 붙여 넣어도 서버 주소만 남겨요
+    var raw = $('set-push').value.trim(), url = '';
+    try { var uo = new URL(/^[a-z]+:\/\//i.test(raw) ? raw : 'https://' + raw); url = 'https://' + uo.host; } catch (e) { url = ''; }
+    if (!url || url.indexOf('.') < 0) { renderPushStatus('서버 주소를 확인해 주세요. 예: https://이름.아이디.workers.dev'); return; }
+    $('set-push').value = url;
     // 주소는 먼저 저장해요: 알림 연결이 안 되더라도 기상청 실시간 비는 이 서버로 받아요
     push.url = url; store.set('push', push);
     if (typeof loadWeather === 'function') loadWeather().then(renderWeather);
