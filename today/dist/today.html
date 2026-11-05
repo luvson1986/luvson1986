@@ -3852,6 +3852,8 @@ window.PHRASE_TOPICS = [
     return getJSON('https://api.rainviewer.com/public/weather-maps.json').then(function (m) {
       var past = m && m.radar && m.radar.past; if (!past || !past.length) return null;
       var f = past[past.length - 1], z = 7, n = Math.pow(2, z);
+      // 40분 넘게 지난 관측은 '지금' 비로 볼 수 없어요
+      if (f.time && Date.now() / 1000 - f.time > 40 * 60) return { bad: 'old' };
       var xt = (lon + 180) / 360 * n, yt = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n;
       var tx = Math.floor(xt), ty = Math.floor(yt), px = Math.floor((xt - tx) * 256), py = Math.floor((yt - ty) * 256);
       return new Promise(function (resolve) {
@@ -3860,6 +3862,10 @@ window.PHRASE_TOPICS = [
           try {
             var cv = document.createElement('canvas'); cv.width = cv.height = 256;
             var cx = cv.getContext('2d'); cx.drawImage(img, 0, 0);
+            // 이 타일(약 250km 범위)이 거의 다 칠해져 있으면 비 지도가 아니라 오류·안내 그림이에요 → 레이더 무시
+            var all = cx.getImageData(0, 0, 256, 256).data, filled = 0;
+            for (var a = 3; a < all.length; a += 16) if (all[a] > 0) filled++;
+            if (filled / (all.length / 16) > 0.8) return resolve({ bad: 'tile' });
             var x0 = Math.max(0, px - 3), y0 = Math.max(0, py - 3), d = cx.getImageData(x0, y0, 7, 7).data, hit = 0, sum = 0;
             for (var i = 0; i < d.length; i += 4) if (d[i + 3] > 0) { hit++; sum += d[i]; }
             // 주변 49칸(약 7km 안) 중 몇 칸이 비로 찍혔는지(hit)와 세기(lv 0~3). 기본 색표(2): 파랑=약한 비, 노랑·빨강=센 비
@@ -3988,13 +3994,15 @@ window.PHRASE_TOPICS = [
     var hint = sure || mm >= 0.1 || c.weather_code >= 51 || pop >= 40;
     var kindNow = (c.snowfall || 0) > 0 || c.temperature_2m <= 1 || rainCode === 'snow' ? 'snow' : 'rain';
     var lvNow = mm >= 2 ? 3 : mm >= 0.5 ? 2 : 1;
+    var bad = null;
     var why = function (r, on) {
       var el = $('wx-why'); if (!el) return;
       el.textContent = '실시간 비 판단 · 예보 ' + mm.toFixed(1) + 'mm · 강수확률 ' + pop + '% · ' + wmo(c.weather_code)[0] +
-        ' · 레이더 ' + (r == null ? '못 읽음' : r.hit + '/49칸') + ' → ' + (on ? (kindNow === 'snow' ? '눈 표시' : '비 표시') : '표시 안 함');
+        ' · 레이더 ' + (bad ? (bad === 'old' ? '오래된 관측(무시)' : '이상 이미지(무시)') : r == null ? '못 읽음' : r.hit + '/49칸') + ' → ' + (on ? (kindNow === 'snow' ? '눈 표시' : '비 표시') : '표시 안 함');
     };
     if (w.sample || w.lat == null) { scene.setWeather(null, 0); why(null, false); }
     else radarWait = radarPrecip(w.lat, w.lon).then(function (r) {
+      if (r && r.bad) { bad = r.bad; r = null; }
       var on = sure || (hint && r != null && r.hit >= 10) || (r != null && r.hit >= 25) || (r == null && mm >= 0.1);
       // 레이더 세기는 넓게 찍혔을 때만 반영 (가장자리 몇 칸이면 그칠 무렵이라 약하게)
       scene.setWeather(on ? kindNow : null, on ? Math.max(lvNow, r && r.hit >= 25 ? r.lv : 1) : 0);
