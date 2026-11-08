@@ -1545,8 +1545,9 @@
       var d = new Date(s.doneAt);
       return ymd(d) === key ? d.getHours() * 60 + d.getMinutes() : ymd(d) < key ? -1 : 1440;
     };
-    orderDay(all).forEach(function (s) {
-      var k = seqMin(s, all.indexOf(s));
+    var nowK = diff === 0 ? nowMin : null;
+    orderDay(all, nowK).forEach(function (s) {
+      var k = seqMin(s, all.indexOf(s), nowK);
       if (!s.start) {
         rows.push({ html: card(s, diff < 0 || s.done ? 'past' : '', '미정', '', k), behind: !!s.done, when: s.done ? doneMin(s, k) : k });
         return;
@@ -1565,6 +1566,8 @@
     var isPast = function (r) { return r.behind; };
     var above = rows.map(function (r, i) { r.i = i; return r; }).filter(isPast)
       .sort(function (a, b) { return a.when - b.when || a.i - b.i; });
+    // 지난 일 표시: 끌어서 옮길 때 이 줄들은 자리 계산에서 빼요
+    above.forEach(function (r) { r.html = r.html.replace('<li class="tl-item ', '<li data-past="1" class="tl-item '); });
     rows = above.concat(rows.filter(function (r) { return !isPast(r); }));
     if (diff === 0 && list.length) at = above.length;
     var html = rows.map(function (r, i) { return (i === at ? nowRow(now) : '') + r.html; }).join('') + (at === rows.length ? nowRow(now) : '');
@@ -1586,9 +1589,11 @@
   function weekKey(d) { var m = new Date(d); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return ymd(m); }
   // 시간 있는 일정은 시간순, 시간 없는 일정은 적은 순서대로 맨 뒤
   // 시간 있는 일정은 시작 시각, 시간 미정 일정은 끌어다 놓은 자리(pos) 기준. 자리가 없으면 맨 뒤
-  function seqMin(s, i) { return s.start ? toMin(s.start) : (s.pos != null ? s.pos : 10000 + i); }
-  function orderDay(list) {
-    return list.map(function (s, i) { return { s: s, k: seqMin(s, i), i: i }; })
+  // 자리(분 단위). 시간 미정이고 직접 옮긴 적 없는 일정은: 오늘이면 '지금' 자리(현재 줄 바로 아래, 다가올 시간 일정보다 위),
+  // 다른 날이면 시간 일정들 뒤
+  function seqMin(s, i, nowK) { return s.start ? toMin(s.start) : s.pos != null ? s.pos : nowK != null ? nowK + i * 0.01 : 10000 + i; }
+  function orderDay(list, nowK) {
+    return list.map(function (s, i) { return { s: s, k: seqMin(s, i, nowK), i: i }; })
       .sort(function (a, b) { return a.k - b.k || a.i - b.i; })
       .map(function (x) { return x.s; });
   }
@@ -1622,7 +1627,7 @@
   function renderNowNext() {
     var key = ymd(new Date()), now = new Date(), nm = now.getHours() * 60 + now.getMinutes();
     var raw = schedules[key] || [];
-    var seq = orderDay(raw).filter(function (s) { return !s.done; });
+    var seq = orderDay(raw, nm).filter(function (s) { return !s.done; });
     var running = seq.filter(function (s) {
       if (!s.start || toMin(s.start) > nm) return false;
       var en = s.end ? toMin(s.end) : implicitEnd(s, raw);
@@ -2095,6 +2100,9 @@
         var key = ymd(viewDate), it = findItem(key, li.dataset.id); if (!it) return;
         var sib = function (el, dir) { do { el = dir < 0 ? el.previousElementSibling : el.nextElementSibling; } while (el && !el.classList.contains('tl-item')); return el; };
         var p = sib(li, -1), n = sib(li, 1);
+        // 위가 지난 일(완료·이미 시작)이면 '남은 일 맨 위'로 넣은 것: 아래 일정 바로 앞 자리로
+        if (p && p.dataset.past && !li.dataset.past) p = null;
+        if (n && n.dataset.past && !li.dataset.past) n = null;
         var pm = p ? +p.dataset.min : null, nm = n ? +n.dataset.min : null;
         it.pos = pm != null && nm != null ? (pm + nm) / 2 : pm != null ? pm + 1 : nm != null ? nm - 1 : 0;
         saveSchedules(); renderSchedule();
