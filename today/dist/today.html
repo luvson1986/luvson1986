@@ -2759,6 +2759,56 @@ window.FLAG_BANDS = {
       tip: '추석 당일 달은 해 질 무렵 동쪽에서 떠요. 동쪽 하늘이 트인 곳에서 보세요.'
     }
   };
+  // 인스타 해시태그를 검색어 그대로 쓰면 어색한 항목: 더 자연스러운 태그로 바꾸거나(false면 버튼 없음)
+  window.SEASON_INSTA = {
+    'sunrise|정동진': '정동진',
+    'sunrise|포항 호미곶': '호미곶',
+    'sunrise|서울 하늘공원·아차산': '아차산일출',
+    'sunrise|새해 일출 시각': false,
+    'sunrise|해돋이 열차': '정동진해돋이',
+    'bangeo|방어축제 일정': '방어축제',
+    'snow|태백산': '태백산눈꽃',
+    'snow|한라산 영실': '영실코스',
+    'snow|덕유산 곤돌라 예약': '덕유산곤돌라',
+    'strawberry|산지 직송 주문': false,
+    'cherry|올해 벚꽃 개화 예상': false,
+    'azalea|합천 황매산': '황매산철쭉',
+    'azalea|소백산': '소백산철쭉',
+    'rose|에버랜드 로즈가든': '에버랜드장미축제',
+    'rose|서울대공원 장미원': '서울대공원장미원',
+    'hydrangea|제주 휴애리': '휴애리수국',
+    'pinkmuhly|제주 휴애리': '휴애리핑크뮬리',
+    'corn|초당옥수수 산지 직송': '초당옥수수',
+    'firefly|영양 반딧불이 생태공원': '영양반딧불이',
+    'boknal|초복·중복·말복 날짜': false,
+    'jeoneo|보성 율포': '율포전어',
+    'jeoneo|서천 홍원항': '홍원항전어',
+    'daeha|인천 소래포구': '소래포구',
+    'cosmos|경주 첨성대 일대': '첨성대코스모스',
+    'pinkmuhly|경주 첨성대 동부사적지': '첨성대핑크뮬리',
+    'foliage|설악산 주전골': '주전골단풍',
+    'foliage|내장산': '내장산단풍',
+    'foliage|올해 단풍 절정 예상': false,
+    'appledate|사과대추 산지 직송': '사과대추',
+    'bungeoppang|붕어빵 위치 공유 앱': false,
+    'oyster|통영 굴 주문': false,
+    'gwamegi|구룡포 과메기 주문': false,
+    'christmas|명동 신세계백화점': '신세계백화점크리스마스',
+    'christmas|광화문·청계천': '광화문크리스마스마켓',
+    'christmas|롯데월드몰': '롯데월드몰크리스마스',
+    'christmas|부산 광복로': '광복로트리축제',
+    'christmas|연말 모임 장소': '연말모임',
+    'gyul|제주 노지 감귤': '제주감귤',
+    'gyul|한라봉·천혜향': '한라봉',
+    'valentine|초콜릿 원데이 클래스': '초콜릿클래스',
+    'valentine|발렌타인 레스토랑': '발렌타인데이트',
+    'whiteday|편의점 화이트데이 행사': '화이트데이선물',
+    'pepero|편의점 빼빼로데이 행사': '빼빼로데이',
+    'pepero|내 주변 편의점': false,
+    'seollal|세뱃돈 신권 교환': false,
+    'seollal|고궁 무료 개방': '고궁나들이',
+    'chuseok|올해 추석 달 뜨는 시각': '보름달'
+  };
 })();
 
 </script>
@@ -4111,7 +4161,9 @@ window.PHRASE_TOPICS = [
     // 지도·검색 항목에는 인스타 해시태그 버튼도 붙여서 실제 사진을 볼 수 있게
     var insta = function (x) {
       var k = kind(x[2]); if (k !== 'map' && k !== 'n') return '';
-      var q = (k === 'map' ? x[2].map : x[2].n).replace(/[\s·\-()/.,!]/g, '');
+      var o = (window.SEASON_INSTA || {})[id + '|' + x[0]];
+      if (o === false) return '';
+      var q = (o || (k === 'map' ? x[2].map : x[2].n)).replace(/[\s·\-()/.,!]/g, '');
       return '<a class="si-insta" data-open="insta" href="https://www.instagram.com/explore/tags/' + enc(q) + '/" aria-label="' + esc(x[0]) + ' 인스타그램 사진">#인스타</a>';
     };
     var li = function (x) {

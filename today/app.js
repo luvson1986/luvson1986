@@ -295,7 +295,9 @@
     // 지도·검색 항목에는 인스타 해시태그 버튼도 붙여서 실제 사진을 볼 수 있게
     var insta = function (x) {
       var k = kind(x[2]); if (k !== 'map' && k !== 'n') return '';
-      var q = (k === 'map' ? x[2].map : x[2].n).replace(/[\s·\-()/.,!]/g, '');
+      var o = (window.SEASON_INSTA || {})[id + '|' + x[0]];
+      if (o === false) return '';
+      var q = (o || (k === 'map' ? x[2].map : x[2].n)).replace(/[\s·\-()/.,!]/g, '');
       return '<a class="si-insta" data-open="insta" href="https://www.instagram.com/explore/tags/' + enc(q) + '/" aria-label="' + esc(x[0]) + ' 인스타그램 사진">#인스타</a>';
     };
     var li = function (x) {
