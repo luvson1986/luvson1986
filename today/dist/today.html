@@ -6277,7 +6277,10 @@ window.PHRASE_TOPICS = [
       head.slice(1).forEach(function (p) { var kv = p.split('='); params[kv[0].toUpperCase()] = kv[1]; });
       if (name === 'DTSTART' || name === 'DTEND' || name === 'RECURRENCE-ID') cur[name] = { v: val, date: params.VALUE === 'DATE' || /^\d{8}$/.test(val) };
       else if (name === 'EXDATE') val.split(',').forEach(function (x) { cur.exdate.push(x); });
-      else if (name === 'SUMMARY' || name === 'LOCATION' || name === 'UID' || name === 'RRULE' || name === 'STATUS') cur[name] = name === 'SUMMARY' || name === 'LOCATION' ? un(val) : val;
+      // 장소: 아이폰은 '장소 이름\n주소' 꼴이라 첫 줄(이름)만, 구조화된 장소 정보(X-TITLE)가 있으면 그걸 써요
+      else if (name === 'LOCATION') cur.LOCATION = un(val.split(/\\n/)[0]).replace(/,\s*$/, '');
+      else if (name === 'X-APPLE-STRUCTURED-LOCATION' && params['X-TITLE']) cur.PLACE = un(params['X-TITLE'].replace(/^"|"$/g, '').split(/\\n/)[0]);
+      else if (name === 'SUMMARY' || name === 'UID' || name === 'RRULE' || name === 'STATUS') cur[name] = name === 'SUMMARY' ? un(val) : val;
     });
     return evs;
   }
@@ -6341,7 +6344,7 @@ window.PHRASE_TOPICS = [
         var key = ymd(d);
         if (!e['RECURRENCE-ID'] && overridden[e.UID + '@' + key]) return;
         var end = en0 && st0 ? new Date(d.getTime() + (en0 - st0)) : null;
-        items.push({ key: key, xid: kind + ':' + (e.UID || e.SUMMARY) + '@' + key, title: e.SUMMARY || '(제목 없음)', place: e.LOCATION || '',
+        items.push({ key: key, xid: kind + ':' + (e.UID || e.SUMMARY) + '@' + key, title: e.SUMMARY || '(제목 없음)', place: e.PLACE || e.LOCATION || '',
           start: allDay ? '' : pad(d.getHours()) + ':' + pad(d.getMinutes()),
           end: allDay || !end || ymd(end) !== key ? '' : pad(end.getHours()) + ':' + pad(end.getMinutes()) });
       });
