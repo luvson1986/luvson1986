@@ -529,7 +529,8 @@ window.SEASON_ADAPT = {
     var center = (ps + pe) / 2 + shift, half = Math.min((pe - ps) / 2, a.peakDays / 2);
     var copy = Object.assign({}, s);
     copy.from = md(from + shift); copy.to = md(to + shift);
-    copy.peak = [md(center - half), md(center + half)];
+    // 절정은 소수점 날짜를 안쪽으로 잘라요 (반올림하면 절정이 하루 길어져 끝물 첫날도 '절정'으로 보여요)
+    copy.peak = [md(Math.ceil(center - half)), md(Math.floor(center + half))];
     copy.shift = Math.round(shift);
     return copy;
   };

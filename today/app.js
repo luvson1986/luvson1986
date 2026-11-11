@@ -264,7 +264,9 @@
     }, 60);
   }
   function openSeasonInfo(id) {
-    var s = findSeason(id); if (!s) return;
+    // 목록·메인과 같은 날짜(내 위치·올해 기온에 맞춘 날짜)로 보여줘요
+    var raw = findSeason(id); if (!raw) return;
+    var s = seasonCtx ? window.adaptSeason(raw, seasonCtx) : raw;
     var info = (window.SEASON_INFO || {})[id] || {};
     var ranked = window.rankSeasons(new Date(), [s]), ph = ranked.length ? ranked[0].p : null;
     var em = $('si-emoji');
