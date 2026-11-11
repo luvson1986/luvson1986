@@ -1582,13 +1582,13 @@
     var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
     var card = function (s, state, timeLabel, rel, k) {
       var openEnded = !s.end; // 시간 미정·종료 시간 없는 일정은 직접 완료 처리
-      var movable = !s.start;  // 시간 미정 일정은 끌어서 사이에 끼워 넣을 수 있어요
+      var movable = !s.start && !isAllDay(s);  // 시간 미정 일정은 끌어서 사이에 끼워 넣을 수 있어요 (종일 일정은 맨 위 고정)
       return '<li class="tl-item ' + state + (s.important ? ' imp' : '') + (s.done ? ' done' : '') + (openEnded ? ' has-done' : '') + (movable ? ' movable' : '') + (s.sample ? ' is-sample' : '') + '" data-id="' + s.id + '" data-min="' + k + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="tl-time">' + (movable ? '<span class="tl-grip" aria-label="끌어서 옮기기">' + GRIP + '</span>' : timeLabel) + '</span><span class="tl-dot"></span>' +
         '<button type="button" class="tl-card" data-id="' + s.id + '">' +
         '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + (s.ext ? ' <span class="tl-tag ext">' + EXT_LABEL[s.ext.src] + '</span>' : '') + '</span>' +
         (function () {
-          var meta = [s.start ? s.start + (s.end ? '–' + s.end : '') : s.ext && s.ext.allDay ? '종일' : '', s.place ? esc(s.place) : ''].filter(Boolean).join(' · ') + (rel || '');
+          var meta = [s.start ? s.start + (s.end ? '–' + s.end : '') : isAllDay(s) ? '종일' : '', s.place ? esc(s.place) : ''].filter(Boolean).join(' · ') + (rel || '');
           return meta ? '<span class="tl-meta">' + meta.replace(/^ · /, '') + '</span>' : '';
         })() +
         (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
@@ -1597,10 +1597,10 @@
         '</li>';
     };
     // 순서는 dayOrder 하나로 정해요 (다가오는 일정 목록·메인 '다음 할 일'과 같은 순서)
-    var ord = dayOrder(key), at = diff === 0 && list.length ? ord.past.length : -1;
-    var rows = ord.past.concat(ord.rest).map(function (o) {
+    var ord = dayOrder(key), at = diff === 0 && list.length ? ord.top.length + ord.past.length : -1;
+    var rows = ord.top.concat(ord.past, ord.rest).map(function (o) {
       var s = o.s;
-      if (!s.start) return { html: card(s, diff < 0 || s.done ? 'past' : '', '미정', '', o.k), past: o.past };
+      if (!s.start) return { html: card(s, diff < 0 || s.done ? 'past' : '', isAllDay(s) ? '종일' : '미정', '', o.k), past: o.past };
       var st = toMin(s.start), en = s.end ? toMin(s.end) : null;
       // 종료 시간이 없으면 다음 시간 일정이 시작될 때까지(그 뒤 일정이 없으면 '완료'를 누를 때까지) 진행 중
       if (en == null) en = implicitEnd(s, all);
@@ -1625,18 +1625,20 @@
       var d = new Date(s.doneAt);
       return ymd(d) === key ? d.getHours() * 60 + d.getMinutes() : ymd(d) < key ? -1 : 1440;
     };
-    var items = orderDay(all).map(function (s, i) {
+    var top = all.filter(isAllDay).map(function (s, i) { return { s: s, k: -1, i: i, past: true, top: true }; });
+    var items = orderDay(all.filter(function (s) { return !isAllDay(s); })).map(function (s, i) {
       var k = seqMin(s, all.indexOf(s));
       if (!s.start) return { s: s, k: k, i: i, past: !!s.done, when: s.done ? doneMin(s, k) : k };
       var st = toMin(s.start), started = diff < 0 || (diff === 0 && st <= nowMin);
       return { s: s, k: k, i: i, past: !!s.done || started, when: started ? st : s.done ? doneMin(s, st) : st };
     });
     return {
+      top: top,
       past: items.filter(function (o) { return o.past; }).sort(function (a, b) { return a.when - b.when || a.i - b.i; }),
       rest: items.filter(function (o) { return !o.past; })
     };
   }
-  function dayList(key) { var o = dayOrder(key); return o.past.concat(o.rest).map(function (x) { return x.s; }); }
+  function dayList(key) { var o = dayOrder(key); return o.top.concat(o.past, o.rest).map(function (x) { return x.s; }); }
   // 끝나는 시간이 없는 일정은 다음 시간 일정의 시작 시각에 끝난 걸로 봐요
   function implicitEnd(s, all) {
     var st = toMin(s.start), next = null;
@@ -1653,6 +1655,8 @@
   // 시간 있는 일정은 시간순, 시간 없는 일정은 적은 순서대로 맨 뒤
   // 시간 있는 일정은 시작 시각, 시간 미정 일정은 끌어다 놓은 자리(pos) 기준. 자리가 없으면 맨 뒤
   // 자리(분 단위): 시간 일정은 시작 시각, 시간 미정 일정은 저장된 자리(pos)
+  // 종일 일정: 직접 '종일'로 만든 것, 또는 다른 캘린더에서 불러온 종일 일정. 그날 맨 위에 고정, 옮길 수 없어요
+  function isAllDay(s) { return !s.start && !!(s.allDay || (s.ext && s.ext.allDay)); }
   function seqMin(s, i) { return s.start ? toMin(s.start) : s.pos != null ? s.pos : 10000 + i; }
   function orderDay(list) {
     return list.map(function (s, i) { return { s: s, k: seqMin(s, i), i: i }; })
@@ -1689,7 +1693,7 @@
   function renderNowNext() {
     var key = ymd(new Date()), now = new Date(), nm = now.getHours() * 60 + now.getMinutes();
     var raw = schedules[key] || [];
-    var seq = orderDay(raw).filter(function (s) { return !s.done; });
+    var seq = orderDay(raw).filter(function (s) { return !s.done && !isAllDay(s); });
     var running = seq.filter(function (s) {
       if (!s.start || toMin(s.start) > nm) return false;
       var en = s.end ? toMin(s.end) : implicitEnd(s, raw);
@@ -1791,6 +1795,8 @@
     $('sch-cat').value = item && cats.some(function (c) { return c.id === item.cat; }) ? item.cat : cats[0].id;
     $('sch-imp').checked = !!(item && item.important);
     var timed = !!(item && item.start);
+    $('sch-allday').checked = !!(item && isAllDay(item));
+    $('sch-allday').disabled = !!(item && item.ext);
     $('sch-timed').checked = timed;
     $('sch-start').value = timed ? item.start : '';
     $('sch-end').value = timed ? item.end || '' : '';
@@ -2204,7 +2210,12 @@
 
     $('sch-place').addEventListener('input', syncPlaceLink);
     $('sch-abroad').addEventListener('change', syncPlaceLink);
+    // 종일을 켜면 시간은 끄고, 시간을 켜면 종일은 꺼요
+    $('sch-allday').addEventListener('change', function (e) {
+      if (e.target.checked && $('sch-timed').checked) { $('sch-timed').checked = false; setTimeFields(false); }
+    });
     $('sch-timed').addEventListener('change', function (e) {
+      if (e.target.checked) $('sch-allday').checked = false;
       setTimeFields(e.target.checked);
       if (e.target.checked && !$('sch-start').value) {
         var h = Math.min(new Date().getHours() + 1, 23);
@@ -2233,7 +2244,12 @@
         if (!schedules[origKey].length) delete schedules[origKey];
       }
       var list = schedules[date] || (schedules[date] = []);
-      list.splice(pos >= 0 ? pos : list.length, 0, { id: editing || 'e' + Date.now().toString(36), start: start, end: end, title: title, cat: $('sch-cat').value, important: $('sch-imp').checked, place: $('sch-place').value.trim(), abroad: $('sch-abroad').checked, memo: $('sch-memo').value.trim(), rev: prev ? (prev.rev || 0) + 1 : 0 });
+      // 고칠 때는 완료·자리·알림 같은 기존 정보는 그대로 두고, 폼에 있는 것만 바꿔요
+      var item = Object.assign({}, prev || {}, { id: editing || 'e' + Date.now().toString(36), start: start, end: end, title: title, cat: $('sch-cat').value, important: $('sch-imp').checked, place: $('sch-place').value.trim(), abroad: $('sch-abroad').checked, memo: $('sch-memo').value.trim(), rev: prev ? (prev.rev || 0) + 1 : 0 });
+      if (!(prev && prev.ext)) { if (!start && $('sch-allday').checked) item.allDay = true; else delete item.allDay; }
+      if (start) delete item.pos;
+      if (prev && origKey !== date) { delete item.pos; delete item.done; delete item.doneAt; }
+      list.splice(pos >= 0 ? pos : list.length, 0, item);
       saveSchedules();
       viewDate = parseYmd(date);
       renderSchedule();
