@@ -139,7 +139,7 @@ a { color: var(--accent); }
 .wx-cond { font-weight: 600; font-size: 14px; }
 .wx-sub { opacity: 0.88; font-variant-numeric: tabular-nums; }
 
-.season-box { display: grid; gap: 8px; justify-items: start; padding-right: 80px; }
+.season-box { display: grid; gap: 10px; justify-items: start; padding-right: 80px; }
 .season-main { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-radius: 8px; }
 .season-main:focus-visible, .kw-chip:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .season-name { font: 500 clamp(20px, calc(6vw - 6px), 28px)/1.15 var(--f-body); text-shadow: 0 1px 10px rgba(0, 0, 0, 0.18); }
