@@ -1535,45 +1535,47 @@
         (openEnded ? '<button type="button" class="tl-done" data-done="' + s.id + '" aria-pressed="' + !!s.done + '" aria-label="' + esc(s.title) + (s.done ? ' 완료 취소' : ' 완료') + '">' + (s.done ? '✓ 완료' : '완료') + '</button>' : '') +
         '</li>';
     };
-    // 일정을 순서대로 그리고, 현재 시각 줄은 '아직 남은 첫 일정' 바로 앞에 넣어요.
-    // 지난 일: 완료했거나, 시작 시각이 지났거나(진행 중 포함). 아직 안 끝낸 시간 미정 일정은 항상 현재 줄 아래로
-    var rows = [];
-    // 끝낸 시각(오늘 몇 분째). 예전에 끝내서 기록이 없으면 원래 자리 값
-    // 끝낸 시각 기록이 없으면(예전에 끝낸 일정) '방금 끝낸 것'으로 봐서, 이미 지난 시간 일정보다 아래에 둬요
+    // 순서는 dayOrder 하나로 정해요 (다가오는 일정 목록·메인 '다음 할 일'과 같은 순서)
+    var ord = dayOrder(key), at = diff === 0 && list.length ? ord.past.length : -1;
+    var rows = ord.past.concat(ord.rest).map(function (o) {
+      var s = o.s;
+      if (!s.start) return { html: card(s, diff < 0 || s.done ? 'past' : '', '미정', '', o.k), past: o.past };
+      var st = toMin(s.start), en = s.end ? toMin(s.end) : null;
+      // 종료 시간이 없으면 다음 시간 일정이 시작될 때까지(그 뒤 일정이 없으면 '완료'를 누를 때까지) 진행 중
+      if (en == null) en = implicitEnd(s, all);
+      var state = s.done || diff < 0 ? 'past' : diff > 0 ? '' : en != null && en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
+      return { html: card(s, state, s.start, '', o.k), past: o.past };
+    });
+    // 지난 일 표시: 끌어서 옮길 때 이 줄들은 자리 계산에서 빼요
+    rows.forEach(function (r) { if (r.past) r.html = r.html.replace('<li class="tl-item ', '<li data-past="1" class="tl-item '); });
+    var html = rows.map(function (r, i) { return (i === at ? nowRow(now) : '') + r.html; }).join('') + (at === rows.length ? nowRow(now) : '');
+    $('timeline').innerHTML = html;
+    renderNowNext();
+  }
+  // 하루의 보여 줄 순서 (타임라인·다가오는 일정 목록·메인 카드가 모두 이걸 따라요)
+  // past: 끝냈거나(오늘은) 이미 시작한 일정 — 지나간 순서(시작한 시각·끝낸 시각)대로
+  // rest: 아직 남은 일정 — 시간순. 직접 옮긴 적 없는 시간 미정 일정은 오늘이면 '지금' 자리, 다른 날이면 맨 뒤
+  function dayOrder(key) {
+    var all = schedules[key] || [], now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+    var diff = Math.round((parseYmd(key) - parseYmd(ymd(now))) / 864e5), nowK = diff === 0 ? nowMin : null;
+    // 끝낸 시각(그날 몇 분째). 기록이 없으면(예전에 끝낸 일정) '방금 끝낸 것'으로 봐요
     var doneMin = function (s, fallback) {
       if (!s.doneAt) return diff === 0 ? nowMin : diff < 0 ? 1440 : fallback;
       var d = new Date(s.doneAt);
       return ymd(d) === key ? d.getHours() * 60 + d.getMinutes() : ymd(d) < key ? -1 : 1440;
     };
-    var nowK = diff === 0 ? nowMin : null;
-    orderDay(all, nowK).forEach(function (s) {
+    var items = orderDay(all, nowK).map(function (s, i) {
       var k = seqMin(s, all.indexOf(s), nowK);
-      if (!s.start) {
-        rows.push({ html: card(s, diff < 0 || s.done ? 'past' : '', '미정', '', k), behind: !!s.done, when: s.done ? doneMin(s, k) : k });
-        return;
-      }
-      var st = toMin(s.start), en = s.end ? toMin(s.end) : null;
-      // 종료 시간이 없으면 다음 시간 일정이 시작될 때까지(그 뒤 일정이 없으면 '완료'를 누를 때까지) 진행 중
-      if (en == null) en = implicitEnd(s, all);
-      var state = s.done || diff < 0 ? 'past' : diff > 0 ? '' : en != null && en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
-      // 시작 시각이 지난 시간 일정(지난 날은 전부)은 시작 시각 자리, 시작 전에 끝낸 건 끝낸 시각 자리
-      var started = diff < 0 || (diff === 0 && st <= nowMin);
-      rows.push({ html: card(s, state, s.start, '', k), behind: s.done || started, when: started ? st : s.done ? doneMin(s, st) : st });
+      if (!s.start) return { s: s, k: k, i: i, past: !!s.done, when: s.done ? doneMin(s, k) : k };
+      var st = toMin(s.start), started = diff < 0 || (diff === 0 && st <= nowMin);
+      return { s: s, k: k, i: i, past: !!s.done || started, when: started ? st : s.done ? doneMin(s, st) : st };
     });
-    // 위쪽: 끝낸 일정(오늘은 이미 시작한 시간 일정 포함)을 '지나간 순서'(시작한 시각·끝낸 시각)대로.
-    // 아래쪽: 아직 남은 일정 (순서 그대로). 오늘이고 시간 일정이 있으면 그 사이에 현재 시각 줄
-    var at = -1;
-    var isPast = function (r) { return r.behind; };
-    var above = rows.map(function (r, i) { r.i = i; return r; }).filter(isPast)
-      .sort(function (a, b) { return a.when - b.when || a.i - b.i; });
-    // 지난 일 표시: 끌어서 옮길 때 이 줄들은 자리 계산에서 빼요
-    above.forEach(function (r) { r.html = r.html.replace('<li class="tl-item ', '<li data-past="1" class="tl-item '); });
-    rows = above.concat(rows.filter(function (r) { return !isPast(r); }));
-    if (diff === 0 && list.length) at = above.length;
-    var html = rows.map(function (r, i) { return (i === at ? nowRow(now) : '') + r.html; }).join('') + (at === rows.length ? nowRow(now) : '');
-    $('timeline').innerHTML = html;
-    renderNowNext();
+    return {
+      past: items.filter(function (o) { return o.past; }).sort(function (a, b) { return a.when - b.when || a.i - b.i; }),
+      rest: items.filter(function (o) { return !o.past; })
+    };
   }
+  function dayList(key) { var o = dayOrder(key); return o.past.concat(o.rest).map(function (x) { return x.s; }); }
   // 끝나는 시간이 없는 일정은 다음 시간 일정의 시작 시각에 끝난 걸로 봐요
   function implicitEnd(s, all) {
     var st = toMin(s.start), next = null;
@@ -1610,7 +1612,7 @@
       var label = (sameMonth ? d.getDate() : (d.getMonth() + 1) + '/' + d.getDate()) + DAYS[d.getDay()];
       html += '<li><button type="button" class="dl-row' + (k === ymd(viewDate) ? ' on' : '') + (d.getDay() === 0 ? ' sun' : d.getDay() === 6 ? ' sat' : '') + '" data-key="' + k + '">' +
         '<span class="dl-date">' + label + (k === todayKey ? '<em>오늘</em>' : '') + '</span><span class="dl-items">' +
-        orderDay(schedules[k]).map(function (s, i) {
+        dayList(k).map(function (s, i) {
           return (i ? '<span class="dl-sep">-</span>' : '') + '<span class="dl-item' + (s.important ? ' imp' : '') + (s.sample ? ' is-sample' : '') + '" style="--c:' + catOf(s.cat).color + '">' +
             (s.start ? '<span class="dl-time">' + hhmm(s.start) + '</span>' : '') + esc(s.title) + '</span>';
         }).join('') + '</span></button></li>';
@@ -1745,7 +1747,7 @@
   // 모든 일정을 날짜 → (시간순, 시간 미정은 뒤) 순서로 이어 붙인 목록
   function allEventsOrdered() {
     var out = [];
-    Object.keys(schedules).sort().forEach(function (k) { orderDay(schedules[k] || []).forEach(function (s) { out.push({ key: k, id: s.id }); }); });
+    Object.keys(schedules).sort().forEach(function (k) { dayList(k).forEach(function (s) { out.push({ key: k, id: s.id }); }); });
     return out;
   }
   function stepDetail(dir) {
