@@ -259,6 +259,28 @@
       if (r.bottom > d.bottom - 20 || r.top < d.top + 140) dlg.scrollTop += r.top - d.top - d.height / 2;
     }, 60);
   }
+  function openSeasonInfo(id) {
+    var s = findSeason(id); if (!s) return;
+    var info = (window.SEASON_INFO || {})[id] || {};
+    var ranked = window.rankSeasons(new Date(), [s]), ph = ranked.length ? ranked[0].p : null;
+    var em = $('si-emoji');
+    em.textContent = s.scene.motif[0] || '✨';
+    em.style.setProperty('--a', s.scene.colors[0]); em.style.setProperty('--b', s.scene.colors[1]);
+    $('si-name').textContent = s.name;
+    var until = ph ? null : daysUntil(s.from);
+    $('si-when').innerHTML = '<span>' + fmtMd(s.from) + '–' + fmtMd(s.to) + (s.peak ? ' · 절정 ' + fmtMd(s.peak[0]) + '–' + fmtMd(s.peak[1]) : '') + '</span>' +
+      (ph ? '<span class="ph ' + ph.phase + '">' + esc(phaseText(ph)) + '</span>' : '<span>' + (until === 0 ? '오늘 시작' : until + '일 후 시작') + '</span>');
+    $('si-headline').textContent = s.headline || '';
+    $('si-about').textContent = info.about || s.desc || '';
+    var li = function (x) { return '<li><b>' + esc(x[0]) + '</b>' + (x[1] ? '<span>' + esc(x[1]) + '</span>' : '') + '</li>'; };
+    $('si-spots-wrap').hidden = !(info.spots && info.spots.length);
+    $('si-spots').innerHTML = (info.spots || []).map(li).join('');
+    $('si-eats-wrap').hidden = !(info.eats && info.eats.length);
+    $('si-eats').innerHTML = (info.eats || []).map(li).join('');
+    $('si-todo').innerHTML = (s.todo || []).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
+    $('si-tip').textContent = info.tip ? '💡 ' + info.tip : '';
+    openDialog($('season-info-dialog'));
+  }
   function initSeasonDialog() {
     var dlg = $('season-dialog');
     var open = function (focusId) {
@@ -278,6 +300,12 @@
       if (!travelMode && (e.target === $('hero') || e.target === $('hero-canvas') || e.target === $('hero-bg') || e.target.classList.contains('hero-inner'))) open(currentSeason && currentSeason.id);
     });
     $('sd-tabs').addEventListener('click', function (e) { var b = e.target.closest('.seg-btn'); if (b) setSdView(b.dataset.view); });
+    // 목록에서 시즌을 누르면 상세 설명
+    $('sd-list-view').addEventListener('click', function (e) {
+      if (e.target.closest('[data-act]')) return;
+      var row = e.target.closest('.sd-row'); if (!row) return;
+      openSeasonInfo(row.dataset.id);
+    });
     $('sd-cal').addEventListener('click', function (e) {
       var r = e.target.closest('[data-sid]'); if (!r) return;
       renderSeasonCal(r.dataset.sid);

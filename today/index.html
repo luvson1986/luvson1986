@@ -456,6 +456,26 @@
   </form>
 </dialog>
 
+<!-- 시즌 상세 -->
+<dialog class="sheet" id="season-info-dialog" aria-labelledby="si-name">
+  <div class="sheet-grab" aria-hidden="true"></div>
+  <div class="sheet-body si-body">
+    <header class="si-head">
+      <span class="sd-emoji si-emoji" id="si-emoji" aria-hidden="true"></span>
+      <div class="si-titles">
+        <h2 id="si-name"></h2>
+        <p class="si-when" id="si-when"></p>
+      </div>
+    </header>
+    <p class="si-headline" id="si-headline"></p>
+    <p class="si-about" id="si-about"></p>
+    <section class="si-sec" id="si-spots-wrap"><h3 class="sub-h">가 볼 만한 곳</h3><ul class="si-list" id="si-spots"></ul></section>
+    <section class="si-sec" id="si-eats-wrap"><h3 class="sub-h">먹을 곳·먹을거리</h3><ul class="si-list" id="si-eats"></ul></section>
+    <section class="si-sec"><h3 class="sub-h">이맘때 해 볼 것</h3><ul class="si-todo" id="si-todo"></ul></section>
+    <p class="si-tip" id="si-tip"></p>
+  </div>
+</dialog>
+
 <!-- 일정 상세 -->
 <dialog class="sheet" id="detail-dialog" aria-labelledby="dt-title">
   <div class="sheet-grab" aria-hidden="true"></div>
@@ -530,6 +550,7 @@
 
 <script src="i18n.js"></script>
 <script src="data.js"></script>
+<script src="season-info.js"></script>
 <script src="i18n-data.js"></script>
 <script src="phrases.js"></script>
 <script src="app.js"></script>
