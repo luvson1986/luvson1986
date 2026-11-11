@@ -949,7 +949,11 @@ dialog.sheet:focus { outline: none; }
 #ext-panel { display: grid; gap: 12px; margin-top: 8px; }
 #ext-panel[hidden] { display: none; }
 .ext-src { display: grid; gap: 6px; }
-.ext-src label { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.ext-name { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.ext-links { display: grid; gap: 6px; }
+.ext-link { display: flex; gap: 6px; align-items: center; }
+.ext-link input { flex: 1; min-width: 0; }
+.ext-add { justify-self: start; }
 .ext-help summary { font-size: 12.5px; color: var(--accent); cursor: pointer; }
 .ext-help p { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-3); line-height: 1.55; }
 .ext-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

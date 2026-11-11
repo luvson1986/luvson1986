@@ -2661,6 +2661,9 @@
   /* ---------- 외부 일정 불러오기 (구글·아이클라우드·팀즈/아웃룩 .ics 공유 주소) ---------- */
   var EXT_LABEL = { outlook: '팀즈', google: '구글', icloud: '아이폰' };
   var ext = store.get('extcal', { on: false, srcs: {} });
+  // 출처마다 주소를 여러 개 넣을 수 있어요 (예전엔 하나짜리 글자)
+  Object.keys(ext.srcs).forEach(function (k) { if (!Array.isArray(ext.srcs[k])) ext.srcs[k] = ext.srcs[k] ? [ext.srcs[k]] : []; });
+  var extUrls = function (k) { return (ext.srcs[k] || []).filter(Boolean); };
   // .ics 읽기: 접힌 줄 펴기 → VEVENT마다 속성 모으기
   function parseIcs(text) {
     var lines = text.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').split(/\r?\n/), evs = [], cur = null;
@@ -2765,15 +2768,19 @@
   function syncExt(manual) {
     var srv = ((store.get('push', {}) || {}).url || '').replace(/\/+$/, '');
     if (!ext.on || extBusy) return Promise.resolve();
-    var kinds = Object.keys(ext.srcs).filter(function (k) { return ext.srcs[k]; });
+    var kinds = Object.keys(ext.srcs).filter(function (k) { return extUrls(k).length; });
     if (!kinds.length) { if (manual) $('ext-status').textContent = '불러올 주소를 넣어 주세요.'; return Promise.resolve(); }
     if (!srv) { $('ext-status').textContent = '알림 서버를 먼저 연결해 주세요.'; return Promise.resolve(); }
     extBusy = true; if (manual) $('ext-status').textContent = '불러오는 중…';
     var msgs = [];
+    // 같은 출처의 주소들을 모두 받아서 한꺼번에 맞춰요. 하나라도 못 받으면 그 출처는 이번엔 그대로 둬요(일정이 사라지지 않게)
     return Promise.all(kinds.map(function (k) {
-      return fetchWithTimeout(srv + '/ics?url=' + encodeURIComponent(ext.srcs[k]), 15000).then(function (r) { return r.text(); }).then(function (t) {
-        var n = mergeExt(k, parseIcs(t)); msgs.push(EXT_LABEL[k] + ' ' + n + '개');
-      }).catch(function () { msgs.push(EXT_LABEL[k] + ' 실패'); });
+      return Promise.all(extUrls(k).map(function (u) {
+        return fetchWithTimeout(srv + '/ics?url=' + encodeURIComponent(u), 15000).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); });
+      })).then(function (texts) {
+        var evs = []; texts.forEach(function (t) { evs = evs.concat(parseIcs(t)); });
+        var n = mergeExt(k, evs); msgs.push(EXT_LABEL[k] + ' ' + n + '개');
+      }).catch(function () { msgs.push(EXT_LABEL[k] + ' 일부 실패'); });
     })).then(function () {
       extBusy = false; ext.at = Date.now(); store.set('extcal', ext);
       saveSchedules(); renderSchedule();
@@ -2782,9 +2789,17 @@
   }
   function initExtCal() {
     var on = $('ext-on'), panel = $('ext-panel');
+    // 출처별 주소 칸들 (최소 한 칸)
+    var drawLinks = function (k) {
+      var box = $('ext-' + k), list = ext.srcs[k] && ext.srcs[k].length ? ext.srcs[k] : [''];
+      box.innerHTML = list.map(function (u, i) {
+        return '<div class="ext-link"><input type="url" autocomplete="off" spellcheck="false" data-i="' + i + '" placeholder="' + esc(box.dataset.ph) + '" value="' + esc(u) + '">' +
+          (list.length > 1 || u ? '<button type="button" class="icon-mini" data-del="' + i + '" aria-label="주소 지우기">✕</button>' : '') + '</div>';
+      }).join('');
+    };
     var paint = function () {
       on.checked = !!ext.on; panel.hidden = !ext.on;
-      ['outlook', 'google', 'icloud'].forEach(function (k) { $('ext-' + k).value = ext.srcs[k] || ''; });
+      ['outlook', 'google', 'icloud'].forEach(drawLinks);
     };
     paint();
     on.addEventListener('change', function () {
@@ -2796,7 +2811,18 @@
       } else syncExt(true);
     });
     ['outlook', 'google', 'icloud'].forEach(function (k) {
-      $('ext-' + k).addEventListener('change', function () { ext.srcs[k] = this.value.trim(); store.set('extcal', ext); syncExt(true); });
+      var box = $('ext-' + k);
+      var read = function () { ext.srcs[k] = Array.prototype.map.call(box.querySelectorAll('input'), function (i) { return i.value.trim(); }).filter(Boolean); store.set('extcal', ext); };
+      box.addEventListener('change', function () { read(); syncExt(true); });
+      box.addEventListener('click', function (e) {
+        var d = e.target.closest('[data-del]'); if (!d) return;
+        d.parentNode.remove(); read(); drawLinks(k); syncExt(true);
+      });
+    });
+    panel.addEventListener('click', function (e) {
+      var a = e.target.closest('.ext-add'); if (!a) return;
+      var k = a.dataset.kind; ext.srcs[k] = (ext.srcs[k] || []).filter(Boolean).concat(['']); drawLinks(k);
+      var ins = $('ext-' + k).querySelectorAll('input'); ins[ins.length - 1].focus();
     });
     $('ext-sync').onclick = function () { syncExt(true); };
     syncExt();

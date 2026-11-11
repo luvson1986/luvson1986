@@ -985,7 +985,11 @@ dialog.sheet:focus { outline: none; }
 #ext-panel { display: grid; gap: 12px; margin-top: 8px; }
 #ext-panel[hidden] { display: none; }
 .ext-src { display: grid; gap: 6px; }
-.ext-src label { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.ext-name { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.ext-links { display: grid; gap: 6px; }
+.ext-link { display: flex; gap: 6px; align-items: center; }
+.ext-link input { flex: 1; min-width: 0; }
+.ext-add { justify-self: start; }
 .ext-help summary { font-size: 12.5px; color: var(--accent); cursor: pointer; }
 .ext-help p { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-3); line-height: 1.55; }
 .ext-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -1347,18 +1351,21 @@ dialog.sheet:focus { outline: none; }
       <div id="ext-panel" hidden>
         <p class="hint">다른 캘린더의 공유 주소(.ics)를 넣으면 앞으로 30일 일정을 내 타임라인에 미리 넣어 둬요. 30분마다, 앱을 열 때 다시 맞춰요. 알림 서버가 연결돼 있어야 해요.</p>
         <div class="ext-src" data-kind="outlook">
-          <label for="ext-outlook">팀즈·아웃룩</label>
-          <input id="ext-outlook" type="url" autocomplete="off" spellcheck="false" placeholder="https://outlook.office365.com/owa/calendar/…/calendar.ics">
+          <span class="ext-name">팀즈·아웃룩</span>
+          <div class="ext-links" id="ext-outlook" data-ph="https://outlook.office365.com/owa/calendar/…/calendar.ics"></div>
+          <button type="button" class="link-btn sm ext-add" data-kind="outlook">+ 주소 추가</button>
           <details class="ext-help"><summary>주소 찾는 법</summary><p>PC 웹 아웃룩(outlook.office.com) → 설정(톱니) → 일정 → <b>공유 일정</b> → '일정 게시'에서 캘린더 고르고 '모든 세부 정보 보기'로 <b>게시</b> → <b>ICS 링크</b> 복사. 회사 정책으로 게시가 막혀 있으면 이 방법은 쓸 수 없어요.</p></details>
         </div>
         <div class="ext-src" data-kind="google">
-          <label for="ext-google">구글 캘린더</label>
-          <input id="ext-google" type="url" autocomplete="off" spellcheck="false" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics">
+          <span class="ext-name">구글 캘린더</span>
+          <div class="ext-links" id="ext-google" data-ph="https://calendar.google.com/calendar/ical/…/basic.ics"></div>
+          <button type="button" class="link-btn sm ext-add" data-kind="google">+ 주소 추가</button>
           <details class="ext-help"><summary>주소 찾는 법</summary><p>PC 웹 구글 캘린더 → 왼쪽 내 캘린더에서 캘린더 이름 옆 ⋮ → <b>설정 및 공유</b> → 아래쪽 <b>iCal 형식의 비공개 주소</b> 복사.</p></details>
         </div>
         <div class="ext-src" data-kind="icloud">
-          <label for="ext-icloud">아이폰 캘린더(iCloud)</label>
-          <input id="ext-icloud" type="url" autocomplete="off" spellcheck="false" placeholder="webcal://p00-caldav.icloud.com/published/2/…">
+          <span class="ext-name">아이폰 캘린더(iCloud)</span>
+          <div class="ext-links" id="ext-icloud" data-ph="webcal://p00-caldav.icloud.com/published/2/…"></div>
+          <button type="button" class="link-btn sm ext-add" data-kind="icloud">+ 주소 추가</button>
           <details class="ext-help"><summary>주소 찾는 법</summary><p>아이폰 캘린더 앱 → 아래 <b>캘린더</b> → 캘린더 옆 ⓘ → <b>공개 캘린더</b> 켜기 → <b>링크 공유</b> → 복사. (링크를 아는 사람은 누구나 볼 수 있으니 공유하지 마세요.)</p></details>
         </div>
         <div class="ext-actions"><button type="button" class="ghost-btn" id="ext-sync">지금 불러오기</button><span class="hint" id="ext-status"></span></div>
@@ -6254,6 +6261,9 @@ window.PHRASE_TOPICS = [
   /* ---------- 외부 일정 불러오기 (구글·아이클라우드·팀즈/아웃룩 .ics 공유 주소) ---------- */
   var EXT_LABEL = { outlook: '팀즈', google: '구글', icloud: '아이폰' };
   var ext = store.get('extcal', { on: false, srcs: {} });
+  // 출처마다 주소를 여러 개 넣을 수 있어요 (예전엔 하나짜리 글자)
+  Object.keys(ext.srcs).forEach(function (k) { if (!Array.isArray(ext.srcs[k])) ext.srcs[k] = ext.srcs[k] ? [ext.srcs[k]] : []; });
+  var extUrls = function (k) { return (ext.srcs[k] || []).filter(Boolean); };
   // .ics 읽기: 접힌 줄 펴기 → VEVENT마다 속성 모으기
   function parseIcs(text) {
     var lines = text.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').split(/\r?\n/), evs = [], cur = null;
@@ -6358,15 +6368,19 @@ window.PHRASE_TOPICS = [
   function syncExt(manual) {
     var srv = ((store.get('push', {}) || {}).url || '').replace(/\/+$/, '');
     if (!ext.on || extBusy) return Promise.resolve();
-    var kinds = Object.keys(ext.srcs).filter(function (k) { return ext.srcs[k]; });
+    var kinds = Object.keys(ext.srcs).filter(function (k) { return extUrls(k).length; });
     if (!kinds.length) { if (manual) $('ext-status').textContent = '불러올 주소를 넣어 주세요.'; return Promise.resolve(); }
     if (!srv) { $('ext-status').textContent = '알림 서버를 먼저 연결해 주세요.'; return Promise.resolve(); }
     extBusy = true; if (manual) $('ext-status').textContent = '불러오는 중…';
     var msgs = [];
+    // 같은 출처의 주소들을 모두 받아서 한꺼번에 맞춰요. 하나라도 못 받으면 그 출처는 이번엔 그대로 둬요(일정이 사라지지 않게)
     return Promise.all(kinds.map(function (k) {
-      return fetchWithTimeout(srv + '/ics?url=' + encodeURIComponent(ext.srcs[k]), 15000).then(function (r) { return r.text(); }).then(function (t) {
-        var n = mergeExt(k, parseIcs(t)); msgs.push(EXT_LABEL[k] + ' ' + n + '개');
-      }).catch(function () { msgs.push(EXT_LABEL[k] + ' 실패'); });
+      return Promise.all(extUrls(k).map(function (u) {
+        return fetchWithTimeout(srv + '/ics?url=' + encodeURIComponent(u), 15000).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); });
+      })).then(function (texts) {
+        var evs = []; texts.forEach(function (t) { evs = evs.concat(parseIcs(t)); });
+        var n = mergeExt(k, evs); msgs.push(EXT_LABEL[k] + ' ' + n + '개');
+      }).catch(function () { msgs.push(EXT_LABEL[k] + ' 일부 실패'); });
     })).then(function () {
       extBusy = false; ext.at = Date.now(); store.set('extcal', ext);
       saveSchedules(); renderSchedule();
@@ -6375,9 +6389,17 @@ window.PHRASE_TOPICS = [
   }
   function initExtCal() {
     var on = $('ext-on'), panel = $('ext-panel');
+    // 출처별 주소 칸들 (최소 한 칸)
+    var drawLinks = function (k) {
+      var box = $('ext-' + k), list = ext.srcs[k] && ext.srcs[k].length ? ext.srcs[k] : [''];
+      box.innerHTML = list.map(function (u, i) {
+        return '<div class="ext-link"><input type="url" autocomplete="off" spellcheck="false" data-i="' + i + '" placeholder="' + esc(box.dataset.ph) + '" value="' + esc(u) + '">' +
+          (list.length > 1 || u ? '<button type="button" class="icon-mini" data-del="' + i + '" aria-label="주소 지우기">✕</button>' : '') + '</div>';
+      }).join('');
+    };
     var paint = function () {
       on.checked = !!ext.on; panel.hidden = !ext.on;
-      ['outlook', 'google', 'icloud'].forEach(function (k) { $('ext-' + k).value = ext.srcs[k] || ''; });
+      ['outlook', 'google', 'icloud'].forEach(drawLinks);
     };
     paint();
     on.addEventListener('change', function () {
@@ -6389,7 +6411,18 @@ window.PHRASE_TOPICS = [
       } else syncExt(true);
     });
     ['outlook', 'google', 'icloud'].forEach(function (k) {
-      $('ext-' + k).addEventListener('change', function () { ext.srcs[k] = this.value.trim(); store.set('extcal', ext); syncExt(true); });
+      var box = $('ext-' + k);
+      var read = function () { ext.srcs[k] = Array.prototype.map.call(box.querySelectorAll('input'), function (i) { return i.value.trim(); }).filter(Boolean); store.set('extcal', ext); };
+      box.addEventListener('change', function () { read(); syncExt(true); });
+      box.addEventListener('click', function (e) {
+        var d = e.target.closest('[data-del]'); if (!d) return;
+        d.parentNode.remove(); read(); drawLinks(k); syncExt(true);
+      });
+    });
+    panel.addEventListener('click', function (e) {
+      var a = e.target.closest('.ext-add'); if (!a) return;
+      var k = a.dataset.kind; ext.srcs[k] = (ext.srcs[k] || []).filter(Boolean).concat(['']); drawLinks(k);
+      var ins = $('ext-' + k).querySelectorAll('input'); ins[ins.length - 1].focus();
     });
     $('ext-sync').onclick = function () { syncExt(true); };
     syncExt();
