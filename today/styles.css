@@ -962,3 +962,7 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
 .ext-help p { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-3); line-height: 1.55; }
 .ext-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .tl-tag.ext { background: var(--surface-2); color: var(--ink-3); }
+.ext-debug { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; font-size: 12px; color: var(--ink-2); }
+.ext-debug li { background: var(--surface-2); border-radius: 8px; padding: 6px 8px; overflow-wrap: anywhere; }
+.ext-debug li.skip { opacity: 0.7; }
+.ext-debug b { color: var(--ink); }

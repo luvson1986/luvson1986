@@ -2755,7 +2755,9 @@
     var overridden = {}, items = [];
     evs.forEach(function (e) { if (e['RECURRENCE-ID'] && e.UID) { var d = icsDate(e['RECURRENCE-ID']); if (d) overridden[e.UID + '@' + ymd(d)] = 1; } });
     evs.forEach(function (e) {
-      if (e.STATUS === 'CANCELLED' || !e.DTSTART) return;
+      e._why = e.STATUS === 'CANCELLED' ? '취소된 일정' : !e.DTSTART ? '시작 시각 없음' : '';
+      e._n = 0;
+      if (e._why) return;
       var allDay = e.DTSTART.date, en0 = e.DTEND ? icsDate(e.DTEND) : null, st0 = icsDate(e.DTSTART);
       expandIcs(e, from, to).forEach(function (d) {
         var key = ymd(d);
@@ -2768,11 +2770,12 @@
           for (var i = 0; i < nDays && i < 60; i++) {
             var day = new Date(d); day.setDate(d.getDate() + i);
             if (day < from || day > to) continue;
-            items.push(Object.assign({ key: ymd(day), xid: kind + ':' + (e.UID || e.SUMMARY) + '@' + ymd(day), start: '', end: '', allDay: true }, base));
+            items.push(Object.assign({ key: ymd(day), xid: kind + ':' + (e.UID || e.SUMMARY) + '@' + ymd(day), start: '', end: '', allDay: true }, base)); e._n++;
           }
           return;
         }
         if (d < from || d > to) return;
+        e._n++;
         items.push(Object.assign({ key: key, xid: kind + ':' + (e.UID || e.SUMMARY) + '@' + key,
           start: pad(d.getHours()) + ':' + pad(d.getMinutes()),
           end: !end || ymd(end) !== key ? '' : pad(end.getHours()) + ':' + pad(end.getMinutes()) }, base));
@@ -2799,7 +2802,22 @@
     });
     return items.length;
   }
-  var extBusy = false;
+  var extBusy = false, extDebug = {};
+  // 문제 확인용: 받아 온 원래 일정과, 넣었는지/왜 뺐는지
+  function renderExtDebug() {
+    var rows = [];
+    Object.keys(extDebug).forEach(function (k) {
+      extDebug[k].forEach(function (e) {
+        var st = e.DTSTART ? e.DTSTART.v : '-', when = e.DTSTART && icsDate(e.DTSTART);
+        var why = e._why || (e._n ? '넣음 ' + e._n + '개' : (e['RECURRENCE-ID'] ? '바뀐 회차 · ' : '') + '오늘~30일 밖');
+        rows.push({ t: when ? when.getTime() : 0, html: '<li class="' + (e._n ? '' : 'skip') + '"><b>' + esc(e.SUMMARY || '(제목 없음)') + '</b> · ' + EXT_LABEL[k] +
+          '<br>시작 ' + esc(st) + (e.DTSTART && e.DTSTART.date ? ' (종일)' : '') + (e.DTEND ? ' · 끝 ' + esc(e.DTEND.v) : '') + (e.RRULE ? ' · 반복 ' + esc(e.RRULE) : '') +
+          (e['RECURRENCE-ID'] ? ' · 바뀐 회차 ' + esc(e['RECURRENCE-ID'].v) : '') + '<br>→ ' + why + '</li>' });
+      });
+    });
+    rows.sort(function (a, b) { return b.t - a.t; });
+    $('ext-debug').innerHTML = rows.length ? rows.slice(0, 80).map(function (r) { return r.html; }).join('') : '<li>아직 받아 온 일정이 없어요. 지금 불러오기를 눌러 주세요.</li>';
+  }
   function syncExt(manual) {
     var srv = ((store.get('push', {}) || {}).url || '').replace(/\/+$/, '');
     if (!ext.on || extBusy) return Promise.resolve();
@@ -2822,9 +2840,10 @@
       })).then(function (texts) {
         var evs = []; texts.forEach(function (t) { evs = evs.concat(parseIcs(t)); });
         var n = mergeExt(k, evs); msgs.push(EXT_LABEL[k] + ' ' + n + '개');
+        extDebug[k] = evs;
       }).catch(function (e) { msgs.push(EXT_LABEL[k] + ' 실패: ' + ((e && e.message) || '연결 오류')); });
     })).then(function () {
-      extBusy = false; ext.at = Date.now(); store.set('extcal', ext);
+      extBusy = false; ext.at = Date.now(); store.set('extcal', ext); renderExtDebug();
       saveSchedules(); renderSchedule();
       $('ext-status').textContent = msgs.join(' · ') + ' · ' + pad(new Date().getHours()) + ':' + pad(new Date().getMinutes()) + ' 불러옴';
     });
