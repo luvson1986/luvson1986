@@ -52,7 +52,7 @@
     document.addEventListener('pointerup', end);
     document.addEventListener('pointercancel', end);
     list.addEventListener('click', function (e) { if (justDragged) { e.preventDefault(); e.stopPropagation(); } }, true);
-    list.addEventListener('contextmenu', function (e) { if (e.target.closest(opts.item)) e.preventDefault(); });
+    list.addEventListener('contextmenu', function (e) { if (e.target.closest(opts.item) && !e.target.closest('input, textarea')) e.preventDefault(); });
   }
   var GRIP = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 7h16v2H4zM4 11h16v2H4zM4 15h16v2H4z"/></svg>';
 
@@ -1365,6 +1365,10 @@
   }
   document.addEventListener('touchmove', function (e) {
     if (!document.documentElement.classList.contains('modal-open')) return;
+    // 입력칸 안에서 길게 눌러 커서를 옮기거나 글자를 고르는 손짓은 막지 않아요
+    if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]')) return;
+    var sel = window.getSelection && window.getSelection();
+    if (sel && !sel.isCollapsed) return;
     var d = e.target.closest && e.target.closest('dialog[open]');
     for (var el = e.target; d && el && el !== d.parentNode; el = el.parentNode) {
       if (el.scrollHeight > el.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(el).overflowY)) return;

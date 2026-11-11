@@ -762,6 +762,8 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 
 /* iOS: 팝업은 세로로만 움직이게, 넘치는 것은 잘라내요 */
 .sheet { overflow-x: hidden; touch-action: pan-y; }
+/* 입력칸은 손짓 제한을 풀어서, 길게 눌러 커서 옮기기·글자 고르기가 잘 되게 */
+input, textarea, select { touch-action: auto; -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 .sheet-body { overflow-x: hidden; }
 .field { overflow: hidden; padding: 2px; margin: -2px; }
 .form-grid .field { min-width: 0; }
