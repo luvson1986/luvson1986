@@ -268,7 +268,7 @@
     em.style.setProperty('--a', s.scene.colors[0]); em.style.setProperty('--b', s.scene.colors[1]);
     $('si-name').textContent = s.name;
     var until = ph ? null : daysUntil(s.from);
-    $('si-when').innerHTML = '<span>' + fmtMd(s.from) + '–' + fmtMd(s.to) + (s.peak ? ' · 절정 ' + fmtMd(s.peak[0]) + '–' + fmtMd(s.peak[1]) : '') + '</span>' +
+    $('si-when').innerHTML = '<span>' + fmtMd(s.from) + '–' + fmtMd(s.to) + (s.day ? ' · 당일 ' + fmtMd(s.day.slice(5)) : s.peak && s.peak[0] === s.peak[1] ? ' · 당일 ' + fmtMd(s.peak[0]) : s.peak ? ' · 절정 ' + fmtMd(s.peak[0]) + '–' + fmtMd(s.peak[1]) : '') + '</span>' +
       (ph ? '<span class="ph ' + ph.phase + '">' + esc(phaseText(ph)) + '</span>' : '<span>' + (until === 0 ? '오늘 시작' : until + '일 후 시작') + '</span>');
     $('si-headline').textContent = s.headline || '';
     $('si-about').textContent = info.about || s.desc || '';

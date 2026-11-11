@@ -239,8 +239,73 @@ window.SEASONS = [
     desc: '노지 감귤은 11월부터, 한라봉과 천혜향은 1~2월이 제철이에요.',
     todo: ['노지 감귤 주문', '귤 따기 체험', '한라봉 맛보기'],
     scene: { type: 'snow', colors: ['#b8641a', '#ffc070'], accent: '#fff2d8', motif: ['🍊'] }
+  },
+  {
+    id: 'valentine', name: '발렌타인데이', from: '02-13', to: '02-14', peak: ['02-14', '02-14'], w: 2,
+    headline: '초콜릿으로 마음 전하는 날',
+    desc: '2월 14일은 초콜릿을 주고받는 날이에요. 수제 초콜릿 재료는 1~2주 전에, 인기 레스토랑은 미리 예약하세요.',
+    todo: ['초콜릿 고르기·만들기', '저녁 예약', '짧은 손편지'],
+    scene: { type: 'petals', colors: ['#7a1f3a', '#e86a8a'], accent: '#ffd0dc', motif: ['🍫', '💝'] }
+  },
+  {
+    id: 'whiteday', name: '화이트데이', from: '03-13', to: '03-14', peak: ['03-14', '03-14'], w: 2,
+    headline: '사탕으로 답하는 날',
+    desc: '3월 14일은 발렌타인데이의 답례로 사탕을 주고받는 날이에요. 편의점·백화점에 선물 세트가 가득해요.',
+    todo: ['사탕·디저트 선물 고르기', '꽃 한 송이', '저녁 약속 잡기'],
+    scene: { type: 'petals', colors: ['#6a7fb0', '#f3d6e4'], accent: '#ffffff', motif: ['🍬', '🤍'] }
+  },
+  {
+    id: 'pepero', name: '빼빼로데이', from: '11-10', to: '11-11', peak: ['11-11', '11-11'], w: 2,
+    headline: '빼빼로 나눠 먹는 날',
+    desc: '11월 11일, 막대 과자를 닮은 숫자 1이 네 개인 날이에요. 동료·친구들과 가볍게 나누기 좋아요.',
+    todo: ['팀 동료 몫까지 넉넉히', '수제 빼빼로 만들기', '가래떡데이(같은 날)도 챙기기'],
+    scene: { type: 'lights', colors: ['#5a2a1a', '#d9a066'], accent: '#ffe6c0', motif: ['🍫', '🥢'] }
   }
 ];
+
+/*
+ * 설날·추석: 음력이라 해마다 양력 날짜가 달라요 → 표에서 올해(이미 지났으면 내년) 날짜를 골라
+ * 시즌은 3일 전부터 다음 날까지, 절정은 당일 앞뒤 하루씩(전날~다음 날)
+ */
+(function () {
+  var DAYS = {
+    seollal: { 2025: '01-29', 2026: '02-17', 2027: '02-07', 2028: '01-27', 2029: '02-13', 2030: '02-03', 2031: '01-23', 2032: '02-11', 2033: '01-31', 2034: '02-19', 2035: '02-08', 2036: '01-28' },
+    chuseok: { 2025: '10-06', 2026: '09-25', 2027: '09-15', 2028: '10-03', 2029: '09-22', 2030: '09-12', 2031: '10-01', 2032: '09-19', 2033: '09-08', 2034: '09-27', 2035: '09-16', 2036: '10-04' }
+  };
+  var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+  var md = function (d) { return pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  var shift = function (d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  function pick(table) {
+    var now = new Date(), y = now.getFullYear();
+    for (var yy = y; yy <= y + 1; yy++) {
+      var v = table[yy]; if (!v) continue;
+      var d = new Date(yy, +v.slice(0, 2) - 1, +v.slice(3));
+      if (now <= shift(d, 2)) return d; // 다음 날까지가 시즌이라, 그 이튿날까진 올해 것
+    }
+    return null;
+  }
+  [
+    {
+      id: 'seollal', name: '설날', w: 3,
+      headline: '떡국 한 그릇, 한 살 더',
+      desc: '음력 1월 1일, 가족이 모여 차례를 지내고 세배하는 명절이에요. 연휴 귀성길은 출발 시간을 잘 골라야 해요.',
+      todo: ['기차·버스 예매 확인', '세뱃돈 신권 준비', '부모님 선물'],
+      scene: { type: 'lights', colors: ['#6e1420', '#d4a24a'], accent: '#ffe2a0', motif: ['🧧', '🥟'] }
+    },
+    {
+      id: 'chuseok', name: '추석', w: 3,
+      headline: '보름달 아래 한가위',
+      desc: '음력 8월 15일, 햇곡식과 햇과일로 차례를 지내는 명절이에요. 송편 빚고 보름달 보며 소원 빌기.',
+      todo: ['귀성 교통편 예매', '송편·전 준비', '보름달 뜨는 시각 확인'],
+      scene: { type: 'fireflies', colors: ['#16213e', '#c9a14a'], accent: '#ffe9a8', motif: ['🌕', '🍡'] }
+    }
+  ].forEach(function (s) {
+    var d = pick(DAYS[s.id]); if (!d) return;
+    s.from = md(shift(d, -3)); s.to = md(shift(d, 1)); s.peak = [md(shift(d, -1)), md(shift(d, 1))];
+    s.day = d.getFullYear() + '-' + md(d);
+    window.SEASONS.push(s);
+  });
+})();
 
 /*
  * 계절 우선순위
