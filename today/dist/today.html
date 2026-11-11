@@ -134,7 +134,7 @@ a { color: var(--accent); }
 }
 .hero-motif span:nth-child(2) { font-size: 0.5em; align-self: flex-end; transform: rotate(18deg); }
 .hero-inner {
-  position: relative; z-index: 2; padding-block: 16px 18px; display: grid; gap: 14px;
+  position: relative; z-index: 2; padding-block: 16px 18px; display: grid; gap: 18px;
   grid-template-areas: "top" "wx" "season" "nn";
 }
 .hero-top { grid-area: top; } .wx { grid-area: wx; } .season-box { grid-area: season; } .hero-nn { grid-area: nn; }
@@ -193,7 +193,7 @@ a { color: var(--accent); }
 .kw-chip:hover { background: rgba(255, 255, 255, 0.3); }
 
 /* 히어로 안 지금 · 다음 (세로) */
-.hero-nn { display: grid; gap: 6px; margin-top: 8px; }
+.hero-nn { display: grid; gap: 6px; margin-top: 4px; } /* 위 간격(18px)+4 = 시즌~일정 카드 사이는 전과 같게 */
 .hero-nn .nn-item {
   all: unset; box-sizing: border-box; display: grid; grid-template-columns: 74px 1fr; gap: 1px 10px; align-items: center;
   padding: 9px 12px; border-radius: 12px; cursor: pointer; color: #fff;
