@@ -320,9 +320,11 @@
       closeDialog(dlg);
       setTimeout(function () { location.href = go; }, 50);
     });
+    // 상세 화면 링크는 고르지 않고 바로 네이버 앱으로 열어요
     document.addEventListener('click', function (e) {
       var a = e.target.closest('a.si-link'); if (!a) return;
-      e.preventDefault(); openWith(a.href);
+      e.preventDefault();
+      location.href = 'naversearchapp://inappbrowser?url=' + encodeURIComponent(a.href) + '&target=new&version=6';
     });
   }
   function initSeasonDialog() {
