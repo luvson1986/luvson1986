@@ -1012,6 +1012,9 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
 .si-link em { flex: none; font-style: normal; font-size: 12px; font-weight: 600; color: var(--accent); }
 .si-link:active { opacity: 0.7; }
 .si-link b { color: var(--ink); }
+.ow-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ow-btn { padding: 14px 0; font-weight: 600; }
+.ow-url { margin: -8px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 </style>
 </head>
@@ -1484,6 +1487,21 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
     <div id="si-sections"></div>
     <section class="si-sec"><h3 class="sub-h">이맘때 해 볼 것</h3><ul class="si-todo" id="si-todo"></ul></section>
     <p class="si-tip" id="si-tip"></p>
+  </div>
+</dialog>
+
+<!-- 바깥 링크: 어느 앱으로 열지 -->
+<dialog class="sheet" id="open-with" aria-labelledby="ow-h">
+  <div class="sheet-grab" aria-hidden="true"></div>
+  <div class="sheet-body">
+    <header class="panel-head"><h2 id="ow-h">어디서 열까요?</h2></header>
+    <p class="hint ow-url" id="ow-url"></p>
+    <div class="ow-btns">
+      <button type="button" class="ghost-btn ow-btn" data-app="safari">사파리</button>
+      <button type="button" class="ghost-btn ow-btn" data-app="chrome">크롬</button>
+      <button type="button" class="ghost-btn ow-btn" data-app="naver">네이버</button>
+    </div>
+    <p class="hint">앱이 설치돼 있지 않으면 열리지 않아요.</p>
   </div>
 </dialog>
 
@@ -4095,6 +4113,30 @@ window.PHRASE_TOPICS = [
     $('si-todo').innerHTML = (s.todo || []).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
     $('si-tip').textContent = info.tip ? '💡 ' + info.tip : '';
     openDialog($('season-info-dialog'));
+  }
+  // 바깥 링크는 사파리·크롬·네이버 중 골라서 열어요 (홈 화면 앱 안에서 열리지 않게)
+  function openWith(url) {
+    var dlg = $('open-with');
+    $('ow-url').textContent = url.replace(/^https?:\/\//, '');
+    dlg.dataset.url = url;
+    openDialog(dlg);
+  }
+  function initOpenWith() {
+    var dlg = $('open-with');
+    dlg.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-app]'); if (!b) return;
+      var url = dlg.dataset.url, go;
+      // 사파리: iOS 17+ x-safari-https / 크롬: googlechrome(s) / 네이버: 앱의 인앱 브라우저
+      if (b.dataset.app === 'safari') go = url.replace(/^(https?):\/\//, 'x-safari-$1://');
+      else if (b.dataset.app === 'chrome') go = url.replace(/^https:\/\//, 'googlechromes://').replace(/^http:\/\//, 'googlechrome://');
+      else go = 'naversearchapp://inappbrowser?url=' + encodeURIComponent(url) + '&target=new&version=6';
+      closeDialog(dlg);
+      setTimeout(function () { location.href = go; }, 50);
+    });
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest('a.si-link'); if (!a) return;
+      e.preventDefault(); openWith(a.href);
+    });
   }
   function initSeasonDialog() {
     var dlg = $('season-dialog');
@@ -6712,6 +6754,7 @@ window.PHRASE_TOPICS = [
   initNote();
   initSeason();
   initSeasonDialog();
+  initOpenWith();
   initRules();
   $('hourly').onclick = function () { renderWkLoc(); $('wk-loc-form').hidden = true; openDialog($('week-dialog')); };
   // 메인 상단 날씨 → 아래 날씨 섹션으로 이동

@@ -301,6 +301,30 @@
     $('si-tip').textContent = info.tip ? '💡 ' + info.tip : '';
     openDialog($('season-info-dialog'));
   }
+  // 바깥 링크는 사파리·크롬·네이버 중 골라서 열어요 (홈 화면 앱 안에서 열리지 않게)
+  function openWith(url) {
+    var dlg = $('open-with');
+    $('ow-url').textContent = url.replace(/^https?:\/\//, '');
+    dlg.dataset.url = url;
+    openDialog(dlg);
+  }
+  function initOpenWith() {
+    var dlg = $('open-with');
+    dlg.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-app]'); if (!b) return;
+      var url = dlg.dataset.url, go;
+      // 사파리: iOS 17+ x-safari-https / 크롬: googlechrome(s) / 네이버: 앱의 인앱 브라우저
+      if (b.dataset.app === 'safari') go = url.replace(/^(https?):\/\//, 'x-safari-$1://');
+      else if (b.dataset.app === 'chrome') go = url.replace(/^https:\/\//, 'googlechromes://').replace(/^http:\/\//, 'googlechrome://');
+      else go = 'naversearchapp://inappbrowser?url=' + encodeURIComponent(url) + '&target=new&version=6';
+      closeDialog(dlg);
+      setTimeout(function () { location.href = go; }, 50);
+    });
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest('a.si-link'); if (!a) return;
+      e.preventDefault(); openWith(a.href);
+    });
+  }
   function initSeasonDialog() {
     var dlg = $('season-dialog');
     var open = function (focusId) {
@@ -2917,6 +2941,7 @@
   initNote();
   initSeason();
   initSeasonDialog();
+  initOpenWith();
   initRules();
   $('hourly').onclick = function () { renderWkLoc(); $('wk-loc-form').hidden = true; openDialog($('week-dialog')); };
   // 메인 상단 날씨 → 아래 날씨 섹션으로 이동

@@ -507,6 +507,21 @@
   </div>
 </dialog>
 
+<!-- 바깥 링크: 어느 앱으로 열지 -->
+<dialog class="sheet" id="open-with" aria-labelledby="ow-h">
+  <div class="sheet-grab" aria-hidden="true"></div>
+  <div class="sheet-body">
+    <header class="panel-head"><h2 id="ow-h">어디서 열까요?</h2></header>
+    <p class="hint ow-url" id="ow-url"></p>
+    <div class="ow-btns">
+      <button type="button" class="ghost-btn ow-btn" data-app="safari">사파리</button>
+      <button type="button" class="ghost-btn ow-btn" data-app="chrome">크롬</button>
+      <button type="button" class="ghost-btn ow-btn" data-app="naver">네이버</button>
+    </div>
+    <p class="hint">앱이 설치돼 있지 않으면 열리지 않아요.</p>
+  </div>
+</dialog>
+
 <!-- 일정 상세 -->
 <dialog class="sheet" id="detail-dialog" aria-labelledby="dt-title">
   <div class="sheet-grab" aria-hidden="true"></div>
