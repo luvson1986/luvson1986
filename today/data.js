@@ -231,7 +231,7 @@ window.SEASONS = [
     headline: '거리마다 캐롤이 흘러나와요',
     desc: '11월 중순부터 카페와 거리에 캐롤이 들리기 시작해요. 크리스마스 직전 2주가 가장 들뜨는 때예요.',
     todo: ['나만의 캐롤 플레이리스트 만들기', '크리스마스 콘서트·성가대 공연 찾기', 'LP 바·재즈 바에서 캐롤 듣기'],
-    scene: { type: 'snow', colors: ['#1a2238', '#7a2e36'], accent: '#ffe6b0', motif: ['🎶', '🔔'] }
+    scene: { type: 'snow', colors: ['#2c3a5e', '#a5444e'], accent: '#ffe6b0', motif: ['🎶', '🔔'] }
   },
   {
     id: 'gyul', name: '귤', from: '11-01', to: '02-28', peak: ['11-20', '01-15'], w: 1,
