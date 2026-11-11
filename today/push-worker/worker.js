@@ -9,6 +9,7 @@
    GET  /vapid  → 푸시용 공개키 (처음 부르면 서버가 직접 만들어 저장해요)
    POST /sync   → 앱이 이 기기의 구독 정보와 앞으로 울릴 알림 목록을 보내요
    매 분        → 시각이 된 알림을 Web Push로 보내요
+   GET  /ics?url=  → 구글·아이클라우드·아웃룩(팀즈) 캘린더 공유 주소(.ics)를 대신 받아 와요
    GET  /kma?lat=&lon=  → 가장 가까운 기상청 AWS 관측소의 지금 강수 여부 (KMA_KEY 비밀값 필요)
    GET  /kma/raw?what=aws|stn&stn=  → 기상청 응답 원문 일부 (형식 확인용) */
 
@@ -40,6 +41,19 @@ export default {
         }
         await save(env, state);
         return cors(json({ ok: true, count: state.devices[body.token] ? state.devices[body.token].reminders.length : 0 }));
+      }
+      if (url.pathname === '/ics' && req.method === 'GET') {
+        // 구글·아이클라우드·아웃룩(팀즈) 캘린더의 공유(.ics) 주소만 대신 받아 와요
+        const u = (url.searchParams.get('url') || '').trim().replace(/^webcals?:\/\//i, 'https://');
+        let host = '';
+        try { host = new URL(u).hostname; } catch (e) { /* 아래에서 거절 */ }
+        if (!/^https:\/\//i.test(u) || !/(^|\.)(google\.com|icloud\.com|office365\.com|outlook\.com|live\.com|office\.com)$/i.test(host)) {
+          return cors(json({ error: '구글·아이클라우드·아웃룩 캘린더 공유 주소만 쓸 수 있어요' }, 400));
+        }
+        const r = await fetch(u, { headers: { 'user-agent': 'today-calendar/1.0' }, redirect: 'follow' });
+        const t = await r.text();
+        if (!r.ok || !/BEGIN:VCALENDAR/.test(t)) return cors(json({ error: '캘린더를 받지 못했어요 (' + r.status + ')' }, 502));
+        return cors(new Response(t, { headers: { 'content-type': 'text/calendar; charset=utf-8', 'cache-control': 'no-store' } }));
       }
       if (url.pathname === '/kma' && req.method === 'GET') {
         return cors(json(await kmaNow(env, +url.searchParams.get('lat'), +url.searchParams.get('lon'))));

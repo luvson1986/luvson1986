@@ -1586,7 +1586,7 @@
       return '<li class="tl-item ' + state + (s.important ? ' imp' : '') + (s.done ? ' done' : '') + (openEnded ? ' has-done' : '') + (movable ? ' movable' : '') + (s.sample ? ' is-sample' : '') + '" data-id="' + s.id + '" data-min="' + k + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="tl-time">' + (movable ? '<span class="tl-grip" aria-label="끌어서 옮기기">' + GRIP + '</span>' : timeLabel) + '</span><span class="tl-dot"></span>' +
         '<button type="button" class="tl-card" data-id="' + s.id + '">' +
-        '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + '</span>' +
+        '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + (s.ext ? ' <span class="tl-tag ext">' + EXT_LABEL[s.ext.src] + '</span>' : '') + '</span>' +
         (function () {
           var meta = [s.start ? s.start + (s.end ? '–' + s.end : '') : '', s.place ? esc(s.place) : ''].filter(Boolean).join(' · ') + (rel || '');
           return meta ? '<span class="tl-meta">' + meta.replace(/^ · /, '') + '</span>' : '';
@@ -2658,6 +2658,152 @@
   }
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
 
+  /* ---------- 외부 일정 불러오기 (구글·아이클라우드·팀즈/아웃룩 .ics 공유 주소) ---------- */
+  var EXT_LABEL = { outlook: '팀즈', google: '구글', icloud: '아이폰' };
+  var ext = store.get('extcal', { on: false, srcs: {} });
+  // .ics 읽기: 접힌 줄 펴기 → VEVENT마다 속성 모으기
+  function parseIcs(text) {
+    var lines = text.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').split(/\r?\n/), evs = [], cur = null;
+    var un = function (v) { return v.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1').trim(); };
+    lines.forEach(function (l) {
+      if (l === 'BEGIN:VEVENT') { cur = { exdate: [] }; return; }
+      if (l === 'END:VEVENT') { if (cur) evs.push(cur); cur = null; return; }
+      if (!cur) return;
+      var i = l.indexOf(':'); if (i < 0) return;
+      var head = l.slice(0, i).split(';'), name = head[0].toUpperCase(), val = l.slice(i + 1), params = {};
+      head.slice(1).forEach(function (p) { var kv = p.split('='); params[kv[0].toUpperCase()] = kv[1]; });
+      if (name === 'DTSTART' || name === 'DTEND' || name === 'RECURRENCE-ID') cur[name] = { v: val, date: params.VALUE === 'DATE' || /^\d{8}$/.test(val) };
+      else if (name === 'EXDATE') val.split(',').forEach(function (x) { cur.exdate.push(x); });
+      else if (name === 'SUMMARY' || name === 'LOCATION' || name === 'UID' || name === 'RRULE' || name === 'STATUS') cur[name] = name === 'SUMMARY' || name === 'LOCATION' ? un(val) : val;
+    });
+    return evs;
+  }
+  // 날짜·시각: Z(UTC)는 이 폰 시각으로, TZID가 붙은 건 적힌 시각 그대로(현지 시각)
+  function icsDate(t) {
+    var m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?/.exec(t.v || t); if (!m) return null;
+    if (m[7]) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]));
+    return new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0));
+  }
+  // 반복 일정(RRULE)을 기간 안의 날짜들로 펼쳐요 (DAILY·WEEKLY(BYDAY)·MONTHLY·YEARLY, INTERVAL·COUNT·UNTIL·EXDATE)
+  function expandIcs(ev, from, to) {
+    var st = icsDate(ev.DTSTART); if (!st) return [];
+    var en = ev.DTEND ? icsDate(ev.DTEND) : null, len = en ? en - st : 0;
+    if (!ev.RRULE) return st <= to && (en || st) >= from ? [st] : [];
+    var r = {}; ev.RRULE.split(';').forEach(function (p) { var kv = p.split('='); r[kv[0]] = kv[1]; });
+    var iv = +(r.INTERVAL || 1), count = r.COUNT ? +r.COUNT : Infinity, until = r.UNTIL ? icsDate(r.UNTIL) : null;
+    var ex = ev.exdate.map(function (x) { var d = icsDate(x); return d ? ymd(d) : ''; });
+    var days = r.BYDAY ? r.BYDAY.split(',').map(function (d) { return ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'].indexOf(d.slice(-2)); }) : null;
+    var out = [], n = 0, guard = 0;
+    var push = function (d) {
+      if (until && d > until) return false;
+      if (n >= count) return false;
+      n++;
+      if (d.getTime() + len >= from.getTime() && d <= to && ex.indexOf(ymd(d)) < 0) out.push(new Date(d));
+      return d <= to;
+    };
+    if (r.FREQ === 'WEEKLY' && days) {
+      var wk = new Date(st); wk.setDate(wk.getDate() - wk.getDay());
+      while (guard++ < 600) {
+        for (var k = 0; k < 7; k++) {
+          if (days.indexOf(k) < 0) continue;
+          var d = new Date(wk); d.setDate(wk.getDate() + k); d.setHours(st.getHours(), st.getMinutes(), 0, 0);
+          if (d < st) continue;
+          if (!push(d)) return out;
+        }
+        wk.setDate(wk.getDate() + 7 * iv);
+      }
+      return out;
+    }
+    var d = new Date(st);
+    while (guard++ < 1500) {
+      if (!push(d)) return out;
+      if (r.FREQ === 'DAILY') d.setDate(d.getDate() + iv);
+      else if (r.FREQ === 'WEEKLY') d.setDate(d.getDate() + 7 * iv);
+      else if (r.FREQ === 'MONTHLY') d.setMonth(d.getMonth() + iv);
+      else if (r.FREQ === 'YEARLY') d.setFullYear(d.getFullYear() + iv);
+      else return out;
+    }
+    return out;
+  }
+  // 받아 온 일정을 내 일정에 맞춰 넣어요: 오늘~30일 안의 이 출처 일정은 새 목록으로 바꾸되, 완료·알림·메모는 이어받아요
+  function mergeExt(kind, evs) {
+    var from = new Date(); from.setHours(0, 0, 0, 0);
+    var to = new Date(from); to.setDate(to.getDate() + 30);
+    var overridden = {}, items = [];
+    evs.forEach(function (e) { if (e['RECURRENCE-ID'] && e.UID) { var d = icsDate(e['RECURRENCE-ID']); if (d) overridden[e.UID + '@' + ymd(d)] = 1; } });
+    evs.forEach(function (e) {
+      if (e.STATUS === 'CANCELLED' || !e.DTSTART) return;
+      var allDay = e.DTSTART.date, en0 = e.DTEND ? icsDate(e.DTEND) : null, st0 = icsDate(e.DTSTART);
+      expandIcs(e, from, to).forEach(function (d) {
+        var key = ymd(d);
+        if (!e['RECURRENCE-ID'] && overridden[e.UID + '@' + key]) return;
+        var end = en0 && st0 ? new Date(d.getTime() + (en0 - st0)) : null;
+        items.push({ key: key, xid: kind + ':' + (e.UID || e.SUMMARY) + '@' + key, title: e.SUMMARY || '(제목 없음)', place: e.LOCATION || '',
+          start: allDay ? '' : pad(d.getHours()) + ':' + pad(d.getMinutes()),
+          end: allDay || !end || ymd(end) !== key ? '' : pad(end.getHours()) + ':' + pad(end.getMinutes()) });
+      });
+    });
+    var workCat = (cats.find(function (c) { return /회의|업무/.test(c.name); }) || cats[0] || {}).id;
+    var keep = {};
+    Object.keys(schedules).forEach(function (k) {
+      if (parseYmd(k) < from || parseYmd(k) > to) return;
+      schedules[k] = schedules[k].filter(function (s) {
+        if (!s.ext || s.ext.src !== kind) return true;
+        keep[s.ext.id] = s; return false;
+      });
+    });
+    items.forEach(function (it) {
+      var old = keep[it.xid] || {};
+      var s = Object.assign({ id: old.id || uid(), cat: old.cat || (kind === 'outlook' ? workCat : (cats[0] || {}).id), memo: old.memo || '' }, old, {
+        title: it.title, start: it.start, end: it.end, place: it.place, ext: { src: kind, id: it.xid } });
+      if (it.start) delete s.pos;
+      (schedules[it.key] = schedules[it.key] || []).push(s);
+    });
+    return items.length;
+  }
+  var extBusy = false;
+  function syncExt(manual) {
+    var srv = ((store.get('push', {}) || {}).url || '').replace(/\/+$/, '');
+    if (!ext.on || extBusy) return Promise.resolve();
+    var kinds = Object.keys(ext.srcs).filter(function (k) { return ext.srcs[k]; });
+    if (!kinds.length) { if (manual) $('ext-status').textContent = '불러올 주소를 넣어 주세요.'; return Promise.resolve(); }
+    if (!srv) { $('ext-status').textContent = '알림 서버를 먼저 연결해 주세요.'; return Promise.resolve(); }
+    extBusy = true; if (manual) $('ext-status').textContent = '불러오는 중…';
+    var msgs = [];
+    return Promise.all(kinds.map(function (k) {
+      return fetchWithTimeout(srv + '/ics?url=' + encodeURIComponent(ext.srcs[k]), 15000).then(function (r) { return r.text(); }).then(function (t) {
+        var n = mergeExt(k, parseIcs(t)); msgs.push(EXT_LABEL[k] + ' ' + n + '개');
+      }).catch(function () { msgs.push(EXT_LABEL[k] + ' 실패'); });
+    })).then(function () {
+      extBusy = false; ext.at = Date.now(); store.set('extcal', ext);
+      saveSchedules(); renderSchedule();
+      $('ext-status').textContent = msgs.join(' · ') + ' · ' + pad(new Date().getHours()) + ':' + pad(new Date().getMinutes()) + ' 불러옴';
+    });
+  }
+  function initExtCal() {
+    var on = $('ext-on'), panel = $('ext-panel');
+    var paint = function () {
+      on.checked = !!ext.on; panel.hidden = !ext.on;
+      ['outlook', 'google', 'icloud'].forEach(function (k) { $('ext-' + k).value = ext.srcs[k] || ''; });
+    };
+    paint();
+    on.addEventListener('change', function () {
+      ext.on = on.checked; store.set('extcal', ext); panel.hidden = !ext.on;
+      if (!ext.on) {
+        // 끄면 불러온 일정은 지워요 (완료한 것은 남겨요)
+        Object.keys(schedules).forEach(function (k) { schedules[k] = schedules[k].filter(function (s) { return !s.ext || s.done; }); });
+        saveSchedules(); renderSchedule(); $('ext-status').textContent = '';
+      } else syncExt(true);
+    });
+    ['outlook', 'google', 'icloud'].forEach(function (k) {
+      $('ext-' + k).addEventListener('change', function () { ext.srcs[k] = this.value.trim(); store.set('extcal', ext); syncExt(true); });
+    });
+    $('ext-sync').onclick = function () { syncExt(true); };
+    syncExt();
+    setInterval(function () { if (!document.hidden) syncExt(); }, 30 * 60 * 1000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - (ext.at || 0) > 10 * 60 * 1000) syncExt(); });
+  }
+
   /* ---------- 시작 ---------- */
   renderGreeting();
   initNote();
@@ -2679,6 +2825,7 @@
   initSchedule();
   initChecklist();
   initSettings();
+  initExtCal();
   initSectionOrder();
   initBackup();
   // 스플래시: 날씨를 다 불러오면 사라져요 (최소 0.6초, 최대 8초)
