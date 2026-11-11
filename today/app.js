@@ -323,13 +323,14 @@
       closeDialog(dlg);
       setTimeout(function () { location.href = go; }, 50);
     });
-    // 상세 화면 링크: 지도는 네이버 지도 앱, 유튜브는 유튜브 앱, 선물하기는 카카오톡(사파리를 거쳐 앱으로), 인스타는 인스타 앱, 나머지는 네이버 앱
+    // 상세 화면 링크: 지도는 네이버 지도 앱, 유튜브는 유튜브 앱, 선물하기는 카카오톡 앱 안 브라우저, 인스타는 인스타 앱, 나머지는 네이버 앱
     document.addEventListener('click', function (e) {
       var a = e.target.closest('a.si-link, a.si-insta'); if (!a) return;
       e.preventDefault();
       var url = a.href, k = a.dataset.open, go;
       if (k === 'yt') go = url.replace(/^https:\/\/www\.youtube\.com\//, 'youtube://www.youtube.com/');
-      else if (k === 'kakao') go = url.replace(/^https:\/\//, 'x-safari-https://');
+      // 카카오톡 앱 안의 브라우저로 선물하기 페이지를 열어요 (카카오 계정으로 로그인된 상태)
+      else if (k === 'kakao') go = 'kakaotalk://inappbrowser?url=' + encodeURIComponent(url);
       else if (k === 'insta') go = 'instagram://tag?name=' + decodeURIComponent((url.match(/tags\/([^/]+)/) || [])[1] || '');
       // 지도는 네이버 지도 앱으로 바로 검색
       else if (k === 'map') go = 'nmap://search?query=' + encodeURIComponent(decodeURIComponent((url.match(/search\/([^?#]+)/) || [])[1] || '')) + '&appname=luvson1986.github.io';
