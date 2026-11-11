@@ -1328,8 +1328,18 @@
     schedules[plus(2)] = [ex('s8', '', '세탁소', 'personal'), ex('s9', '', '공과금 납부', 'personal'), ex('s10', '18:00', '영화', 'personal', { important: true })];
     schedules[plus(4)] = [ex('s11', '', '조식', 'personal'), ex('s12', '', '출근', 'focus'), ex('s13', '', '마사지', 'health')];
   }
-  var saveSchedules = function () { store.set('schedules', schedules); if (typeof scheduleReminders === 'function') setTimeout(scheduleReminders, 0); };
+  var saveSchedules = function () { pinUntimed(); store.set('schedules', schedules); if (typeof scheduleReminders === 'function') setTimeout(scheduleReminders, 0); };
   var toMin = function (hm) { if (!hm) return -1; var p = hm.split(':'); return +p[0] * 60 + +p[1]; };
+  // 시간 미정 일정은 처음 저장될 때 자리(pos)를 고정해요: 그때 그날의 맨 뒤.
+  // 그래서 나중에 시간 일정을 넣거나 시간이 흘러도, 직접 옮기기 전까지는 순서가 저절로 바뀌지 않아요
+  function pinUntimed() {
+    Object.keys(schedules).forEach(function (k) {
+      var day = schedules[k] || [], last = -1;
+      day.forEach(function (s) { var m = s.start ? toMin(s.start) : s.pos; if (m != null && m > last) last = m; });
+      day.forEach(function (s) { if (!s.start && s.pos == null) { last += 1; s.pos = last; } });
+    });
+  }
+  pinUntimed();
   var parseYmd = function (k) { var p = k.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); };
 
   // 팝업이 열려 있는 동안 뒤 화면이 스크롤되지 않게 고정 (iOS는 body를 fixed로 묶어야 확실해요)
@@ -1554,18 +1564,18 @@
   }
   // 하루의 보여 줄 순서 (타임라인·다가오는 일정 목록·메인 카드가 모두 이걸 따라요)
   // past: 끝냈거나(오늘은) 이미 시작한 일정 — 지나간 순서(시작한 시각·끝낸 시각)대로
-  // rest: 아직 남은 일정 — 시간순. 직접 옮긴 적 없는 시간 미정 일정은 오늘이면 '지금' 자리, 다른 날이면 맨 뒤
+  // rest: 아직 남은 일정 — 시간순, 시간 미정 일정은 저장된 자리(pos) 그대로
   function dayOrder(key) {
     var all = schedules[key] || [], now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
-    var diff = Math.round((parseYmd(key) - parseYmd(ymd(now))) / 864e5), nowK = diff === 0 ? nowMin : null;
+    var diff = Math.round((parseYmd(key) - parseYmd(ymd(now))) / 864e5);
     // 끝낸 시각(그날 몇 분째). 기록이 없으면(예전에 끝낸 일정) '방금 끝낸 것'으로 봐요
     var doneMin = function (s, fallback) {
       if (!s.doneAt) return diff === 0 ? nowMin : diff < 0 ? 1440 : fallback;
       var d = new Date(s.doneAt);
       return ymd(d) === key ? d.getHours() * 60 + d.getMinutes() : ymd(d) < key ? -1 : 1440;
     };
-    var items = orderDay(all, nowK).map(function (s, i) {
-      var k = seqMin(s, all.indexOf(s), nowK);
+    var items = orderDay(all).map(function (s, i) {
+      var k = seqMin(s, all.indexOf(s));
       if (!s.start) return { s: s, k: k, i: i, past: !!s.done, when: s.done ? doneMin(s, k) : k };
       var st = toMin(s.start), started = diff < 0 || (diff === 0 && st <= nowMin);
       return { s: s, k: k, i: i, past: !!s.done || started, when: started ? st : s.done ? doneMin(s, st) : st };
@@ -1591,11 +1601,10 @@
   function weekKey(d) { var m = new Date(d); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return ymd(m); }
   // 시간 있는 일정은 시간순, 시간 없는 일정은 적은 순서대로 맨 뒤
   // 시간 있는 일정은 시작 시각, 시간 미정 일정은 끌어다 놓은 자리(pos) 기준. 자리가 없으면 맨 뒤
-  // 자리(분 단위). 시간 미정이고 직접 옮긴 적 없는 일정은: 오늘이면 '지금' 자리(현재 줄 바로 아래, 다가올 시간 일정보다 위),
-  // 다른 날이면 시간 일정들 뒤
-  function seqMin(s, i, nowK) { return s.start ? toMin(s.start) : s.pos != null ? s.pos : nowK != null ? nowK + i * 0.01 : 10000 + i; }
-  function orderDay(list, nowK) {
-    return list.map(function (s, i) { return { s: s, k: seqMin(s, i, nowK), i: i }; })
+  // 자리(분 단위): 시간 일정은 시작 시각, 시간 미정 일정은 저장된 자리(pos)
+  function seqMin(s, i) { return s.start ? toMin(s.start) : s.pos != null ? s.pos : 10000 + i; }
+  function orderDay(list) {
+    return list.map(function (s, i) { return { s: s, k: seqMin(s, i), i: i }; })
       .sort(function (a, b) { return a.k - b.k || a.i - b.i; })
       .map(function (x) { return x.s; });
   }
@@ -1629,7 +1638,7 @@
   function renderNowNext() {
     var key = ymd(new Date()), now = new Date(), nm = now.getHours() * 60 + now.getMinutes();
     var raw = schedules[key] || [];
-    var seq = orderDay(raw, nm).filter(function (s) { return !s.done; });
+    var seq = orderDay(raw).filter(function (s) { return !s.done; });
     var running = seq.filter(function (s) {
       if (!s.start || toMin(s.start) > nm) return false;
       var en = s.end ? toMin(s.end) : implicitEnd(s, raw);
