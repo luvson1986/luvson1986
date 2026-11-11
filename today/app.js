@@ -866,6 +866,7 @@
     });
     var hero = $('hero');
     $('hero-bg').style.background = layers.join(', ') + ', ' + base;
+    flagBandImg = layers.join(', ') + ', linear-gradient(' + base + ', ' + base + ')';
     // 글자가 놓이는 위쪽은 앞쪽 색들이 덮어요 → 그 밝기로 글자색 결정
     var topCols = cols.slice(0, Math.min(2, cols.length));
     var topLum = topCols.reduce(function (s, b) { return s + lum(b[0]) * b[1]; }, 0) / topCols.reduce(function (s, b) { return s + b[1]; }, 0);
@@ -875,19 +876,19 @@
     document.documentElement.style.setProperty('--hero-b', cols[cols.length - 1][0]);
     syncStatusBand();
   }
-  // 상태바 뒤 띠에 메인 맨 위 배경(그라데이션 + 위쪽 어둡게 덮는 막)을 같은 크기로 복사해요
+  // 상태바 뒤 띠: 시즌 배경은 CSS가 같은 색으로 그려요(메인 높이만 알려 주면 돼요).
+  // 해외(국기) 배경일 때만 그 번짐 무늬를 그대로 넘겨요
+  var flagBandImg = '';
   function syncStatusBand() {
-    var band = $('status-band'), bg = $('hero-bg'), hero = $('hero'); if (!band || !bg) return;
-    requestAnimationFrame(function () {
-      var img = getComputedStyle(bg).backgroundImage, h = hero.offsetHeight || 400;
+    var band = $('status-band'), hero = $('hero'); if (!band || !hero) return;
+    document.documentElement.style.setProperty('--hero-h', (hero.offsetHeight || 640) + 'px');
+    document.documentElement.classList.toggle('hero-light', hero.classList.contains('ink-dark'));
+    if (travelBands && flagBandImg) {
       var shade = hero.classList.contains('ink-dark')
         ? 'linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 45%, rgba(8,12,20,0.18) 100%)'
         : 'linear-gradient(180deg, rgba(28,16,12,0.3) 0%, rgba(28,16,12,0) 45%, rgba(28,16,12,0.35) 100%)';
-      var layers = img && img !== 'none' ? shade + ', ' + img : shade;
-      band.style.backgroundImage = layers;
-      band.style.backgroundSize = layers.split(/,(?![^(]*\))/).map(function () { return '100% ' + h + 'px'; }).join(', ');
-      band.style.backgroundColor = getComputedStyle(bg).backgroundColor;
-    });
+      band.style.backgroundImage = shade + ', ' + flagBandImg;
+    } else band.style.backgroundImage = '';
   }
   // 한국 시즌 배경도 라이트는 지금 색 그대로, 다크는 같은 색을 깊게 눌러서
   var seasonColors = null;

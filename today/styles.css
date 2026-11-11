@@ -938,7 +938,11 @@ dialog.sheet:focus { outline: none; }
 /* 상태바 뒤 띠: 화면 맨 위 고정. iOS 26은 맨 위에 고정된 요소의 색으로 상태바 뒤를 칠해서,
    이게 없으면 페이지 바탕(밝은 베이지)으로 하얗게 흐려져요 */
 .status-band { position: fixed; left: 0; right: 0; top: 0; height: env(safe-area-inset-top, 0px); z-index: 99; pointer-events: none;
-  background-color: color-mix(in srgb, var(--hero-a) 70%, rgb(28, 16, 12)); background-repeat: no-repeat; background-position: left top; }
+  background-color: var(--hero-a); background-repeat: no-repeat; background-position: left top;
+  /* 메인 배경과 같은 그라데이션 + 위쪽 어둡게 덮는 막을 메인 높이(--hero-h)에 맞춰 그려서, 맨 위에서 이어져 보여요 */
+  background-image: linear-gradient(180deg, rgba(28, 16, 12, 0.3) 0%, rgba(28, 16, 12, 0) 45%, rgba(28, 16, 12, 0.35) 100%), linear-gradient(160deg, var(--hero-a) 0%, var(--hero-b) 100%);
+  background-size: 100% var(--hero-h, 640px); }
+html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 45%, rgba(8, 12, 20, 0.18) 100%), linear-gradient(160deg, var(--hero-a) 0%, var(--hero-b) 100%); }
 
 /* 외부 일정 불러오기 */
 .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
