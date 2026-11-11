@@ -259,7 +259,7 @@ window.SEASONS = [
     headline: '빼빼로 나눠 먹는 날',
     desc: '11월 11일, 막대 과자를 닮은 숫자 1이 네 개인 날이에요. 동료·친구들과 가볍게 나누기 좋아요.',
     todo: ['팀 동료 몫까지 넉넉히', '수제 빼빼로 만들기', '가래떡데이(같은 날)도 챙기기'],
-    scene: { type: 'lights', colors: ['#5a2a1a', '#d9a066'], accent: '#ffe6c0', motif: ['🍫', '🥢'] }
+    scene: { type: 'lights', colors: ['#5a2a1a', '#d9a066'], accent: '#ffe6c0', motif: ['🍫', '🎁'] }
   }
 ];
 
