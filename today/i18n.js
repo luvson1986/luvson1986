@@ -65,7 +65,7 @@
     '복사했어요': 'Copied',
 
     // ---- 시즌 ----
-    '시즌 캘린더': 'Season calendar', '시즌 추가': 'Add season', '캘린더': 'Calendar', '목록·편집': 'List · Edit', '보기 방식': 'View',
+    '시즌 캘린더': 'Season calendar', '시즌 추가': 'Add season', '캘린더': 'Calendar', '목록': 'List', '보기 방식': 'View',
     '전국 기준 날짜예요. 위치를 받아오면 지역에 맞게 바뀌어요.': 'Nationwide dates. They adjust to your region once location is available.',
     '오늘 기준 순서예요. 배경에는 항상 오늘 가장 높은 순위 시즌이 나와요.': "Ordered for today. The background always shows today's top season.",
     '숨긴 시즌': 'Hidden seasons', '다시 보기': 'Show', '숨기기': 'Hide', '내가 추가': 'Mine',
