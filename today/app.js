@@ -167,7 +167,8 @@
     $('season-kw').innerHTML = others.map(function (x) {
       return '<button type="button" class="kw-chip" data-id="' + esc(x.s.id) + '"><span aria-hidden="true">' + esc(x.s.scene.motif[0] || '') + '</span>' + esc(x.s.name) + '</button>';
     }).join('');
-    var motif = tops.length > 1 ? tops.slice(0, 2).map(function (x) { return x.s.scene.motif[0]; }) : s.scene.motif;
+    // 오른쪽 큰 아이콘은 시즌당 하나 (시즌이 둘이면 각각 하나씩)
+    var motif = tops.slice(0, 2).map(function (x) { return x.s.scene.motif[0]; }).filter(Boolean);
     $('hero-motif').innerHTML = motif.map(function (m) { return '<span>' + esc(m) + '</span>'; }).join('');
     $('hero-motif').classList.toggle('pair', tops.length > 1);
     // 배경에 날리는 이모티콘은 2종류까지: 시즌이 둘이면 각 시즌의 대표 하나씩, 하나면 그 시즌의 앞 두 개
