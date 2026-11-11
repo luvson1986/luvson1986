@@ -184,8 +184,10 @@
       showSeason([{ s: f, p: null }]);
       return;
     }
-    // 가장 절정인 시즌이 메인. 같은 단계·같은 점수면 함께 보여줘요
+    // 기념일·명절 기간이면 그것만 메인
     var first = ranked[0];
+    if (first.s.priority) { showSeason([first]); return; }
+    // 가장 절정인 시즌이 메인. 같은 단계·같은 점수면 함께 보여줘요
     showSeason(ranked.filter(function (x) { return x.p.phase === first.p.phase && first.p.score - x.p.score < 0.001; }));
   }
 
