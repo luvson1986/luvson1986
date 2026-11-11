@@ -263,10 +263,13 @@
     var dlg = $('season-dialog');
     var open = function (focusId) {
       renderSeasonDialog();
-      setSdView('cal');
+      setSdView('list');
       renderSeasonCal(focusId);
       $('sd-form').hidden = true;
       openDialog(dlg);
+      // 누른 시즌이 목록에 있으면 잠깐 강조해서 보여 줘요
+      var row = focusId && dlg.querySelector('#sd-list-view .sd-row[data-id="' + focusId + '"]');
+      if (row) { row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 1600); }
     };
     $('season-open').onclick = function () { if (!travelMode) open(currentSeason && currentSeason.id); };
     $('season-kw').addEventListener('click', function (e) { var b = e.target.closest('.kw-chip'); if (b && !travelMode) open(b.dataset.id); });

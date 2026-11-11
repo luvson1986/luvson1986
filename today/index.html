@@ -195,15 +195,15 @@
     </form>
 
     <div class="seg" role="tablist" aria-label="보기 방식" id="sd-tabs">
-      <button type="button" role="tab" class="seg-btn" data-view="list" aria-selected="false">목록</button>
-      <button type="button" role="tab" class="seg-btn" data-view="cal" aria-selected="true">캘린더</button>
+      <button type="button" role="tab" class="seg-btn" data-view="list" aria-selected="true">목록</button>
+      <button type="button" role="tab" class="seg-btn" data-view="cal" aria-selected="false">캘린더</button>
     </div>
-    <div id="sd-cal-view">
+    <div id="sd-cal-view" hidden>
       <p class="hint" id="sd-adapt"></p>
       <div class="legend"><span><i class="lg-bar"></i>제철</span><span><i class="lg-peak"></i>절정</span><span><i class="lg-today"></i>오늘</span></div>
       <div class="cal-box"><div class="ycal" id="sd-cal"></div></div>
     </div>
-    <div id="sd-list-view" hidden>
+    <div id="sd-list-view">
     <p class="hint">오늘 기준 순서예요. 배경에는 항상 오늘 가장 높은 순위 시즌이 나와요.</p>
     <ul class="sd-list" id="sd-now"></ul>
     <h3 class="sub-h">다른 시기</h3>

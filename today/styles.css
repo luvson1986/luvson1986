@@ -694,7 +694,7 @@ a.wk-row:active { background: var(--surface-2); }
 .dl-item.done { opacity: 0.45; text-decoration: line-through; }
 .dl-time { font-family: var(--f-mono); font-size: 13.5px; margin-right: 1px; }
 .dl-memo { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); margin-left: 4px; vertical-align: 3px; }
-.dl-item.flash { animation: flash 1.4s ease 2; }
+.dl-item.flash, .sd-row.flash { animation: flash 1.4s ease 2; }
 @media (max-width: 480px) {
   .qa { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "text text" "date btn"; }
   .qa #qa-text { grid-area: text; } .qa #qa-date { grid-area: date; width: 100%; } .qa button { grid-area: btn; }

@@ -730,7 +730,7 @@ a.wk-row:active { background: var(--surface-2); }
 .dl-item.done { opacity: 0.45; text-decoration: line-through; }
 .dl-time { font-family: var(--f-mono); font-size: 13.5px; margin-right: 1px; }
 .dl-memo { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); margin-left: 4px; vertical-align: 3px; }
-.dl-item.flash { animation: flash 1.4s ease 2; }
+.dl-item.flash, .sd-row.flash { animation: flash 1.4s ease 2; }
 @media (max-width: 480px) {
   .qa { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "text text" "date btn"; }
   .qa #qa-text { grid-area: text; } .qa #qa-date { grid-area: date; width: 100%; } .qa button { grid-area: btn; }
@@ -1116,15 +1116,15 @@ dialog.sheet:focus { outline: none; }
     </form>
 
     <div class="seg" role="tablist" aria-label="보기 방식" id="sd-tabs">
-      <button type="button" role="tab" class="seg-btn" data-view="list" aria-selected="false">목록</button>
-      <button type="button" role="tab" class="seg-btn" data-view="cal" aria-selected="true">캘린더</button>
+      <button type="button" role="tab" class="seg-btn" data-view="list" aria-selected="true">목록</button>
+      <button type="button" role="tab" class="seg-btn" data-view="cal" aria-selected="false">캘린더</button>
     </div>
-    <div id="sd-cal-view">
+    <div id="sd-cal-view" hidden>
       <p class="hint" id="sd-adapt"></p>
       <div class="legend"><span><i class="lg-bar"></i>제철</span><span><i class="lg-peak"></i>절정</span><span><i class="lg-today"></i>오늘</span></div>
       <div class="cal-box"><div class="ycal" id="sd-cal"></div></div>
     </div>
-    <div id="sd-list-view" hidden>
+    <div id="sd-list-view">
     <p class="hint">오늘 기준 순서예요. 배경에는 항상 오늘 가장 높은 순위 시즌이 나와요.</p>
     <ul class="sd-list" id="sd-now"></ul>
     <h3 class="sub-h">다른 시기</h3>
@@ -3562,10 +3562,13 @@ window.PHRASE_TOPICS = [
     var dlg = $('season-dialog');
     var open = function (focusId) {
       renderSeasonDialog();
-      setSdView('cal');
+      setSdView('list');
       renderSeasonCal(focusId);
       $('sd-form').hidden = true;
       openDialog(dlg);
+      // 누른 시즌이 목록에 있으면 잠깐 강조해서 보여 줘요
+      var row = focusId && dlg.querySelector('#sd-list-view .sd-row[data-id="' + focusId + '"]');
+      if (row) { row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 1600); }
     };
     $('season-open').onclick = function () { if (!travelMode) open(currentSeason && currentSeason.id); };
     $('season-kw').addEventListener('click', function (e) { var b = e.target.closest('.kw-chip'); if (b && !travelMode) open(b.dataset.id); });
