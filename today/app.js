@@ -170,8 +170,9 @@
     var motif = tops.length > 1 ? tops.slice(0, 2).map(function (x) { return x.s.scene.motif[0]; }) : s.scene.motif;
     $('hero-motif').innerHTML = motif.map(function (m) { return '<span>' + esc(m) + '</span>'; }).join('');
     $('hero-motif').classList.toggle('pair', tops.length > 1);
+    // 배경에 날리는 이모티콘은 2종류까지: 시즌이 둘이면 각 시즌의 대표 하나씩, 하나면 그 시즌의 앞 두 개
     var em = [];
-    tops.forEach(function (x) { (x.s.scene.motif || []).forEach(function (m) { if (em.indexOf(m) < 0) em.push(m); }); });
+    (tops.length > 1 ? tops.map(function (x) { return x.s.scene.motif[0]; }) : (s.scene.motif || [])).forEach(function (m) { if (m && em.indexOf(m) < 0 && em.length < 2) em.push(m); });
     // 단풍은 이미 🍁🍂가 떨어져서 따로 안 띄워요
     if (s.scene.type === 'leaves' && tops.length === 1) em = [];
     scene.start(Object.assign({}, s.scene, { emojis: em }));
