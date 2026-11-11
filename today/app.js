@@ -2776,11 +2776,18 @@
     // 같은 출처의 주소들을 모두 받아서 한꺼번에 맞춰요. 하나라도 못 받으면 그 출처는 이번엔 그대로 둬요(일정이 사라지지 않게)
     return Promise.all(kinds.map(function (k) {
       return Promise.all(extUrls(k).map(function (u) {
-        return fetchWithTimeout(srv + '/ics?url=' + encodeURIComponent(u), 15000).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); });
+        return fetch(srv + '/ics?url=' + encodeURIComponent(u)).then(function (r) {
+          return r.text().then(function (t) {
+            if (/BEGIN:VCALENDAR/.test(t)) return t;
+            // 서버가 예전 코드면 /ics를 몰라서 안내 문구만 돌려줘요
+            var why = /^오늘 알림 서버/.test(t) ? '알림 서버 코드를 최신으로 바꿔 주세요' : (function () { try { return JSON.parse(t).error; } catch (e) { return '받지 못했어요 (' + r.status + ')'; } })();
+            throw new Error(why);
+          });
+        });
       })).then(function (texts) {
         var evs = []; texts.forEach(function (t) { evs = evs.concat(parseIcs(t)); });
         var n = mergeExt(k, evs); msgs.push(EXT_LABEL[k] + ' ' + n + '개');
-      }).catch(function () { msgs.push(EXT_LABEL[k] + ' 일부 실패'); });
+      }).catch(function (e) { msgs.push(EXT_LABEL[k] + ' 실패: ' + ((e && e.message) || '연결 오류')); });
     })).then(function () {
       extBusy = false; ext.at = Date.now(); store.set('extcal', ext);
       saveSchedules(); renderSchedule();
