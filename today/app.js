@@ -290,9 +290,12 @@
       return '';
     };
     var tag = function (l) { return !l ? '' : typeof l === 'string' ? '바로가기' : l.map ? '지도' : l.yt ? '유튜브' : l.kakao ? '선물하기' : '검색'; };
+    var kind = function (l) { return !l ? '' : typeof l === 'string' ? 'web' : l.map ? 'map' : l.yt ? 'yt' : l.kakao ? 'kakao' : 'n'; };
+    // 장소·음식(지도 링크)은 인스타 해시태그로 실제 사진도 볼 수 있게
+    var insta = function (x) { return kind(x[2]) === 'map' ? '<a class="si-insta" data-open="insta" href="https://www.instagram.com/explore/tags/' + enc(x[2].map.replace(/[\s·\-()/.,!]/g, '')) + '/" aria-label="' + esc(x[0]) + ' 인스타그램 사진">#인스타</a>' : ''; };
     var li = function (x) {
       var h = href(x[2]), inner = '<b>' + esc(x[0]) + '</b>' + (x[1] ? '<span>' + esc(x[1]) + '</span>' : '');
-      return h ? '<li><a class="si-link" href="' + esc(h) + '" target="_blank" rel="noopener"><span class="si-txt">' + inner + '</span><em>' + tag(x[2]) + ' ›</em></a></li>' : '<li>' + inner + '</li>';
+      return h ? '<li class="si-row"><a class="si-link" data-open="' + kind(x[2]) + '" href="' + esc(h) + '" target="_blank" rel="noopener"><span class="si-txt">' + inner + '</span><em>' + tag(x[2]) + ' ›</em></a>' + insta(x) + '</li>' : '<li>' + inner + '</li>';
     };
     $('si-sections').innerHTML = (info.sections || []).map(function (sec) {
       return '<section class="si-sec"><h3 class="sub-h">' + esc(sec.t) + '</h3><ul class="si-list">' + sec.items.map(li).join('') + '</ul></section>';
@@ -320,11 +323,16 @@
       closeDialog(dlg);
       setTimeout(function () { location.href = go; }, 50);
     });
-    // 상세 화면 링크는 고르지 않고 바로 네이버 앱으로 열어요
+    // 상세 화면 링크: 유튜브는 유튜브 앱, 선물하기는 카카오톡(사파리를 거쳐 앱으로), 인스타는 인스타 앱, 나머지는 네이버 앱
     document.addEventListener('click', function (e) {
-      var a = e.target.closest('a.si-link'); if (!a) return;
+      var a = e.target.closest('a.si-link, a.si-insta'); if (!a) return;
       e.preventDefault();
-      location.href = 'naversearchapp://inappbrowser?url=' + encodeURIComponent(a.href) + '&target=new&version=6';
+      var url = a.href, k = a.dataset.open, go;
+      if (k === 'yt') go = url.replace(/^https:\/\/www\.youtube\.com\//, 'youtube://www.youtube.com/');
+      else if (k === 'kakao') go = url.replace(/^https:\/\//, 'x-safari-https://');
+      else if (k === 'insta') go = 'instagram://tag?name=' + decodeURIComponent((url.match(/tags\/([^/]+)/) || [])[1] || '');
+      else go = 'naversearchapp://inappbrowser?url=' + encodeURIComponent(url) + '&target=new&version=6';
+      location.href = go;
     });
   }
   function initSeasonDialog() {

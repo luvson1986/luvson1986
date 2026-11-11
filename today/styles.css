@@ -979,3 +979,6 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
 .ow-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .ow-btn { padding: 14px 0; font-weight: 600; }
 .ow-url { margin: -8px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.si-list li.si-row { display: flex; align-items: stretch; padding: 0; }
+.si-row .si-link { flex: 1; min-width: 0; }
+.si-insta { flex: none; display: grid; place-items: center; padding: 0 12px; border-left: 1px solid var(--line); font-size: 12px; font-weight: 600; color: #c13584; text-decoration: none; }
