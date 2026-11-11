@@ -873,6 +873,21 @@
     var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', cols[0][0]);
     document.documentElement.style.setProperty('--hero-a', cols[0][0]);
     document.documentElement.style.setProperty('--hero-b', cols[cols.length - 1][0]);
+    syncStatusBand();
+  }
+  // 상태바 뒤 띠에 메인 맨 위 배경(그라데이션 + 위쪽 어둡게 덮는 막)을 같은 크기로 복사해요
+  function syncStatusBand() {
+    var band = $('status-band'), bg = $('hero-bg'), hero = $('hero'); if (!band || !bg) return;
+    requestAnimationFrame(function () {
+      var img = getComputedStyle(bg).backgroundImage, h = hero.offsetHeight || 400;
+      var shade = hero.classList.contains('ink-dark')
+        ? 'linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 45%, rgba(8,12,20,0.18) 100%)'
+        : 'linear-gradient(180deg, rgba(28,16,12,0.3) 0%, rgba(28,16,12,0) 45%, rgba(28,16,12,0.35) 100%)';
+      var layers = img && img !== 'none' ? shade + ', ' + img : shade;
+      band.style.backgroundImage = layers;
+      band.style.backgroundSize = layers.split(/,(?![^(]*\))/).map(function () { return '100% ' + h + 'px'; }).join(', ');
+      band.style.backgroundColor = getComputedStyle(bg).backgroundColor;
+    });
   }
   // 한국 시즌 배경도 라이트는 지금 색 그대로, 다크는 같은 색을 깊게 눌러서
   var seasonColors = null;
@@ -883,13 +898,14 @@
     document.documentElement.style.setProperty('--hero-a', cols[0]);
     document.documentElement.style.setProperty('--hero-b', cols[1]);
     var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', cols[0]);
+    syncStatusBand();
   }
   if (window.matchMedia) {
     var mqDark = matchMedia('(prefers-color-scheme: dark)');
     var onScheme = function () { paintFlag(); paintSeason(); };
     // 메인 높이가 바뀌면(일정 줄 수 등) 국기 번짐 위치도 다시 맞춰요
     var heroH0 = 0;
-    if (window.ResizeObserver) new ResizeObserver(function () { var hh = $('hero').offsetHeight; if (hh !== heroH0) { heroH0 = hh; if (travelBands) paintFlag(); } }).observe($('hero'));
+    if (window.ResizeObserver) new ResizeObserver(function () { var hh = $('hero').offsetHeight; if (hh !== heroH0) { heroH0 = hh; if (travelBands) paintFlag(); syncStatusBand(); } }).observe($('hero'));
     (mqDark.addEventListener ? mqDark.addEventListener.bind(mqDark, 'change') : mqDark.addListener.bind(mqDark))(onScheme);
   }
   function flagOf(cc) { return cc && cc.length === 2 ? String.fromCodePoint.apply(null, cc.toUpperCase().split('').map(function (c) { return 0x1F1E6 + c.charCodeAt(0) - 65; })) : '🌏'; }
@@ -897,7 +913,7 @@
     var cc = (w.cc || '').toUpperCase();
     var inKorea = cc === 'KR' || (!cc && w.lat > 32.5 && w.lat < 39 && w.lon > 124 && w.lon < 132);
     if (!cc || cc === 'KR') {
-      if (travelMode) { travelMode = false; travelBands = null; $('hero').classList.remove('travel', 'ink-dark'); $('hero-bg').style.background = ''; }
+      if (travelMode) { travelMode = false; travelBands = null; $('hero').classList.remove('travel', 'ink-dark'); $('hero-bg').style.background = ''; syncStatusBand(); }
       if (inKorea && !w.sample) {
         seasonCtx = { lat: w.lat, elev: w.elev, anomaly: null, today: new Date(), place: w.place };
         initSeason();

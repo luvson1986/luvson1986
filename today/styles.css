@@ -934,3 +934,8 @@ dialog.sheet:focus { outline: none; }
 .si-todo { margin: 0; padding-left: 18px; color: var(--ink-2); display: grid; gap: 4px; font-size: 14.5px; }
 .si-tip { margin: 0; padding: 10px 12px; border-radius: var(--r-s); background: var(--accent-soft); color: var(--ink); font-size: 13.5px; line-height: 1.55; }
 .si-tip:empty { display: none; }
+
+/* 상태바 뒤 띠: 화면 맨 위 고정. iOS 26은 맨 위에 고정된 요소의 색으로 상태바 뒤를 칠해서,
+   이게 없으면 페이지 바탕(밝은 베이지)으로 하얗게 흐려져요 */
+.status-band { position: fixed; left: 0; right: 0; top: 0; height: env(safe-area-inset-top, 0px); z-index: 99; pointer-events: none;
+  background-color: color-mix(in srgb, var(--hero-a) 70%, rgb(28, 16, 12)); background-repeat: no-repeat; background-position: left top; }
