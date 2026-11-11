@@ -2748,11 +2748,11 @@
     }
     return out;
   }
-  // 받아 온 일정을 내 일정에 맞춰 넣어요: 오늘~60일 안의 이 출처 일정은 새 목록으로 바꾸되, 완료·알림·메모는 이어받아요
+  // 받아 온 일정을 내 일정에 맞춰 넣어요: 오늘~30일 안의 이 출처 일정은 새 목록으로 바꾸되, 완료·알림·메모는 이어받아요
   function mergeExt(kind, evs) {
     var from = new Date(); from.setHours(0, 0, 0, 0);
-    // 오늘부터 60일째 되는 날 '끝까지' (종일·시간 일정 모두 같은 기준)
-    var to = new Date(from); to.setDate(to.getDate() + 60); to.setHours(23, 59, 59, 999);
+    // 오늘부터 30일째 되는 날 '끝까지' (종일·시간 일정 모두 같은 기준)
+    var to = new Date(from); to.setDate(to.getDate() + 30); to.setHours(23, 59, 59, 999);
     var overridden = {}, items = [];
     evs.forEach(function (e) { if (e['RECURRENCE-ID'] && e.UID) { var d = icsDate(e['RECURRENCE-ID']); if (d) overridden[e.UID + '@' + ymd(d)] = 1; } });
     evs.forEach(function (e) {
@@ -2810,7 +2810,7 @@
     Object.keys(extDebug).forEach(function (k) {
       extDebug[k].forEach(function (e) {
         var st = e.DTSTART ? e.DTSTART.v : '-', when = e.DTSTART && icsDate(e.DTSTART);
-        var why = e._why || (e._n ? '넣음 ' + e._n + '개' : (e['RECURRENCE-ID'] ? '바뀐 회차 · ' : '') + '오늘~60일 밖');
+        var why = e._why || (e._n ? '넣음 ' + e._n + '개' : (e['RECURRENCE-ID'] ? '바뀐 회차 · ' : '') + '오늘~30일 밖');
         rows.push({ t: when ? when.getTime() : 0, html: '<li class="' + (e._n ? '' : 'skip') + '"><b>' + esc(e.SUMMARY || '(제목 없음)') + '</b> · ' + EXT_LABEL[k] +
           '<br>시작 ' + esc(st) + (e.DTSTART && e.DTSTART.date ? ' (종일)' : '') + (e.DTEND ? ' · 끝 ' + esc(e.DTEND.v) : '') + (e.RRULE ? ' · 반복 ' + esc(e.RRULE) : '') +
           (e['RECURRENCE-ID'] ? ' · 바뀐 회차 ' + esc(e['RECURRENCE-ID'].v) : '') + '<br>→ ' + why + '</li>' });
