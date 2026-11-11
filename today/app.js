@@ -278,11 +278,25 @@
       (ph ? '<span class="ph ' + ph.phase + '">' + esc(phaseText(ph)) + '</span>' : '<span>' + (until === 0 ? '오늘 시작' : until + '일 후 시작') + '</span>');
     $('si-headline').textContent = s.headline || '';
     $('si-about').textContent = info.about || s.desc || '';
-    var li = function (x) { return '<li><b>' + esc(x[0]) + '</b>' + (x[1] ? '<span>' + esc(x[1]) + '</span>' : '') + '</li>'; };
-    $('si-spots-wrap').hidden = !(info.spots && info.spots.length);
-    $('si-spots').innerHTML = (info.spots || []).map(li).join('');
-    $('si-eats-wrap').hidden = !(info.eats && info.eats.length);
-    $('si-eats').innerHTML = (info.eats || []).map(li).join('');
+    // 칸마다 이름·설명과 바로 가는 링크(지도·검색·유튜브·선물하기)
+    var enc = encodeURIComponent;
+    var href = function (l) {
+      if (!l) return '';
+      if (typeof l === 'string') return l;
+      if (l.map) return 'https://map.naver.com/p/search/' + enc(l.map);
+      if (l.yt) return 'https://www.youtube.com/results?search_query=' + enc(l.yt);
+      if (l.kakao) return 'https://gift.kakao.com/search/result?query=' + enc(l.kakao);
+      if (l.n) return 'https://search.naver.com/search.naver?query=' + enc(l.n);
+      return '';
+    };
+    var tag = function (l) { return !l ? '' : typeof l === 'string' ? '바로가기' : l.map ? '지도' : l.yt ? '유튜브' : l.kakao ? '선물하기' : '검색'; };
+    var li = function (x) {
+      var h = href(x[2]), inner = '<b>' + esc(x[0]) + '</b>' + (x[1] ? '<span>' + esc(x[1]) + '</span>' : '');
+      return h ? '<li><a class="si-link" href="' + esc(h) + '" target="_blank" rel="noopener"><span class="si-txt">' + inner + '</span><em>' + tag(x[2]) + ' ›</em></a></li>' : '<li>' + inner + '</li>';
+    };
+    $('si-sections').innerHTML = (info.sections || []).map(function (sec) {
+      return '<section class="si-sec"><h3 class="sub-h">' + esc(sec.t) + '</h3><ul class="si-list">' + sec.items.map(li).join('') + '</ul></section>';
+    }).join('');
     $('si-todo').innerHTML = (s.todo || []).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
     $('si-tip').textContent = info.tip ? '💡 ' + info.tip : '';
     openDialog($('season-info-dialog'));

@@ -969,3 +969,10 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
 .ext-debug li { background: var(--surface-2); border-radius: 8px; padding: 6px 8px; overflow-wrap: anywhere; }
 .ext-debug li.skip { opacity: 0.7; }
 .ext-debug b { color: var(--ink); }
+#si-sections { display: grid; gap: 14px; }
+.si-list li:has(> .si-link) { padding: 0; }
+.si-link { display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: inherit; text-decoration: none; }
+.si-link .si-txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.si-link em { flex: none; font-style: normal; font-size: 12px; font-weight: 600; color: var(--accent); }
+.si-link:active { opacity: 0.7; }
+.si-link b { color: var(--ink); }
