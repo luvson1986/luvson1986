@@ -1588,7 +1588,7 @@
         '<button type="button" class="tl-card" data-id="' + s.id + '">' +
         '<span class="tl-title">' + esc(s.title) + (s.sample ? ' <span class="tl-tag">예시</span>' : '') + (s.ext ? ' <span class="tl-tag ext">' + EXT_LABEL[s.ext.src] + '</span>' : '') + '</span>' +
         (function () {
-          var meta = [s.start ? s.start + (s.end ? '–' + s.end : '') : '', s.place ? esc(s.place) : ''].filter(Boolean).join(' · ') + (rel || '');
+          var meta = [s.start ? s.start + (s.end ? '–' + s.end : '') : s.ext && s.ext.allDay ? '종일' : '', s.place ? esc(s.place) : ''].filter(Boolean).join(' · ') + (rel || '');
           return meta ? '<span class="tl-meta">' + meta.replace(/^ · /, '') + '</span>' : '';
         })() +
         (s.memo ? '<span class="tl-memo">' + esc(s.memo) + '</span>' : '') +
@@ -2744,14 +2744,29 @@
         var key = ymd(d);
         if (!e['RECURRENCE-ID'] && overridden[e.UID + '@' + key]) return;
         var end = en0 && st0 ? new Date(d.getTime() + (en0 - st0)) : null;
-        items.push({ key: key, xid: kind + ':' + (e.UID || e.SUMMARY) + '@' + key, title: e.SUMMARY || '(제목 없음)', place: e.PLACE || e.LOCATION || '',
-          start: allDay ? '' : pad(d.getHours()) + ':' + pad(d.getMinutes()),
-          end: allDay || !end || ymd(end) !== key ? '' : pad(end.getHours()) + ':' + pad(end.getMinutes()) });
+        var base = { title: e.SUMMARY || '(제목 없음)', place: e.PLACE || e.LOCATION || '' };
+        if (allDay) {
+          // 종일 일정: 끝나는 날 전날까지 하루씩 '시간 미정' 일정으로 (여러 날 휴가도 날마다 보여요)
+          var nDays = end ? Math.max(1, Math.round((end - d) / 864e5)) : 1;
+          for (var i = 0; i < nDays && i < 60; i++) {
+            var day = new Date(d); day.setDate(d.getDate() + i);
+            if (day < from || day > to) continue;
+            items.push(Object.assign({ key: ymd(day), xid: kind + ':' + (e.UID || e.SUMMARY) + '@' + ymd(day), start: '', end: '', allDay: true }, base));
+          }
+          return;
+        }
+        if (d < from || d > to) return;
+        items.push(Object.assign({ key: key, xid: kind + ':' + (e.UID || e.SUMMARY) + '@' + key,
+          start: pad(d.getHours()) + ':' + pad(d.getMinutes()),
+          end: !end || ymd(end) !== key ? '' : pad(end.getHours()) + ':' + pad(end.getMinutes()) }, base));
       });
     });
     var workCat = (cats.find(function (c) { return /회의|업무/.test(c.name); }) || cats[0] || {}).id;
     var keep = {};
     Object.keys(schedules).forEach(function (k) {
+      // 예전 버전이 범위 밖 날짜에 같은 일정을 여러 번 넣었을 수 있어서, 같은 것(같은 id)은 하나만 남겨요
+      var seen = {};
+      schedules[k] = schedules[k].filter(function (s) { if (!s.ext) return true; if (seen[s.ext.id]) return false; seen[s.ext.id] = 1; return true; });
       if (parseYmd(k) < from || parseYmd(k) > to) return;
       schedules[k] = schedules[k].filter(function (s) {
         if (!s.ext || s.ext.src !== kind) return true;
@@ -2761,7 +2776,7 @@
     items.forEach(function (it) {
       var old = keep[it.xid] || {};
       var s = Object.assign({ id: old.id || uid(), cat: old.cat || (kind === 'outlook' ? workCat : (cats[0] || {}).id), memo: old.memo || '' }, old, {
-        title: it.title, start: it.start, end: it.end, place: it.place, ext: { src: kind, id: it.xid } });
+        title: it.title, start: it.start, end: it.end, place: it.place, ext: { src: kind, id: it.xid, allDay: !!it.allDay } });
       if (it.start) delete s.pos;
       (schedules[it.key] = schedules[it.key] || []).push(s);
     });
