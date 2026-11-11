@@ -972,10 +972,10 @@ dialog.sheet:focus { outline: none; }
 .si-tip { margin: 0; padding: 10px 12px; border-radius: var(--r-s); background: var(--accent-soft); color: var(--ink); font-size: 13.5px; line-height: 1.55; }
 .si-tip:empty { display: none; }
 
-/* 상태바 뒤 띠: 화면 맨 위 고정. iOS 26은 맨 위에 고정된 요소의 색으로 상태바 뒤를 칠해서,
+/* 상태바 뒤 띠: 페이지 맨 위에 붙어서 스크롤하면 같이 올라가요. iOS 26은 맨 위에 고정된 요소의 색으로 상태바 뒤를 칠해서,
    이게 없으면 페이지 바탕(밝은 베이지)으로 하얗게 흐려져요 */
 /* 아래쪽은 경계 없이 메인으로 스며들게: 상태바 아래로 조금 더 내려와서 투명하게 사라져요 */
-.status-band { position: fixed; left: 0; right: 0; top: 0; height: calc(env(safe-area-inset-top, 0px) * 1.6); z-index: 99; pointer-events: none;
+.status-band { position: absolute; left: 0; right: 0; top: 0; height: calc(env(safe-area-inset-top, 0px) * 1.6); z-index: 99; pointer-events: none;
   -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 100%); mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
   background-color: var(--hero-a); background-repeat: no-repeat; background-position: left top;
   /* 메인 배경과 같은 그라데이션 + 위쪽 어둡게 덮는 막을 메인 높이(--hero-h)에 맞춰 그려서, 맨 위에서 이어져 보여요 */
