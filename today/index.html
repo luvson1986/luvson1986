@@ -504,6 +504,35 @@
     <div id="si-sections"></div>
     <section class="si-sec"><h3 class="sub-h">이맘때 해 볼 것</h3><ul class="si-todo" id="si-todo"></ul></section>
     <p class="si-tip" id="si-tip"></p>
+    <button type="button" class="ghost-btn" id="si-edit-btn" hidden>이 시즌 수정하기</button>
+    <!-- 직접 추가한 시즌 고치기 -->
+    <form class="season-form" id="si-edit" hidden novalidate>
+      <div class="form-grid">
+        <div class="field"><label for="se-name">이름</label><input id="se-name" maxlength="16" required></div>
+        <div class="field"><label for="se-emoji">이모지</label><input id="se-emoji" maxlength="4"></div>
+        <div class="field"><label for="se-from">시작</label><input id="se-from" type="date" required></div>
+        <div class="field"><label for="se-to">끝</label><input id="se-to" type="date" required></div>
+        <div class="field"><label for="se-pfrom">절정 시작</label><input id="se-pfrom" type="date"></div>
+        <div class="field"><label for="se-pto">절정 끝</label><input id="se-pto" type="date"></div>
+        <div class="field"><label for="se-w">중요도</label>
+          <select id="se-w"><option value="3">●●● 꼭 챙길 시즌</option><option value="2">●● 챙기면 좋음</option><option value="1">● 소소한 제철</option></select></div>
+        <div class="field"><label for="se-scene">배경 효과</label>
+          <select id="se-scene">
+            <option value="petals">꽃잎</option><option value="leaves">낙엽</option><option value="snow">눈</option>
+            <option value="sea">바다·물방울</option><option value="sun">햇살</option><option value="lights">불빛</option>
+            <option value="grass">풀·억새</option><option value="rain">비</option><option value="fireflies">반딧불</option>
+          </select></div>
+        <div class="field full"><label for="se-headline">한 줄 소개</label><input id="se-headline" maxlength="40"></div>
+        <div class="field full"><label for="se-desc">설명</label><textarea id="se-desc" rows="3" maxlength="500"></textarea></div>
+        <div class="field full"><label for="se-todo">이맘때 해 볼 것 (한 줄에 하나)</label><textarea id="se-todo" rows="3" maxlength="400"></textarea></div>
+      </div>
+      <p class="hint">연도는 상관없어요. 매년 같은 날짜로 반복돼요.</p>
+      <p class="form-error" id="se-error" role="alert" hidden></p>
+      <div class="form-actions">
+        <button type="button" class="ghost-btn" id="se-cancel">취소</button>
+        <button type="submit" class="primary-btn">저장</button>
+      </div>
+    </form>
   </div>
 </dialog>
 

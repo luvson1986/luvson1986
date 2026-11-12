@@ -309,7 +309,13 @@
     }).join('');
     $('si-todo').innerHTML = (s.todo || []).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
     $('si-tip').textContent = info.tip ? '💡 ' + info.tip : '';
-    openDialog($('season-info-dialog'));
+    // 직접 추가한 시즌은 이 화면에서 고칠 수 있어요
+    $('si-edit').hidden = true;
+    $('si-edit-btn').hidden = !raw.custom;
+    Array.prototype.forEach.call($('season-info-dialog').querySelectorAll('.si-head, .si-headline, .si-about, #si-sections, .si-sec, .si-tip'), function (el) { el.style.display = ''; });
+    $('season-info-dialog').dataset.id = id;
+    var dlg = $('season-info-dialog');
+    if (!dlg.open) openDialog(dlg);
   }
   // 바깥 링크는 사파리·크롬·네이버 중 골라서 열어요 (홈 화면 앱 안에서 열리지 않게)
   function openWith(url) {
@@ -343,6 +349,46 @@
       else if (k === 'map') go = 'nmap://search?query=' + encodeURIComponent(decodeURIComponent((url.match(/search\/([^?#]+)/) || [])[1] || '')) + '&appname=luvson1986.github.io';
       else go = 'naversearchapp://inappbrowser?url=' + encodeURIComponent(url) + '&target=new&version=6';
       location.href = go;
+    });
+  }
+  function initSeasonEdit() {
+    var y = new Date().getFullYear(), dateOf = function (md) { return md ? y + '-' + md : ''; };
+    var show = function (on) {
+      $('si-edit').hidden = !on; $('si-edit-btn').hidden = on;
+      Array.prototype.forEach.call($('season-info-dialog').querySelectorAll('.si-head, .si-headline, .si-about, #si-sections, .si-sec, .si-tip'), function (el) { el.style.display = on ? 'none' : ''; });
+    };
+    $('si-edit-btn').onclick = function () {
+      var s = findSeason($('season-info-dialog').dataset.id); if (!s || !s.custom) return;
+      $('se-name').value = s.name; $('se-emoji').value = s.scene.motif[0] || '';
+      $('se-from').value = dateOf(s.from); $('se-to').value = dateOf(s.to);
+      $('se-pfrom').value = dateOf(s.peak && s.peak[0]); $('se-pto').value = dateOf(s.peak && s.peak[1]);
+      $('se-w').value = String(s.w || 2); $('se-scene').value = s.scene.type;
+      $('se-headline').value = s.headline || ''; $('se-desc').value = s.desc || '';
+      $('se-todo').value = (s.todo || []).join('\n');
+      $('se-error').hidden = true;
+      show(true);
+    };
+    $('se-cancel').onclick = function () { show(false); };
+    $('si-edit').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var id = $('season-info-dialog').dataset.id, s = customSeasons.find(function (x) { return x.id === id; }); if (!s) return;
+      var name = $('se-name').value.trim(), from = $('se-from').value, to = $('se-to').value, err = $('se-error');
+      if (!name || !from || !to) { err.textContent = '이름과 시작·끝 날짜를 입력해 주세요.'; err.hidden = false; return; }
+      var f = from.slice(5), t = to.slice(5), a = mdDoy(f), b = mdDoy(t); if (b < a) b += 365;
+      var pf = $('se-pfrom').value ? $('se-pfrom').value.slice(5) : doyMd(a + Math.round((b - a) / 3));
+      var pt = $('se-pto').value ? $('se-pto').value.slice(5) : doyMd(a + Math.round((b - a) * 2 / 3));
+      var type = $('se-scene').value, col = type === s.scene.type ? null : SCENE_COLORS[type];
+      s.name = name; s.from = f; s.to = t; s.peak = [pf, pt]; s.w = +$('se-w').value;
+      s.headline = $('se-headline').value.trim() || name;
+      s.desc = $('se-desc').value.trim();
+      var todo = $('se-todo').value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+      s.todo = todo.length ? todo : [name];
+      s.scene = Object.assign({}, s.scene, { type: type, motif: [$('se-emoji').value.trim() || '✨'] }, col ? { colors: [col[0], col[1]], accent: col[2] } : {});
+      store.set('customSeasons', customSeasons);
+      show(false);
+      renderSeasonDialog(); renderSeasonCal(); initSeason();
+      openSeasonInfo(id);
+      toast('시즌을 고쳤어요');
     });
   }
   function initSeasonDialog() {
@@ -2961,6 +3007,7 @@
   initNote();
   initSeason();
   initSeasonDialog();
+  initSeasonEdit();
   initOpenWith();
   initRules();
   $('hourly').onclick = function () { renderWkLoc(); $('wk-loc-form').hidden = true; openDialog($('week-dialog')); };

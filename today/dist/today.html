@@ -1490,6 +1490,35 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
     <div id="si-sections"></div>
     <section class="si-sec"><h3 class="sub-h">이맘때 해 볼 것</h3><ul class="si-todo" id="si-todo"></ul></section>
     <p class="si-tip" id="si-tip"></p>
+    <button type="button" class="ghost-btn" id="si-edit-btn" hidden>이 시즌 수정하기</button>
+    <!-- 직접 추가한 시즌 고치기 -->
+    <form class="season-form" id="si-edit" hidden novalidate>
+      <div class="form-grid">
+        <div class="field"><label for="se-name">이름</label><input id="se-name" maxlength="16" required></div>
+        <div class="field"><label for="se-emoji">이모지</label><input id="se-emoji" maxlength="4"></div>
+        <div class="field"><label for="se-from">시작</label><input id="se-from" type="date" required></div>
+        <div class="field"><label for="se-to">끝</label><input id="se-to" type="date" required></div>
+        <div class="field"><label for="se-pfrom">절정 시작</label><input id="se-pfrom" type="date"></div>
+        <div class="field"><label for="se-pto">절정 끝</label><input id="se-pto" type="date"></div>
+        <div class="field"><label for="se-w">중요도</label>
+          <select id="se-w"><option value="3">●●● 꼭 챙길 시즌</option><option value="2">●● 챙기면 좋음</option><option value="1">● 소소한 제철</option></select></div>
+        <div class="field"><label for="se-scene">배경 효과</label>
+          <select id="se-scene">
+            <option value="petals">꽃잎</option><option value="leaves">낙엽</option><option value="snow">눈</option>
+            <option value="sea">바다·물방울</option><option value="sun">햇살</option><option value="lights">불빛</option>
+            <option value="grass">풀·억새</option><option value="rain">비</option><option value="fireflies">반딧불</option>
+          </select></div>
+        <div class="field full"><label for="se-headline">한 줄 소개</label><input id="se-headline" maxlength="40"></div>
+        <div class="field full"><label for="se-desc">설명</label><textarea id="se-desc" rows="3" maxlength="500"></textarea></div>
+        <div class="field full"><label for="se-todo">이맘때 해 볼 것 (한 줄에 하나)</label><textarea id="se-todo" rows="3" maxlength="400"></textarea></div>
+      </div>
+      <p class="hint">연도는 상관없어요. 매년 같은 날짜로 반복돼요.</p>
+      <p class="form-error" id="se-error" role="alert" hidden></p>
+      <div class="form-actions">
+        <button type="button" class="ghost-btn" id="se-cancel">취소</button>
+        <button type="submit" class="primary-btn">저장</button>
+      </div>
+    </form>
   </div>
 </dialog>
 
@@ -4175,7 +4204,13 @@ window.PHRASE_TOPICS = [
     }).join('');
     $('si-todo').innerHTML = (s.todo || []).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
     $('si-tip').textContent = info.tip ? '💡 ' + info.tip : '';
-    openDialog($('season-info-dialog'));
+    // 직접 추가한 시즌은 이 화면에서 고칠 수 있어요
+    $('si-edit').hidden = true;
+    $('si-edit-btn').hidden = !raw.custom;
+    Array.prototype.forEach.call($('season-info-dialog').querySelectorAll('.si-head, .si-headline, .si-about, #si-sections, .si-sec, .si-tip'), function (el) { el.style.display = ''; });
+    $('season-info-dialog').dataset.id = id;
+    var dlg = $('season-info-dialog');
+    if (!dlg.open) openDialog(dlg);
   }
   // 바깥 링크는 사파리·크롬·네이버 중 골라서 열어요 (홈 화면 앱 안에서 열리지 않게)
   function openWith(url) {
@@ -4209,6 +4244,46 @@ window.PHRASE_TOPICS = [
       else if (k === 'map') go = 'nmap://search?query=' + encodeURIComponent(decodeURIComponent((url.match(/search\/([^?#]+)/) || [])[1] || '')) + '&appname=luvson1986.github.io';
       else go = 'naversearchapp://inappbrowser?url=' + encodeURIComponent(url) + '&target=new&version=6';
       location.href = go;
+    });
+  }
+  function initSeasonEdit() {
+    var y = new Date().getFullYear(), dateOf = function (md) { return md ? y + '-' + md : ''; };
+    var show = function (on) {
+      $('si-edit').hidden = !on; $('si-edit-btn').hidden = on;
+      Array.prototype.forEach.call($('season-info-dialog').querySelectorAll('.si-head, .si-headline, .si-about, #si-sections, .si-sec, .si-tip'), function (el) { el.style.display = on ? 'none' : ''; });
+    };
+    $('si-edit-btn').onclick = function () {
+      var s = findSeason($('season-info-dialog').dataset.id); if (!s || !s.custom) return;
+      $('se-name').value = s.name; $('se-emoji').value = s.scene.motif[0] || '';
+      $('se-from').value = dateOf(s.from); $('se-to').value = dateOf(s.to);
+      $('se-pfrom').value = dateOf(s.peak && s.peak[0]); $('se-pto').value = dateOf(s.peak && s.peak[1]);
+      $('se-w').value = String(s.w || 2); $('se-scene').value = s.scene.type;
+      $('se-headline').value = s.headline || ''; $('se-desc').value = s.desc || '';
+      $('se-todo').value = (s.todo || []).join('\n');
+      $('se-error').hidden = true;
+      show(true);
+    };
+    $('se-cancel').onclick = function () { show(false); };
+    $('si-edit').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var id = $('season-info-dialog').dataset.id, s = customSeasons.find(function (x) { return x.id === id; }); if (!s) return;
+      var name = $('se-name').value.trim(), from = $('se-from').value, to = $('se-to').value, err = $('se-error');
+      if (!name || !from || !to) { err.textContent = '이름과 시작·끝 날짜를 입력해 주세요.'; err.hidden = false; return; }
+      var f = from.slice(5), t = to.slice(5), a = mdDoy(f), b = mdDoy(t); if (b < a) b += 365;
+      var pf = $('se-pfrom').value ? $('se-pfrom').value.slice(5) : doyMd(a + Math.round((b - a) / 3));
+      var pt = $('se-pto').value ? $('se-pto').value.slice(5) : doyMd(a + Math.round((b - a) * 2 / 3));
+      var type = $('se-scene').value, col = type === s.scene.type ? null : SCENE_COLORS[type];
+      s.name = name; s.from = f; s.to = t; s.peak = [pf, pt]; s.w = +$('se-w').value;
+      s.headline = $('se-headline').value.trim() || name;
+      s.desc = $('se-desc').value.trim();
+      var todo = $('se-todo').value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+      s.todo = todo.length ? todo : [name];
+      s.scene = Object.assign({}, s.scene, { type: type, motif: [$('se-emoji').value.trim() || '✨'] }, col ? { colors: [col[0], col[1]], accent: col[2] } : {});
+      store.set('customSeasons', customSeasons);
+      show(false);
+      renderSeasonDialog(); renderSeasonCal(); initSeason();
+      openSeasonInfo(id);
+      toast('시즌을 고쳤어요');
     });
   }
   function initSeasonDialog() {
@@ -6827,6 +6902,7 @@ window.PHRASE_TOPICS = [
   initNote();
   initSeason();
   initSeasonDialog();
+  initSeasonEdit();
   initOpenWith();
   initRules();
   $('hourly').onclick = function () { renderWkLoc(); $('wk-loc-form').hidden = true; openDialog($('week-dialog')); };
