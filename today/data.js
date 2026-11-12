@@ -220,7 +220,7 @@ window.SEASONS = [
     scene: { type: 'sea', colors: ['#1a2a3a', '#5a7a9a'], accent: '#d8e8f8', motif: ['🐟'] }
   },
   {
-    id: 'christmas', name: '연말 조명', from: '12-01', to: '12-27', peak: ['12-15', '12-25'], w: 3,
+    id: 'christmas', name: '연말 조명', from: '11-15', to: '12-27', peak: ['12-15', '12-25'], w: 3,
     headline: '도시가 반짝이는 연말',
     desc: '명동, 청계천, 롯데월드몰의 크리스마스 장식이 화려해요. 연말 모임 예약은 일찍 하세요.',
     todo: ['크리스마스 마켓', '연말 모임 장소 예약', '올해 회고 쓰기'],
