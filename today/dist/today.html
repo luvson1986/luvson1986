@@ -5950,6 +5950,7 @@ window.PHRASE_TOPICS = [
     var savePlace = function () {
       var s = detailItem(); if (!s) return;
       s.place = $('dt-place-in').value.trim(); s.abroad = $('dt-abroad').checked;
+      if (s.ext) s.placeByUser = true; // 불러온 일정: 다시 불러와도 내가 넣은 장소를 지켜요
       afterDetailEdit(s, s.place ? '장소를 고쳤어요' : '장소를 지웠어요');
     };
     $('dt-place-done').onclick = savePlace;
@@ -6802,7 +6803,7 @@ window.PHRASE_TOPICS = [
     items.forEach(function (it) {
       var old = keep[it.xid] || {};
       var s = Object.assign({ id: old.id || uid(), cat: old.cat || (kind === 'outlook' ? workCat : (cats[0] || {}).id), memo: old.memo || '' }, old, {
-        title: it.title, start: it.start, end: it.end, place: it.place, ext: { src: kind, id: it.xid, allDay: !!it.allDay } });
+        title: it.title, start: it.start, end: it.end, place: old.placeByUser ? old.place : (it.place || old.place || ''), ext: { src: kind, id: it.xid, allDay: !!it.allDay } });
       if (it.start) delete s.pos;
       (schedules[it.key] = schedules[it.key] || []).push(s);
     });
