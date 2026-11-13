@@ -519,12 +519,14 @@ window.SEASON_ADAPT = {
     if (!a || !ctx || ctx.lat == null) return s;
     var shift = (ctx.lat - a.refLat) * a.latRate + ((ctx.elev || 0) - a.refElev) / 100 * a.elevRate;
     // 올해 기온은 시즌 직전·도중일 때만 의미가 있어요
-    var from = doy(s.from), to = lift(doy(s.to), from);
+    var from = doy(s.from), to = lift(doy(s.to), from), usedTemp = false;
     if (ctx.anomaly != null && ctx.today) {
       var t = lift(Math.round((Date.UTC(2001, ctx.today.getMonth(), ctx.today.getDate()) - Date.UTC(2001, 0, 1)) / 864e5), from - 60);
-      if (t >= from - 60 && t <= to) shift += ctx.anomaly * a.tempRate;
+      if (t >= from - 60 && t <= to) { shift += ctx.anomaly * a.tempRate; usedTemp = true; }
     }
     shift = Math.max(-20, Math.min(20, shift));
+    // 한 번 정한 올해 보정값이 있으면 그대로 써요 (매일 기온이 조금씩 달라져도 날짜가 흔들리지 않게)
+    if (ctx.fixed && ctx.fixed[s.id] != null) { shift = ctx.fixed[s.id]; usedTemp = false; }
     var ps = lift(doy(s.peak[0]), from), pe = lift(doy(s.peak[1]), ps);
     var center = (ps + pe) / 2 + shift, half = Math.min((pe - ps) / 2, a.peakDays / 2);
     var copy = Object.assign({}, s);
@@ -532,6 +534,7 @@ window.SEASON_ADAPT = {
     // 절정은 소수점 날짜를 안쪽으로 잘라요 (반올림하면 절정이 하루 길어져 끝물 첫날도 '절정'으로 보여요)
     copy.peak = [md(Math.ceil(center - half)), md(Math.floor(center + half))];
     copy.shift = Math.round(shift);
+    copy.shiftExact = shift; copy.usedTemp = usedTemp;
     return copy;
   };
 })();

@@ -133,9 +133,22 @@
   var allSeasons = function () { return window.SEASONS.concat(customSeasons); };
   // 국내에선 현재 위치·올해 기온으로 날짜를 옮긴 시즌을 써요 (seasonCtx가 정해진 뒤부터)
   var seasonCtx = null;
+  // 지역·올해 기온 보정은 시즌마다 1년에 한 번 정하면 그대로 고정해요.
+  // (최근 30일 기온은 매일 조금씩 바뀌어서, 고정하지 않으면 절정 날짜가 날마다 흔들려요)
+  var seasonLocks = store.get('seasonLocks', {});
+  function adaptLocked(s) {
+    if (!seasonCtx) return s;
+    var n = new Date(), y = n.getFullYear(), t = mdDoy(pad(n.getMonth() + 1) + '-' + pad(n.getDate()));
+    var yr = t >= mdDoy(s.from) - 60 ? y : y - 1; // 이 시즌이 시작한(또는 곧 시작할) 해
+    var key = s.id + '|' + yr + '|' + Math.round(seasonCtx.lat * 2) / 2; // 같은 지역(위도 0.5° 단위)
+    if (seasonLocks[key] != null) return window.adaptSeason(s, Object.assign({}, seasonCtx, { fixed: (function () { var f = {}; f[s.id] = seasonLocks[key]; return f; })() }));
+    var a = window.adaptSeason(s, seasonCtx);
+    // 올해 기온까지 반영된 첫 값을 저장해 두고 그 해에는 계속 써요
+    if (a !== s && a.usedTemp) { seasonLocks[key] = a.shiftExact; store.set('seasonLocks', seasonLocks); }
+    return a;
+  }
   var visibleSeasons = function () {
-    return allSeasons().filter(function (s) { return hiddenSeasons.indexOf(s.id) < 0; })
-      .map(function (s) { return seasonCtx ? window.adaptSeason(s, seasonCtx) : s; });
+    return allSeasons().filter(function (s) { return hiddenSeasons.indexOf(s.id) < 0; }).map(adaptLocked);
   };
   var findSeason = function (id) { return allSeasons().find(function (s) { return s.id === id; }); };
   var dots = function (w) { return '●●●'.slice(0, w); };
@@ -266,7 +279,7 @@
   function openSeasonInfo(id) {
     // 목록·메인과 같은 날짜(내 위치·올해 기온에 맞춘 날짜)로 보여줘요
     var raw = findSeason(id); if (!raw) return;
-    var s = seasonCtx ? window.adaptSeason(raw, seasonCtx) : raw;
+    var s = adaptLocked(raw);
     var info = (window.SEASON_INFO || {})[id] || {};
     var ranked = window.rankSeasons(new Date(), [s]), ph = ranked.length ? ranked[0].p : null;
     var em = $('si-emoji');
