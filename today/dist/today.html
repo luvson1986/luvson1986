@@ -5609,7 +5609,8 @@ window.PHRASE_TOPICS = [
     // 오늘 앞뒤 이틀은 말로(그제·어제·오늘·내일·모레), 그 밖은 날짜로
     var REL = { '-2': '그제', '-1': '어제', '0': '오늘', '1': '내일', '2': '모레' }, rel = REL[diff];
     $('day-today').textContent = rel || (viewDate.getMonth() + 1) + '/' + viewDate.getDate() + ' (' + DAYS[viewDate.getDay()] + ')';
-    $('sch-h').textContent = rel ? rel + ' 일정' : (viewDate.getMonth() + 1) + '월 ' + viewDate.getDate() + '일 일정';
+    // 제목은 언제나 날짜로
+    $('sch-h').textContent = (viewDate.getMonth() + 1) + '월 ' + viewDate.getDate() + '일 일정';
     $('sample-banner').hidden = !all.some(function (s) { return s.sample; });
     $('timeline-empty').hidden = all.length > 0;
 
