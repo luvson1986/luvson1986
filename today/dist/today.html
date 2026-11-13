@@ -4033,7 +4033,7 @@ window.PHRASE_TOPICS = [
   var seasonCtx = null;
   // 지역·올해 기온 보정은 시즌마다 1년에 한 번 정하면 그대로 고정해요.
   // (최근 30일 기온은 매일 조금씩 바뀌어서, 고정하지 않으면 절정 날짜가 날마다 흔들려요)
-  var seasonLocks = store.get('seasonLocks', {});
+  var seasonLocks = store.get('seasonLocks2', {});
   function adaptLocked(s) {
     if (!seasonCtx) return s;
     var n = new Date(), y = n.getFullYear(), t = mdDoy(pad(n.getMonth() + 1) + '-' + pad(n.getDate()));
@@ -4042,7 +4042,7 @@ window.PHRASE_TOPICS = [
     if (seasonLocks[key] != null) return window.adaptSeason(s, Object.assign({}, seasonCtx, { fixed: (function () { var f = {}; f[s.id] = seasonLocks[key]; return f; })() }));
     var a = window.adaptSeason(s, seasonCtx);
     // 올해 기온까지 반영된 첫 값을 저장해 두고 그 해에는 계속 써요
-    if (a !== s && a.usedTemp) { seasonLocks[key] = a.shiftExact; store.set('seasonLocks', seasonLocks); }
+    if (a !== s && a.usedTemp) { seasonLocks[key] = a.shiftExact; store.set('seasonLocks2', seasonLocks); }
     return a;
   }
   var visibleSeasons = function () {
@@ -4682,9 +4682,13 @@ window.PHRASE_TOPICS = [
     if (!navigator.geolocation) return Promise.resolve(SEOUL);
     return new Promise(function (resolve) {
       var done = false;
-      // 위치를 못 받으면 항상 서울특별시 (예전에 저장된 위치는 쓰지 않아요)
-      var fallback = function () { if (!done) { done = true; resolve(SEOUL); } };
-      setTimeout(fallback, 6000);
+      // 위치를 못 받으면(앱을 막 열어 GPS가 늦을 때 등) 최근 3일 안에 받은 위치를 써요. 그것도 없을 때만 서울
+      var fallback = function () {
+        if (done) return; done = true;
+        var last = store.get('lastGps', null);
+        resolve(last && Date.now() - last.at < 3 * 864e5 ? last.loc : SEOUL);
+      };
+      setTimeout(fallback, 11000);
       try {
         navigator.geolocation.getCurrentPosition(function (pos) {
           if (done) return; done = true;
@@ -4692,8 +4696,8 @@ window.PHRASE_TOPICS = [
           getJSON('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + g.lat + '&longitude=' + g.lon + '&localityLanguage=ko', 4000)
             .then(function (r) { g.name = r.city || r.locality || r.principalSubdivision || g.name; g.cc = r.countryCode || ''; g.country = r.countryName || ''; })
             .catch(function () {})
-            .then(function () { resolve(g); });
-        }, fallback, { timeout: 5000, maximumAge: 30 * 60 * 1000 });
+            .then(function () { store.set('lastGps', { at: Date.now(), loc: g }); resolve(g); });
+        }, fallback, { timeout: 10000, maximumAge: 2 * 60 * 60 * 1000 });
       } catch (e) { fallback(); }
     });
   }
@@ -4788,6 +4792,11 @@ window.PHRASE_TOPICS = [
         if (!k || !k.ok || k.rain == null) {
           return byRadar().then(function () { var el = $('wx-why'); if (el) el.textContent += ' · 기상청: ' + ((k && k.error) || '값 없음'); });
         }
+        // 기온도 가장 가까운 관측소의 실제 측정값으로 (예보 모델 값보다 정확해요)
+        if (k.ta != null) {
+          $('wx-temp').textContent = Math.round(k.ta) + '°';
+          var nowT = document.querySelector('#hourly .hour.now .h-t'); if (nowT) nowT.textContent = Math.round(k.ta) + '°';
+        }
         // 15분 강수량 ×4 = 시간당 양으로 세기 결정. 감지만 되고 양이 0이면 가랑비
         var mmh = (k.rn15 || 0) * 4, on = !!k.rain;
         scene.setWeather(on ? kindNow : null, on ? (mmh >= 4 ? 3 : mmh >= 1 ? 2 : 1) : 0);
@@ -4807,7 +4816,7 @@ window.PHRASE_TOPICS = [
     $('hourly').innerHTML = w.hours.map(function (hr, i) {
       return '<div class="hour' + (i === 0 ? ' now' : '') + '"><span class="h-time">' + (i === 0 ? '지금' : hr.hour + '시') + '</span>' +
         '<span class="h-ico" aria-hidden="true">' + wmo(hr.code)[1] + '</span>' +
-        '<span class="h-t">' + Math.round(hr.temp) + '°</span>' +
+        '<span class="h-t">' + Math.round(i === 0 ? c.temperature_2m : hr.temp) + '°</span>' +
         '<span class="h-p">' + (hr.pop >= 20 ? hr.pop + '%' : '') + '</span></div>';
     }).join('');
     renderOutfit(w);
@@ -4937,7 +4946,8 @@ window.PHRASE_TOPICS = [
     if (!cc || cc === 'KR') {
       if (travelMode) { travelMode = false; travelBands = null; $('hero').classList.remove('travel', 'ink-dark'); $('hero-bg').style.background = ''; syncStatusBand(); }
       if (inKorea && !w.sample) {
-        seasonCtx = { lat: w.lat, elev: w.elev, anomaly: null, today: new Date(), place: w.place };
+        // 시즌 날짜는 서 있는 자리의 고도·GPS 오차에 흔들리지 않게 '지역'(위도 0.5° 단위) 기준으로만 맞춰요
+        seasonCtx = { lat: Math.round(w.lat * 2) / 2, elev: 50, anomaly: null, today: new Date(), place: w.place };
         initSeason();
         // 올해 기온 편차는 따로 받아서 오면 한 번 더 반영
         loadAnomaly(w.lat, w.lon).then(function (an) {

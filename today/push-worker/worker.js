@@ -284,7 +284,7 @@ async function kmaNow(env, lat, lon) {
     const obs = near.filter(s => byStn[s.id]).map(s => {
       const r = byStn[s.id];
       return { stn: s.id, name: s.name, km: Math.round(s.km * 10) / 10, time: r[iTm] || r[0],
-        re: val(r, /^RE$/i), rn15: val(r, /^RN-?15/i), rn60: val(r, /^RN-?60/i), rnDay: val(r, /^RN-?DAY/i) };
+        re: val(r, /^RE$/i), rn15: val(r, /^RN-?15/i), rn60: val(r, /^RN-?60/i), rnDay: val(r, /^RN-?DAY/i), ta: val(r, /^TA$/i), hm: val(r, /^HM$/i) };
     });
     if (!obs.length) return { ok: false, error: '가까운 관측소 값이 없어요' };
     // 강수량은 가장 가까운 관측소, 강수감지는 감지기가 있는 가장 가까운 관측소(8km 안)를 써요.
@@ -294,6 +294,8 @@ async function kmaNow(env, lat, lon) {
     const rain = (d ? d.re > 0 : false) || (o.rn15 != null && o.rn15 > 0);
     v = { ok: true, rain, re: d ? d.re : null, reName: d ? d.name : null, reKm: d ? d.km : null,
       rn15: o.rn15, rn60: o.rn60, rnDay: o.rnDay, stn: o.stn, name: o.name, km: o.km, time: o.time,
+      // 기온·습도: 값이 있는 가장 가까운 관측소
+      ta: (obs.find(x => x.ta != null) || {}).ta ?? null, hm: (obs.find(x => x.hm != null) || {}).hm ?? null,
       nearby: obs.slice(0, 5).map(x => ({ name: x.name, km: x.km, re: x.re, rn15: x.rn15 })), cols: head.join(' ') };
   } catch (e) {
     return { ok: false, error: String(e && e.message || e) };
