@@ -1747,7 +1747,15 @@
     // 지난 일 표시: 끌어서 옮길 때 이 줄들은 자리 계산에서 빼요
     rows.forEach(function (r) { if (r.past) r.html = r.html.replace('<li class="tl-item ', '<li data-past="1" class="tl-item '); });
     var html = rows.map(function (r, i) { return (i === at ? nowRow(now) : '') + r.html; }).join('') + (at === rows.length ? nowRow(now) : '');
-    $('timeline').innerHTML = html;
+    // 내용이 그대로면 다시 그리지 않아요: 앱을 열 때·1분마다·다른 캘린더를 불러올 때 다시 그리면서
+    // 누르던 '완료' 버튼이 바뀌어 버려 탭이 씹히는 걸 막아요. 현재 시각만 바뀌었으면 그 글자만 고쳐요.
+    var tlEl = $('timeline'), noNow = function (h) { return h.replace(/<li class="tl-now"[\s\S]*?<\/li>/, '<li class="tl-now"></li>'); };
+    if (tlEl._html !== html) {
+      var nowEl = tlEl.querySelector('.tl-now .tl-time');
+      if (tlEl._html && nowEl && noNow(tlEl._html) === noNow(html)) nowEl.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
+      else tlEl.innerHTML = html;
+      tlEl._html = html;
+    }
     renderNowNext();
   }
   // 하루의 보여 줄 순서 (타임라인·다가오는 일정 목록·메인 카드가 모두 이걸 따라요)
