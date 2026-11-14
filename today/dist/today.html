@@ -3964,11 +3964,11 @@ window.PHRASE_TOPICS = [
   var DAYS = ['일', '월', '화', '수', '목', '금', '토'];
   var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 
-  function toast(msg) {
+  function toast(msg, ms) {
     var t = $('toast');
     t.textContent = msg; t.hidden = false;
     clearTimeout(toast._t);
-    toast._t = setTimeout(function () { t.hidden = true; }, 2200);
+    toast._t = setTimeout(function () { t.hidden = true; }, ms || 2200);
   }
 
   function fetchWithTimeout(url, ms) {
@@ -4797,12 +4797,20 @@ window.PHRASE_TOPICS = [
           $('wx-temp').textContent = Math.round(k.ta) + '°';
           var nowT = document.querySelector('#hourly .hour.now .h-t'); if (nowT) nowT.textContent = Math.round(k.ta) + '°';
         }
-        // 15분 강수량 ×4 = 시간당 양으로 세기 결정. 감지만 되고 양이 0이면 가랑비
-        var mmh = (k.rn15 || 0) * 4, on = !!k.rain;
+        // 비 판단: 관측소 강수량계는 0.5mm 단위라 약한 비는 15분 동안 0으로 남을 때가 많아요.
+        // 그래서 ① 강수감지 ② 15분 ③ 최근 1시간 강수량 ④ 근처 관측소 ⑤ 예보 모델(지금 0.1mm 이상 + 비 날씨 코드)
+        // 중 하나라도 '오는 중'이면 비로 봐요. 다 0이고 예보도 맑을 때만 표시하지 않아요.
+        var near = (k.nearby || []).some(function (x) { return (x.rn15 || 0) > 0 || x.re > 0; });
+        var gauge = k.re > 0 || (k.rn15 || 0) > 0 || (k.rn60 || 0) > 0 || near;
+        var model = mm >= 0.1 && !!rainCode;
+        var on = gauge || model;
+        // 세기: 1시간 강수량(또는 15분×4)과 예보 강수량 중 큰 값
+        var mmh = Math.max((k.rn60 || 0), (k.rn15 || 0) * 4, mm);
         scene.setWeather(on ? kindNow : null, on ? (mmh >= 4 ? 3 : mmh >= 1 ? 2 : 1) : 0);
         var el = $('wx-why');
         if (el) el.textContent = '실시간 비 판단 · 기상청 ' + (k.name || k.stn) + ' 관측소(' + k.km + 'km) · 강수감지 ' + (k.re == null ? '감지기 없음' : (k.re > 0 ? '있음' : '없음') + (k.reName && k.reName !== k.name ? '(' + k.reName + ' ' + k.reKm + 'km)' : '')) +
-          ' · 15분 ' + (k.rn15 == null ? '-' : k.rn15.toFixed(1) + 'mm') + ' · ' + String(k.time || '').slice(-4).replace(/(\d\d)(\d\d)/, '$1:$2') + ' 관측 → ' + (on ? (kindNow === 'snow' ? '눈 표시' : '비 표시') : '표시 안 함');
+          ' · 15분 ' + (k.rn15 == null ? '-' : k.rn15.toFixed(1) + 'mm') + ' · 1시간 ' + (k.rn60 == null ? '-' : k.rn60.toFixed(1) + 'mm') + (near ? ' · 근처 관측소 비' : '') +
+          ' · 예보 ' + mm.toFixed(1) + 'mm ' + wmo(c.weather_code)[0] + ' · ' + String(k.time || '').slice(-4).replace(/(\d\d)(\d\d)/, '$1:$2') + ' 관측 → ' + (on ? (kindNow === 'snow' ? '눈 표시' : '비 표시') : '표시 안 함');
       }).catch(function () { return byRadar(); });
     };
     if (w.sample || w.lat == null) { scene.setWeather(null, 0); why(null, false); }
@@ -6943,6 +6951,15 @@ window.PHRASE_TOPICS = [
   initSeasonEdit();
   initOpenWith();
   initRules();
+  // '날씨 · 옷차림' 제목을 길게 누르면 지금 비·눈을 왜 띄웠는지(안 띄웠는지) 보여줘요
+  (function () {
+    var h = $('wx-h'), t = null;
+    var show = function () { t = null; var w = $('wx-why'); toast(w && w.textContent ? w.textContent : '아직 날씨를 불러오는 중이에요', 9000); };
+    h.addEventListener('touchstart', function () { t = setTimeout(show, 650); }, { passive: true });
+    ['touchend', 'touchmove', 'touchcancel'].forEach(function (ev) { h.addEventListener(ev, function () { if (t) { clearTimeout(t); t = null; } }, { passive: true }); });
+    h.addEventListener('contextmenu', function (e) { e.preventDefault(); show(); });
+    h.style.webkitUserSelect = 'none'; h.style.webkitTouchCallout = 'none';
+  })();
   $('hourly').onclick = function () { renderWkLoc(); $('wk-loc-form').hidden = true; openDialog($('week-dialog')); };
   // 메인 상단 날씨 → 아래 날씨 섹션으로 이동
   $('wx-open').onclick = function () {
