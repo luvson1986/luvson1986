@@ -241,6 +241,48 @@ window.SEASONS = [
     scene: { type: 'snow', colors: ['#b8641a', '#ffc070'], accent: '#fff2d8', motif: ['🍊'] }
   },
   {
+    id: 'chamoe', name: '참외', from: '03-20', to: '07-31', peak: ['05-01', '06-30'], w: 1,
+    headline: '노랗고 아삭한 성주 참외',
+    desc: '경북 성주가 국내 참외의 대부분을 키워요. 5~6월 하우스 참외가 가장 달고 아삭해요.',
+    todo: ['성주 참외 한 박스', '참외 껍질째 먹어 보기', '참외 장아찌'],
+    scene: { type: 'sun', colors: ['#7a6a12', '#f2d04a'], accent: '#fff6c0', motif: ['🍈'] }
+  },
+  {
+    id: 'watermelon', name: '수박', from: '06-01', to: '08-31', peak: ['07-01', '08-10'], w: 2,
+    headline: '한여름엔 시원한 수박',
+    desc: '7~8월 노지 수박이 가장 달아요. 고창·함안·음성이 대표 산지예요. 두드렸을 때 맑게 통통 울리는 걸 고르세요.',
+    todo: ['수박 한 통', '수박화채', '수박주스'],
+    scene: { type: 'sun', colors: ['#1d5a2a', '#e8505b'], accent: '#ffe0e0', motif: ['🍉'] }
+  },
+  {
+    id: 'peach', name: '복숭아', from: '06-20', to: '09-20', peak: ['07-20', '08-31'], w: 2,
+    headline: '말랑한 백도, 아삭한 황도',
+    desc: '6월 말 조생종부터 9월 황도까지 이어져요. 백도는 7~8월, 딱딱이 복숭아는 7월, 황도는 8월 말~9월이 제철이에요.',
+    todo: ['백도 vs 딱딱이 취향 정하기', '복숭아 산지 직송', '복숭아 병조림'],
+    scene: { type: 'petals', colors: ['#8a3a4a', '#ffb3a7'], accent: '#ffe4dc', motif: ['🍑'] }
+  },
+  {
+    id: 'grape', name: '포도·샤인머스캣', from: '08-01', to: '10-31', peak: ['08-25', '10-05'], w: 2,
+    headline: '송이째 달콤한 포도',
+    desc: '캠벨얼리는 8~9월, 샤인머스캣은 9~10월이 제철이에요. 영동·김천·상주가 대표 산지예요.',
+    todo: ['샤인머스캣 한 송이', '캠벨 포도 주스', '영동 포도축제'],
+    scene: { type: 'lights', colors: ['#3a1f4a', '#7ac06a'], accent: '#e8d4ff', motif: ['🍇'] }
+  },
+  {
+    id: 'fig', name: '무화과', from: '08-15', to: '10-31', peak: ['09-01', '10-10'], w: 1,
+    headline: '딱 이맘때만 먹는 무화과',
+    desc: '전남 영암이 국내 최대 산지예요. 쉽게 물러서 수확 기간이 짧고, 냉장해도 2~3일 안에 먹는 게 좋아요.',
+    todo: ['영암 무화과 주문', '무화과 + 크림치즈', '무화과 잼'],
+    scene: { type: 'sun', colors: ['#4a1f3a', '#c07a9a'], accent: '#ffe0f0', motif: ['🟣'] }
+  },
+  {
+    id: 'persimmon', name: '단감·홍시', from: '10-01', to: '12-20', peak: ['10-20', '11-25'], w: 1,
+    headline: '주황빛 가을 감',
+    desc: '단감은 10~11월 아삭할 때, 홍시와 곶감은 11월부터 겨울까지 맛있어요. 진영 단감, 청도 반시, 상주 곶감이 유명해요.',
+    todo: ['단감 한 박스', '홍시 냉동해 아이스홍시', '상주 곶감'],
+    scene: { type: 'leaves', colors: ['#7a3010', '#f08a2a'], accent: '#ffe0b0', motif: ['🟠'] }
+  },
+  {
     id: 'valentine', priority: true, name: '발렌타인데이', from: '02-13', to: '02-14', peak: ['02-14', '02-14'], w: 2,
     headline: '초콜릿으로 마음 전하는 날',
     desc: '2월 14일은 초콜릿을 주고받는 날이에요. 수제 초콜릿 재료는 1~2주 전에, 인기 레스토랑은 미리 예약하세요.',
