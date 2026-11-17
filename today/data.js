@@ -269,18 +269,39 @@ window.SEASONS = [
     scene: { type: 'lights', colors: ['#3a1f4a', '#7ac06a'], accent: '#e8d4ff', motif: ['🍇'] }
   },
   {
+    id: 'blueberry', name: '블루베리', from: '06-01', to: '07-31', peak: ['06-15', '07-15'], w: 1,
+    headline: '초여름 한 줌 블루베리',
+    desc: '국산 생 블루베리는 6~7월 잠깐 나와요. 전북 고창·충북 등에서 따기 체험도 열려요.',
+    todo: ['생 블루베리 한 팩', '블루베리 따기 체험', '요거트에 듬뿍'],
+    scene: { type: 'petals', colors: ['#1f2a5a', '#6a7ac0'], accent: '#d8e0ff', motif: ['🫐'] }
+  },
+  {
+    id: 'plum', name: '자두', from: '06-20', to: '08-20', peak: ['07-01', '07-31'], w: 1,
+    headline: '새콤달콤 여름 자두',
+    desc: '7월 대석·후무사 자두가 가장 맛있어요. 경북 김천·의성이 대표 산지예요.',
+    todo: ['자두 한 박스', '자두청 담그기', '김천 자두 주문'],
+    scene: { type: 'sun', colors: ['#5a1a2a', '#d0405a'], accent: '#ffd8e0', motif: ['🍒'] }
+  },
+  {
+    id: 'apple', name: '사과', from: '09-01', to: '12-31', peak: ['10-20', '11-30'], w: 1,
+    headline: '가을 햇사과',
+    desc: '9월 홍로·아리수로 시작해 10월 말부터 부사가 나와요. 청송·영주·충주가 대표 산지예요.',
+    todo: ['부사 한 박스', '사과 따기 체험', '애플파이'],
+    scene: { type: 'leaves', colors: ['#6a1a1a', '#d84a3a'], accent: '#ffe0d0', motif: ['🍎'] }
+  },
+  {
     id: 'fig', name: '무화과', from: '08-15', to: '10-31', peak: ['09-01', '10-10'], w: 1,
     headline: '딱 이맘때만 먹는 무화과',
     desc: '전남 영암이 국내 최대 산지예요. 쉽게 물러서 수확 기간이 짧고, 냉장해도 2~3일 안에 먹는 게 좋아요.',
     todo: ['영암 무화과 주문', '무화과 + 크림치즈', '무화과 잼'],
-    scene: { type: 'sun', colors: ['#4a1f3a', '#c07a9a'], accent: '#ffe0f0', motif: ['🟣'] }
+    scene: { type: 'sun', colors: ['#4a1f3a', '#c07a9a'], accent: '#ffe0f0', motif: ['🍐'] }
   },
   {
     id: 'persimmon', name: '단감·홍시', from: '10-01', to: '12-20', peak: ['10-20', '11-25'], w: 1,
     headline: '주황빛 가을 감',
     desc: '단감은 10~11월 아삭할 때, 홍시와 곶감은 11월부터 겨울까지 맛있어요. 진영 단감, 청도 반시, 상주 곶감이 유명해요.',
     todo: ['단감 한 박스', '홍시 냉동해 아이스홍시', '상주 곶감'],
-    scene: { type: 'leaves', colors: ['#7a3010', '#f08a2a'], accent: '#ffe0b0', motif: ['🟠'] }
+    scene: { type: 'leaves', colors: ['#7a3010', '#f08a2a'], accent: '#ffe0b0', motif: ['🍅'] }
   },
   {
     id: 'valentine', priority: true, name: '발렌타인데이', from: '02-13', to: '02-14', peak: ['02-14', '02-14'], w: 2,
