@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>제철 캘린더</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* 레이아웃: 상단에 오늘 기준 순위, 아래 1년 막대 차트(행 = 시즌, 열 = 월) */
+:root {
+  color-scheme: light;
+  --bg: #f3f1ec; --surface: #ffffff; --ink: #1d2230; --ink-2: #576070; --ink-3: #8a92a0; --line: #e2dfd8;
+  --bar: #d9cfc0; --peak: #b4532a; --today: #1d5bd8; --rising: #1f8a5b; --fading: #9a6a2a;
+  --f-display: "Gowun Batang", serif;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b; --surface: #1a1e26; --ink: #ebeef3; --ink-2: #aab2bf; --ink-3: #7a8392; --line: #2a303b;
+    --bar: #3a3a3f; --peak: #f08a5a; --today: #6f9dff; --rising: #4cc48d; --fading: #e0a860;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 14px/1.6 var(--f-body); word-break: keep-all; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+h1 { margin: 0; font: 700 clamp(28px, 5vw, 38px)/1.2 var(--f-display); text-wrap: balance; }
+.lead { margin: 6px 0 0; color: var(--ink-2); max-width: 60ch; }
+h2 { margin: 0 0 10px; font-size: 16px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+.rank { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 10px; }
+.rank li { background: var(--surface); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; }
+.rank .top { display: flex; align-items: baseline; gap: 8px; }
+.rank .no { font: 500 13px var(--f-mono); color: var(--ink-3); }
+.rank .nm { font-weight: 700; font-size: 15px; }
+.rank .sc { margin-left: auto; font: 500 12px var(--f-mono); color: var(--ink-3); }
+.rank .why { font-size: 12.5px; color: var(--ink-2); }
+.rank li:first-child { outline: 2px solid var(--peak); }
+.ph { font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; justify-self: start; }
+.ph.peak { color: var(--peak); background: color-mix(in srgb, var(--peak) 14%, transparent); }
+.ph.rising { color: var(--rising); background: color-mix(in srgb, var(--rising) 14%, transparent); }
+.ph.fading { color: var(--fading); background: color-mix(in srgb, var(--fading) 14%, transparent); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--ink-2); margin-bottom: 10px; }
+.legend i { display: inline-block; width: 22px; height: 8px; border-radius: 4px; vertical-align: middle; margin-right: 6px; }
+.chart-box { overflow-x: auto; background: var(--surface); border-radius: 14px; }
+.chart { min-width: 760px; display: grid; grid-template-columns: 170px 1fr; position: relative; }
+.chart .head, .chart .row { display: contents; }
+.cell-name { padding: 7px 12px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 6px; min-width: 0; }
+.cell-name b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cell-name .w { margin-left: auto; color: var(--peak); font-size: 9px; letter-spacing: 1px; }
+.cell-track { position: relative; border-bottom: 1px solid var(--line); height: 38px;
+  background-image: repeating-linear-gradient(90deg, transparent 0, transparent calc(100% / 12 - 1px), var(--line) calc(100% / 12 - 1px), var(--line) calc(100% / 12)); }
+.months { display: grid; grid-template-columns: repeat(12, 1fr); font: 500 12px var(--f-mono); color: var(--ink-3); border-bottom: 1px solid var(--line); }
+.months span { padding: 8px 6px; }
+.seg { position: absolute; top: 13px; height: 12px; border-radius: 6px; background: var(--bar); }
+.seg.pk { top: 11px; height: 16px; background: var(--peak); }
+.today { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--today); z-index: 2; pointer-events: none; }
+.today span { position: absolute; top: 4px; left: 6px; font: 600 11px var(--f-mono); color: var(--today); white-space: nowrap; background: var(--surface); padding: 0 4px; }
+.row.active .cell-name { background: color-mix(in srgb, var(--peak) 8%, transparent); }
+
+table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 14px; overflow: hidden; font-size: 13.5px; }
+.tbl-box { overflow-x: auto; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--ink-3); font-weight: 600; letter-spacing: 0.04em; }
+td.mono { white-space: nowrap; }
+td .todo { color: var(--ink-2); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>제철 캘린더</h1>
+    <p class="lead">비서 앱이 계절 추천을 고르는 기준이에요. 시즌마다 전체 기간과 절정 기간, 관심도(●)를 정해 두고, 오늘이 절정에 가까울수록 높은 점수를 줘요. 다가오는 시즌은 절정 직전에 점수가 크게 오르고, 끝물인 시즌은 빠르게 내려가요.</p>
+  </header>
+
+  <section>
+    <h2 id="rank-h">오늘 기준 순위</h2>
+    <ol class="rank" id="rank"></ol>
+  </section>
+
+  <section>
+    <h2>1년 시즌표</h2>
+    <div class="legend"><span><i style="background:var(--bar)"></i>제철 기간</span><span><i style="background:var(--peak)"></i>절정</span><span><i style="background:var(--today);width:2px;height:12px"></i>오늘</span><span>● 관심도 (●●● 대표 시즌)</span></div>
+    <div class="chart-box"><div class="chart" id="chart"></div></div>
+  </section>
+
+  <section>
+    <h2>시즌 상세</h2>
+    <div class="tbl-box"><table>
+      <thead><tr><th>시즌</th><th>기간</th><th>절정</th><th>추천</th></tr></thead>
+      <tbody id="tbl"></tbody>
+    </table></div>
+  </section>
+</div>
+<script src="data.js"></script>
+<script>
+(function () {
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var today = new Date();
+  var doy = function (md) { var p = md.split('-'); return (Date.UTC(2001, +p[0] - 1, +p[1]) - Date.UTC(2001, 0, 1)) / 864e5; };
+  var pct = function (d) { return (d / 365 * 100).toFixed(3) + '%'; };
+  var fmt = function (md) { var p = md.split('-'); return +p[0] + '.' + +p[1]; };
+  var dots = function (w) { return '●●●'.slice(0, w); };
+
+  // 오늘 순위
+  var ranked = window.rankSeasons(today);
+  document.getElementById('rank-h').textContent = '오늘(' + (today.getMonth() + 1) + '월 ' + today.getDate() + '일) 기준 순위';
+  document.getElementById('rank').innerHTML = ranked.map(function (x, i) {
+    var p = x.p, why = p.phase === 'peak' ? fmt(x.s.peak[0]) + '~' + fmt(x.s.peak[1]) + ' 절정 기간이에요'
+      : p.phase === 'rising' ? '절정까지 ' + p.days + '일 남았어요'
+      : '절정이 ' + (-p.days) + '일 전에 지났어요';
+    return '<li><div class="top"><span class="no">' + (i + 1) + '</span><span class="nm">' + esc(x.s.name) + '</span><span class="sc">' + p.score.toFixed(2) + '</span></div>' +
+      '<span class="ph ' + p.phase + '">' + p.label + '</span><span class="why">' + why + ' · 관심도 ' + dots(x.s.w) + '</span></li>';
+  }).join('');
+
+  // 막대 차트: 연말-연초를 넘는 구간은 두 조각으로
+  function segs(a, b, cls) {
+    var s = doy(a), e = doy(b) + 1;
+    if (e > s) return '<span class="seg ' + cls + '" style="left:' + pct(s) + ';width:' + pct(e - s) + '"></span>';
+    return '<span class="seg ' + cls + '" style="left:' + pct(s) + ';width:' + pct(365 - s) + '"></span>' +
+      '<span class="seg ' + cls + '" style="left:0;width:' + pct(e) + '"></span>';
+  }
+  var active = {}; ranked.forEach(function (x) { active[x.s.id] = 1; });
+  var list = window.SEASONS.slice().sort(function (a, b) { return doy(a.peak[0]) - doy(b.peak[0]); });
+  var t = (Date.UTC(2001, today.getMonth(), today.getDate()) - Date.UTC(2001, 0, 1)) / 864e5 + 0.5;
+  var html = '<div class="head"><div class="cell-name" style="color:var(--ink-3);font-size:12px">시즌</div><div class="months">' +
+    Array.from({ length: 12 }, function (_, i) { return '<span>' + (i + 1) + '월</span>'; }).join('') + '</div></div>';
+  list.forEach(function (s) {
+    html += '<div class="row' + (active[s.id] ? ' active' : '') + '"><div class="cell-name"><b>' + esc(s.name) + '</b><span class="w">' + dots(s.w) + '</span></div>' +
+      '<div class="cell-track">' + segs(s.from, s.to, '') + segs(s.peak[0], s.peak[1], 'pk') + '</div></div>';
+  });
+  var chart = document.getElementById('chart');
+  chart.innerHTML = html;
+  // 오늘 선: 차트 영역 위에 겹치기
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:absolute;top:0;bottom:0;left:170px;right:0;pointer-events:none';
+  overlay.innerHTML = '<div class="today" style="left:' + pct(t) + '"><span>오늘</span></div>';
+  chart.appendChild(overlay);
+
+  document.getElementById('tbl').innerHTML = list.map(function (s) {
+    return '<tr><td><b>' + esc(s.name) + '</b> <span style="color:var(--peak);font-size:10px">' + dots(s.w) + '</span><div class="todo">' + esc(s.headline) + '</div></td>' +
+      '<td class="mono">' + fmt(s.from) + '–' + fmt(s.to) + '</td><td class="mono">' + fmt(s.peak[0]) + '–' + fmt(s.peak[1]) + '</td>' +
+      '<td class="todo">' + s.todo.map(esc).join(' · ') + '</td></tr>';
+  }).join('');
+})();
+</script>
+</body>
+</html>
