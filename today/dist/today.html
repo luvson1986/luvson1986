@@ -5759,7 +5759,7 @@ window.PHRASE_TOPICS = [
 
     var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
     var card = function (s, state, timeLabel, rel, k) {
-      var openEnded = !s.end; // 시간 미정·종료 시간 없는 일정은 직접 완료 처리
+      var openEnded = !s.end && !isAllDay(s); // 시간 미정·종료 시간 없는 일정은 직접 완료 처리 (종일 일정은 완료 버튼 없음)
       var movable = !s.start && !isAllDay(s);  // 시간 미정 일정은 끌어서 사이에 끼워 넣을 수 있어요 (종일 일정은 맨 위 고정)
       return '<li class="tl-item ' + state + (s.important ? ' imp' : '') + (s.done ? ' done' : '') + (openEnded ? ' has-done' : '') + (movable ? ' movable' : '') + (s.sample ? ' is-sample' : '') + '" data-id="' + s.id + '" data-min="' + k + '" style="--c: ' + catOf(s.cat).color + '">' +
         '<span class="tl-time">' + (movable ? '<span class="tl-grip" aria-label="끌어서 옮기기">' + GRIP + '</span>' : timeLabel) + '</span><span class="tl-dot"></span>' +
