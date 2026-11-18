@@ -1018,6 +1018,8 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
 .si-list li.si-row { display: flex; align-items: stretch; padding: 0; }
 .si-row .si-link { flex: 1; min-width: 0; }
 .si-insta { flex: none; display: grid; place-items: center; padding: 0 12px; border-left: 1px solid var(--line); font-size: 12px; font-weight: 600; color: #c13584; text-decoration: none; }
+.fx-link { display: block; text-align: center; text-decoration: none; padding: 12px; font-weight: 600; }
+.fx-link[hidden] { display: none; }
 
 </style>
 </head>
@@ -1272,6 +1274,7 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
       <button type="button" data-k="neg" aria-label="부호 바꾸기">±</button><button type="button" data-k="0">0</button><button type="button" data-k=".">.</button><button type="button" class="op eq" data-k="=">=</button>
     </div>
     <p class="hint" id="fx-rate"></p>
+    <a class="ghost-btn fx-link" id="fx-hotel" href="https://luvson1986.github.io/hotel_bangkok/" target="_blank" rel="noopener" hidden>호텔비 정산 ›</a>
   </div>
 </dialog>
 
@@ -5286,6 +5289,7 @@ window.PHRASE_TOPICS = [
     var d = new Date(fx.t);
     $('fx-rate').textContent = fx.sym + fx.unit.toLocaleString('en-US') + ' = ' + won(fx.krw * fx.unit) + ' · ' + (window.IS_EN ? 'updated ' : '') + pad(d.getHours()) + ':' + pad(d.getMinutes()) + (window.IS_EN ? '' : ' 기준');
     calcShow();
+    $('fx-hotel').hidden = fx.code !== 'THB'; // 태국에 있을 때만 호텔비 정산 바로가기
     openDialog($('fx-dialog'));
   }
   function initFx() {

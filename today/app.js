@@ -1161,6 +1161,7 @@
     var d = new Date(fx.t);
     $('fx-rate').textContent = fx.sym + fx.unit.toLocaleString('en-US') + ' = ' + won(fx.krw * fx.unit) + ' · ' + (window.IS_EN ? 'updated ' : '') + pad(d.getHours()) + ':' + pad(d.getMinutes()) + (window.IS_EN ? '' : ' 기준');
     calcShow();
+    $('fx-hotel').hidden = fx.code !== 'THB'; // 태국에 있을 때만 호텔비 정산 바로가기
     openDialog($('fx-dialog'));
   }
   function initFx() {
