@@ -1077,7 +1077,12 @@
       if (km <= c.r && km < best) { best = km; city = c; }
     });
     var cur = CURRENCY[cc];
-    var kw = (city ? city.kw : t.kw).slice(0, cur ? 2 : 3), place = city ? city.name : w.place;
+    // 키워드: 도시(없으면 나라) 풀에서 오늘·지금 시간대·날씨(비 오면 실내)에 맞게 골라요
+    var KWP = window.TRAVEL_KW || { cities: {}, countries: {} };
+    var pool = (city && KWP.cities[city.name]) || KWP.countries[cc] || (city ? city.kw : t.kw);
+    var raining = !w.sample && ((w.current.precipitation || 0) >= 0.1 || /^(5|6|8|9)/.test(String(w.current.weather_code)));
+    var kw = window.pickTravelKw ? window.pickTravelKw(pool, cur ? 2 : 3, { rain: raining }) : pool.slice(0, cur ? 2 : 3);
+    var place = city ? city.name : w.place;
     var root = document.documentElement;
     var fc = (window.FLAG_COLORS || {})[cc] || ['#1d4e89', '#4f86c6', '#e8f4ff'];
     root.style.setProperty('--season', fc[2]);
