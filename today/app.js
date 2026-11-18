@@ -1745,15 +1745,19 @@
     var ord = dayOrder(key), at = diff === 0 && list.length ? ord.top.length + ord.past.length : -1;
     var rows = ord.top.concat(ord.past, ord.rest).map(function (o) {
       var s = o.s;
-      if (!s.start) return { html: card(s, diff < 0 || s.done ? 'past' : '', isAllDay(s) ? '종일' : '미정', '', o.k), past: o.past };
+      if (!s.start) return { html: card(s, diff < 0 || s.done ? 'past' : '', isAllDay(s) ? '종일' : '미정', '', o.k), past: o.past, when: o.when, top: o.top };
       var st = toMin(s.start), en = s.end ? toMin(s.end) : null;
       // 종료 시간이 없으면 다음 시간 일정이 시작될 때까지(그 뒤 일정이 없으면 '완료'를 누를 때까지) 진행 중
       if (en == null) en = implicitEnd(s, all);
       var state = s.done || diff < 0 ? 'past' : diff > 0 ? '' : en != null && en <= nowMin ? 'past' : st <= nowMin ? 'current' : '';
-      return { html: card(s, state, s.start, '', o.k), past: o.past };
+      return { html: card(s, state, s.start, '', o.k), past: o.past, when: o.when };
     });
     // 지난 일 표시: 끌어서 옮길 때 이 줄들은 자리 계산에서 빼요
-    rows.forEach(function (r) { if (r.past) r.html = r.html.replace('<li class="tl-item ', '<li data-past="1" class="tl-item '); });
+    // 지난 일 줄에는 정렬 기준(지나간 시각)을, 종일 일정에는 표시를 달아요: 끌어서 옮길 때 자리 계산에 써요
+    rows.forEach(function (r) {
+      if (r.top) r.html = r.html.replace('<li class="tl-item ', '<li data-top="1" class="tl-item ');
+      else if (r.past) r.html = r.html.replace('<li class="tl-item ', '<li data-past="1" data-when="' + r.when + '" class="tl-item ');
+    });
     var html = rows.map(function (r, i) { return (i === at ? nowRow(now) : '') + r.html; }).join('') + (at === rows.length ? nowRow(now) : '');
     // 내용이 그대로면 다시 그리지 않아요: 앱을 열 때·1분마다·다른 캘린더를 불러올 때 다시 그리면서
     // 누르던 '완료' 버튼이 바뀌어 버려 탭이 씹히는 걸 막아요. 현재 시각만 바뀌었으면 그 글자만 고쳐요.
@@ -1781,7 +1785,11 @@
     var top = all.filter(isAllDay).map(function (s, i) { return { s: s, k: -1, i: i, past: true, top: true }; });
     var items = orderDay(all.filter(function (s) { return !isAllDay(s); })).map(function (s, i) {
       var k = seqMin(s, all.indexOf(s));
-      if (!s.start) return { s: s, k: k, i: i, past: !!s.done, when: s.done ? doneMin(s, k) : k };
+      // 시간 미정 일정을 직접 옮겼으면(place) 완료 여부와 상관없이 그 자리를 따라요
+      if (!s.start) {
+        var inPast = s.place === 'past' ? true : s.place === 'rest' ? false : !!s.done;
+        return { s: s, k: k, i: i, past: inPast, when: s.place === 'past' && s.pastWhen != null ? s.pastWhen : s.done ? doneMin(s, k) : k };
+      }
       var st = toMin(s.start), started = diff < 0 || (diff === 0 && st <= nowMin);
       return { s: s, k: k, i: i, past: !!s.done || started, when: started ? st : s.done ? doneMin(s, st) : st };
     });
@@ -2322,11 +2330,24 @@
         var key = ymd(viewDate), it = findItem(key, li.dataset.id); if (!it) return;
         var sib = function (el, dir) { do { el = dir < 0 ? el.previousElementSibling : el.nextElementSibling; } while (el && !el.classList.contains('tl-item')); return el; };
         var p = sib(li, -1), n = sib(li, 1);
-        // 위가 지난 일(완료·이미 시작)이면 '남은 일 맨 위'로 넣은 것: 아래 일정 바로 앞 자리로
-        if (p && p.dataset.past && !li.dataset.past) p = null;
-        if (n && n.dataset.past && !li.dataset.past) n = null;
-        var pm = p ? +p.dataset.min : null, nm = n ? +n.dataset.min : null;
-        it.pos = pm != null && nm != null ? (pm + nm) / 2 : pm != null ? pm + 1 : nm != null ? nm - 1 : 0;
+        if (p && p.dataset.top) p = null; // 종일 일정 위로는 못 가요: 그 바로 아래로
+        // 놓은 곳이 현재 시각 줄 위(지난 일 쪽)인지 아래(남은 일 쪽)인지
+        var line = $('timeline').querySelector('.tl-now'), zone;
+        if (line) zone = li.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING ? 'past' : 'rest';
+        else zone = (p && p.dataset.past) && (!n || n.dataset.past) ? 'past' : (!p && n && n.dataset.past) ? 'past' : 'rest';
+        if (zone === 'past') {
+          // 지난 일 쪽: 이웃의 '지나간 시각' 사이로
+          var pw = p && p.dataset.past ? +p.dataset.when : null, nw = n && n.dataset.past ? +n.dataset.when : null;
+          it.pastWhen = pw != null && nw != null ? (pw + nw) / 2 : pw != null ? pw + 0.5 : nw != null ? nw - 0.5 : 0;
+          it.place = 'past';
+        } else {
+          // 남은 일 쪽: 이웃 자리(시간 일정은 시작 시각) 사이로
+          if (p && p.dataset.past) p = null;
+          if (n && n.dataset.past) n = null;
+          var pm = p ? +p.dataset.min : null, nm = n ? +n.dataset.min : null;
+          it.pos = pm != null && nm != null ? (pm + nm) / 2 : pm != null ? pm + 1 : nm != null ? nm - 1 : 0;
+          it.place = 'rest'; delete it.pastWhen;
+        }
         saveSchedules(); renderSchedule();
       }
     });
@@ -2337,6 +2358,7 @@
         it.done = !it.done;
         // 언제 끝냈는지 기억해 두면, 타임라인 위쪽(지난 일)을 끝낸 순서대로 쌓을 수 있어요
         if (it.done) it.doneAt = Date.now(); else delete it.doneAt;
+        delete it.place; delete it.pastWhen; // 완료를 바꾸면 다시 자동 자리로
         saveSchedules(); renderSchedule();
         toast(it.done ? '“' + it.title + '” 완료!' : '완료를 취소했어요');
         return;
