@@ -1018,7 +1018,7 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
 .si-list li.si-row { display: flex; align-items: stretch; padding: 0; }
 .si-row .si-link { flex: 1; min-width: 0; }
 .si-insta { flex: none; display: grid; place-items: center; padding: 0 12px; border-left: 1px solid var(--line); font-size: 12px; font-weight: 600; color: #c13584; text-decoration: none; }
-.fx-link { display: block; text-align: center; text-decoration: none; padding: 12px; font-weight: 600; }
+.fx-link { margin-left: auto; text-decoration: none; font-weight: 600; white-space: nowrap; }
 .fx-link[hidden] { display: none; }
 
 </style>
@@ -1260,6 +1260,7 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
   <div class="sheet-body">
     <header class="panel-head">
       <h2 id="fx-h">환율 계산기</h2>
+      <a class="ghost-btn sm fx-link" id="fx-hotel" href="https://luvson1986.github.io/hotel_bangkok/" target="_blank" rel="noopener" hidden>호텔비 정산 ›</a>
     </header>
     <div class="fx-display">
       <div class="fx-line main"><output id="fx-a" aria-live="polite">0</output><span class="fx-code" id="fx-a-code"></span></div>
@@ -1274,7 +1275,6 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
       <button type="button" data-k="neg" aria-label="부호 바꾸기">±</button><button type="button" data-k="0">0</button><button type="button" data-k=".">.</button><button type="button" class="op eq" data-k="=">=</button>
     </div>
     <p class="hint" id="fx-rate"></p>
-    <a class="ghost-btn fx-link" id="fx-hotel" href="https://luvson1986.github.io/hotel_bangkok/" target="_blank" rel="noopener" hidden>호텔비 정산 ›</a>
   </div>
 </dialog>
 
