@@ -5650,6 +5650,15 @@ window.PHRASE_TOPICS = [
     schedules[plus(1)] = [ex('s5', '10:00', '피티', 'health'), ex('s6', '13:00', '친구 점심', 'personal'), ex('s7', '', '장보기', 'personal', { important: true })];
     schedules[plus(2)] = [ex('s8', '', '세탁소', 'personal'), ex('s9', '', '공과금 납부', 'personal'), ex('s10', '18:00', '영화', 'personal', { important: true })];
     schedules[plus(4)] = [ex('s11', '', '조식', 'personal'), ex('s12', '', '출근', 'focus'), ex('s13', '', '마사지', 'health')];
+  } else {
+    // 예전엔 끌어 옮긴 자리를 장소(place) 칸에 'past'/'rest'로 적어서, 장소에 rest가 보였어요.
+    // 자리는 이제 slot에 따로 두고, 잘못 들어간 장소 값은 지워요
+    Object.keys(schedules).forEach(function (k) {
+      (schedules[k] || []).forEach(function (it) {
+        if (it && (it.place === 'past' || it.place === 'rest')) { if (!it.slot) it.slot = it.place; it.place = ''; }
+      });
+    });
+    store.set('schedules', schedules);
   }
   var saveSchedules = function () { pinUntimed(); store.set('schedules', schedules); if (typeof scheduleReminders === 'function') setTimeout(scheduleReminders, 0); };
   var toMin = function (hm) { if (!hm) return -1; var p = hm.split(':'); return +p[0] * 60 + +p[1]; };
@@ -5921,8 +5930,8 @@ window.PHRASE_TOPICS = [
       var k = seqMin(s, all.indexOf(s));
       // 시간 미정 일정을 직접 옮겼으면(place) 완료 여부와 상관없이 그 자리를 따라요
       if (!s.start) {
-        var inPast = s.place === 'past' ? true : s.place === 'rest' ? false : !!s.done;
-        return { s: s, k: k, i: i, past: inPast, when: s.place === 'past' && s.pastWhen != null ? s.pastWhen : s.done ? doneMin(s, k) : k };
+        var inPast = s.slot === 'past' ? true : s.slot === 'rest' ? false : !!s.done;
+        return { s: s, k: k, i: i, past: inPast, when: s.slot === 'past' && s.pastWhen != null ? s.pastWhen : s.done ? doneMin(s, k) : k };
       }
       var st = toMin(s.start), started = diff < 0 || (diff === 0 && st <= nowMin);
       return { s: s, k: k, i: i, past: !!s.done || started, when: started ? st : s.done ? doneMin(s, st) : st };
@@ -6473,14 +6482,14 @@ window.PHRASE_TOPICS = [
           // 지난 일 쪽: 이웃의 '지나간 시각' 사이로
           var pw = p && p.dataset.past ? +p.dataset.when : null, nw = n && n.dataset.past ? +n.dataset.when : null;
           it.pastWhen = pw != null && nw != null ? (pw + nw) / 2 : pw != null ? pw + 0.5 : nw != null ? nw - 0.5 : 0;
-          it.place = 'past';
+          it.slot = 'past';
         } else {
           // 남은 일 쪽: 이웃 자리(시간 일정은 시작 시각) 사이로
           if (p && p.dataset.past) p = null;
           if (n && n.dataset.past) n = null;
           var pm = p ? +p.dataset.min : null, nm = n ? +n.dataset.min : null;
           it.pos = pm != null && nm != null ? (pm + nm) / 2 : pm != null ? pm + 1 : nm != null ? nm - 1 : 0;
-          it.place = 'rest'; delete it.pastWhen;
+          it.slot = 'rest'; delete it.pastWhen;
         }
         saveSchedules(); renderSchedule();
       }
@@ -6492,7 +6501,7 @@ window.PHRASE_TOPICS = [
         it.done = !it.done;
         // 언제 끝냈는지 기억해 두면, 타임라인 위쪽(지난 일)을 끝낸 순서대로 쌓을 수 있어요
         if (it.done) it.doneAt = Date.now(); else delete it.doneAt;
-        delete it.place; delete it.pastWhen; // 완료를 바꾸면 다시 자동 자리로
+        delete it.slot; delete it.pastWhen; // 완료를 바꾸면 다시 자동 자리로
         saveSchedules(); renderSchedule();
         toast(it.done ? '“' + it.title + '” 완료!' : '완료를 취소했어요');
         return;
