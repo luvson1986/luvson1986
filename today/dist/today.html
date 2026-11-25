@@ -4190,6 +4190,7 @@ window.PHRASE_TOPICS = [
     set: function (k, v) { try { localStorage.setItem('pa:' + k, JSON.stringify(v)); } catch (e) { /* 저장 불가 환경 */ } }
   };
   var pad = function (n) { return String(n).padStart(2, '0'); };
+  var endAuto = false; // 일정 폼: 끝 시간을 앱이 채웠는지(시작을 바꾸면 따라가요)
   var ymd = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
   var DAYS = ['일', '월', '화', '수', '목', '금', '토'];
   var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -6104,6 +6105,7 @@ window.PHRASE_TOPICS = [
     $('sch-timed').checked = timed;
     $('sch-start').value = timed ? item.start : '';
     $('sch-end').value = timed ? item.end || '' : '';
+    endAuto = false;
     setTimeFields(timed);
     $('sch-dialog-h').textContent = item ? '일정 수정' : '일정 추가';
     $('sch-submit').textContent = item ? '수정 저장' : '일정 추가';
@@ -6536,11 +6538,19 @@ window.PHRASE_TOPICS = [
     $('sch-timed').addEventListener('change', function (e) {
       if (e.target.checked) $('sch-allday').checked = false;
       setTimeFields(e.target.checked);
-      if (e.target.checked && !$('sch-start').value) {
-        var h = Math.min(new Date().getHours() + 1, 23);
-        $('sch-start').value = pad(h) + ':00';
-      }
+      // 기본: 시작 09:00, 끝은 시작 + 1시간
+      if (e.target.checked && !$('sch-start').value) $('sch-start').value = '09:00';
+      if (e.target.checked && !$('sch-end').value) { $('sch-end').value = plusHour($('sch-start').value); endAuto = true; }
     });
+    // 끝 시간을 직접 고치기 전까지는 시작을 바꾸면 끝도 1시간 뒤로 따라가요
+    function plusHour(hm) { var m = toMin(hm); if (m < 0) return ''; m = Math.min(m + 60, 23 * 60 + 59); return pad(Math.floor(m / 60)) + ':' + pad(m % 60); }
+    $('sch-start').addEventListener('input', function () {
+      if (endAuto || !$('sch-end').value) { $('sch-end').value = plusHour($('sch-start').value); endAuto = true; }
+    });
+    $('sch-start').addEventListener('change', function () {
+      if (endAuto || !$('sch-end').value) { $('sch-end').value = plusHour($('sch-start').value); endAuto = true; }
+    });
+    $('sch-end').addEventListener('input', function () { endAuto = false; });
     $('sch-form').addEventListener('submit', function (e) {
       e.preventDefault();
       var err = $('sch-error');
