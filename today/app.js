@@ -62,7 +62,6 @@
     set: function (k, v) { try { localStorage.setItem('pa:' + k, JSON.stringify(v)); } catch (e) { /* 저장 불가 환경 */ } }
   };
   var pad = function (n) { return String(n).padStart(2, '0'); };
-  var SC = document.getElementById('scroller') || document.scrollingElement; // 메인 스크롤 상자
   var endAuto = false; // 일정 폼: 끝 시간을 앱이 채웠는지(시작을 바꾸면 따라가요)
   var ymd = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
   var DAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -1552,8 +1551,6 @@
 
   // 팝업이 열려 있는 동안 뒤 화면이 스크롤되지 않게 고정 (iOS는 body를 fixed로 묶어야 확실해요)
   var lockY = 0;
-  // 메인 화면은 페이지가 아니라 안쪽 상자(#scroller)가 스크롤해요.
-  // 페이지 자체가 스크롤되면 iOS 26이 상태바 뒤에 흐림(그라데이션)을 덮어서, 그걸 피하려고요
   // 아이폰 홈 화면 앱에서 body를 position:fixed로 고정하면 화면 아래에 빈 띠가 생겨서,
   // 페이지는 그대로 두고 overflow로만 막고, 팝업 밖에서 생기는 터치 스크롤은 직접 막아요.
   window.addEventListener('scroll', function () {
@@ -1915,8 +1912,8 @@
   function placeSchedulePanel() {
     var panel = $('schedule-panel');
     requestAnimationFrame(function () {
-      var top = panel.getBoundingClientRect().top + SC.scrollTop - SC.clientHeight * 0.1;
-      SC.scrollTo(0, Math.max(0, top));
+      var top = panel.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.1;
+      window.scrollTo(0, Math.max(0, top));
     });
   }
   // 날짜를 바꿔도 일정 섹션 머리가 화면에서 제자리에 있도록
@@ -1930,11 +1927,11 @@
     holdTimer = setTimeout(function release() {
       // 사용자가 위로 스크롤했거나 여유 공간이 화면 밖이면 풀어요
       home.style.minHeight = '';
-      if (home.offsetHeight < SC.scrollTop + SC.clientHeight) { home.style.minHeight = (SC.scrollTop + SC.clientHeight) + 'px'; holdTimer = setTimeout(release, 4000); }
+      if (home.offsetHeight < window.scrollY + window.innerHeight) { home.style.minHeight = (window.scrollY + window.innerHeight) + 'px'; holdTimer = setTimeout(release, 4000); }
     }, 4000);
     fn();
     var diff = panel.getBoundingClientRect().top - before;
-    if (Math.abs(diff) > 1) SC.scrollBy(0, diff);
+    if (Math.abs(diff) > 1) window.scrollBy(0, diff);
   }
   function scrollToSchedule(id) {
     viewDate = new Date();
@@ -3118,8 +3115,8 @@
   // 메인 상단 날씨 → 아래 날씨 섹션으로 이동
   $('wx-open').onclick = function () {
     var panel = $('weather-panel');
-    var top = panel.getBoundingClientRect().top + SC.scrollTop - 64; // 상태바 아래로 여유
-    SC.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    var top = panel.getBoundingClientRect().top + window.scrollY - 64; // 상태바 아래로 여유
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
   };
   initWeatherLocation();
   initPhrase();
@@ -3156,13 +3153,13 @@
     var show = function (p) { ptr.style.opacity = Math.min(1, p); ptr.style.transform = 'translateY(' + Math.min(30, p * 30 - 10) + 'px) scale(' + (0.6 + Math.min(1, p) * 0.4) + ')'; ptr.querySelector('i').style.transform = 'rotate(' + p * 300 + 'deg)'; };
     var hide = function () { ptr.style.opacity = ''; ptr.style.transform = ''; ptr.classList.remove('spin'); };
     document.addEventListener('touchstart', function (e) {
-      if (busy || document.documentElement.classList.contains('modal-open') || SC.scrollTop > 0 || e.touches.length !== 1) { y0 = null; return; }
+      if (busy || document.documentElement.classList.contains('modal-open') || window.scrollY > 0 || e.touches.length !== 1) { y0 = null; return; }
       y0 = e.touches[0].clientY; pull = 0;
     }, { passive: true });
     document.addEventListener('touchmove', function (e) {
       if (y0 == null) return;
       pull = Math.max(0, e.touches[0].clientY - y0);
-      if (SC.scrollTop > 0) { y0 = null; hide(); return; }
+      if (window.scrollY > 0) { y0 = null; hide(); return; }
       show(pull / 110);
     }, { passive: true });
     document.addEventListener('touchend', function () {
