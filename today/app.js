@@ -1024,9 +1024,6 @@
     var band = $('status-band'), hero = $('hero'); if (!band || !hero) return;
     document.documentElement.style.setProperty('--hero-h', (hero.offsetHeight || 640) + 'px');
     document.documentElement.classList.toggle('hero-light', hero.classList.contains('ink-dark'));
-    // 페이지 바탕색 = 메인 맨 위 색을 어둡게 (아이폰 상단 흐림이 이 색으로 칠해져요)
-    var ha = (document.documentElement.style.getPropertyValue('--hero-a') || getComputedStyle(document.documentElement).getPropertyValue('--hero-a')).trim();
-    if (/^#[0-9a-f]{6}$/i.test(ha)) document.documentElement.style.setProperty('--top-dark', mixHex(ha, '#1c100c', 0.45));
     if (travelBands && flagBandImg) {
       var shade = hero.classList.contains('ink-dark')
         ? 'linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 45%, rgba(8,12,20,0.18) 100%)'

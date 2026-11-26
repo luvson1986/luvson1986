@@ -43,9 +43,7 @@
 }
 
 * { box-sizing: border-box; }
-/* 페이지 바탕(html)은 어둡게: 아이폰이 상단 흐림을 이 색으로 칠해서, 허옇지 않고 어둡게 보이게.
-   실제 화면 바탕은 body가 칠해요 */
-html { -webkit-text-size-adjust: 100%; background: var(--top-dark, #1c1714); }
+html { -webkit-text-size-adjust: 100%; background: var(--bg); }
 /* 당겨서 새로고침 */
 .ptr {
   position: fixed; z-index: 50; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 8px); width: 34px; height: 34px; margin-left: -17px;
