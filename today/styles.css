@@ -578,7 +578,7 @@ body.on-news::before {
 .sheet[open] {
   position: absolute; z-index: 102;
   margin: 0; inset: auto; left: 50%; top: var(--sheet-y, 100%); transform: translate(-50%, -100%);
-  width: min(560px, 100%); max-width: none; max-height: calc(var(--sheet-h, 100vh) - env(safe-area-inset-top, 0px) - 16px);
+  width: min(560px, 100%); max-width: none; max-height: calc(var(--sheet-h, 100vh) * 0.8); /* 최대 화면의 80%, 내용이 짧으면 그만큼만 */
   border-radius: 22px 22px 0 0; box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.25), 0 240px 0 0 var(--surface);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   animation: sheet-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -593,7 +593,7 @@ body.on-news::before {
 /* 맨 위 손잡이: 시트 안을 스크롤해도 위에 붙어 있고, 여기를 잡고 내리면 바로 닫혀요 */
 .sheet-grab { position: sticky; top: 0; z-index: 5; flex: none; height: 30px; margin-bottom: -16px; background: var(--surface); touch-action: none; cursor: grab; }
 .sheet-grab::before { content: ""; position: absolute; left: 50%; top: 10px; width: 38px; height: 5px; margin-left: -19px; border-radius: 3px; background: var(--line); }
-.sheet-grab + .sheet-body { padding-top: 20px; }
+.sheet-grab + .sheet-body { padding-top: 32px; }
 /* 아이폰 홈 화면 앱은 화면 고정 레이어가 아래쪽까지 닿지 않아(::backdrop도 마찬가지) 밝은 띠가 남아요.
    그래서 어둡게 덮는 막을 화면이 아니라 페이지 전체에 깔아요. 팝업이 열린 동안은 스크롤이 막혀 있어요. */
 html.modal-open body { position: relative; }

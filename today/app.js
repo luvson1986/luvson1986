@@ -1647,7 +1647,8 @@
       if (!d || e.touches.length !== 1) return;
       if (e.target.closest('input, textarea, select, .tl-grip, .grip, [data-nodrag]')) return;
       // 손잡이를 잡았으면 안쪽 스크롤 위치와 상관없이 바로 끌어내려요
-      st = { d: d, sc: e.target.closest('.sheet-grab') ? null : scroller(e.target, d), x: e.touches[0].clientX, y: e.touches[0].clientY, dy: 0, on: false, t: 0 };
+      var grab = !!e.target.closest('.sheet-grab');
+      st = { d: d, grab: grab, sc: grab ? null : scroller(e.target, d), x: e.touches[0].clientX, y: e.touches[0].clientY, dy: 0, on: false, t: 0, mode: '' };
     }, { passive: true });
     document.addEventListener('touchmove', function (e) {
       if (!st) return;
@@ -1655,17 +1656,42 @@
       if (!st.on) {
         var dx = x - st.x, dy0 = y - st.y;
         if (Math.abs(dy0) < 6 && Math.abs(dx) < 6) return;
-        if (dy0 <= 0 || Math.abs(dx) > Math.abs(dy0) || (st.sc && st.sc.scrollTop > 0)) { st = null; return; }
+        if (Math.abs(dx) > Math.abs(dy0)) { st = null; return; }
+        var det = st.d.dataset.detent;
+        if (dy0 < 0) {
+          // 위로: 중간 높이면 시트를 키워요. 아니면 평소처럼 안쪽 스크롤
+          if (det !== 'mid') { st = null; return; }
+          st.mode = 'grow';
+        } else {
+          if (!st.grab && st.sc && st.sc.scrollTop > 0) { st = null; return; }
+          // 아래로: 손잡이는 바로 닫기, 내용은 커진 시트면 중간 높이로 줄이기, 아니면 닫기
+          st.mode = !st.grab && det === 'full' ? 'shrink' : 'close';
+        }
         st.on = true; st.y = y; st.t = Date.now();
         st.d.style.transition = 'none';
+        if (st.mode === 'grow' && st.sc) st.sc.scrollTop = 0;
+        if (st.mode !== 'close') { st.h0 = st.d.getBoundingClientRect().height; st.min = sheetMid(st.d); st.max = sheetMax(st.d); }
       }
       e.preventDefault();
-      st.dy = Math.max(0, y - st.y);
-      st.d.style.translate = '0 ' + st.dy + 'px';
+      if (st.mode === 'close') {
+        st.dy = Math.max(0, y - st.y);
+        st.d.style.translate = '0 ' + st.dy + 'px';
+      } else {
+        st.dy = y - st.y;
+        st.d.style.maxHeight = Math.round(Math.min(st.max, Math.max(st.min, st.h0 - st.dy))) + 'px';
+      }
     }, { passive: false });
     var end = function () {
       if (!st || !st.on) { st = null; return; }
       var d = st.d, fast = st.dy > 40 && st.dy / Math.max(1, Date.now() - st.t) > 0.5;
+      if (st.mode !== 'close') {
+        var up = st.mode === 'grow' ? -st.dy > 30 : !(st.dy > 60 || fast);
+        d.style.transition = 'max-height 0.22s ease';
+        d.style.maxHeight = (up ? st.max : st.min) + 'px';
+        d.dataset.detent = up ? 'full' : 'mid';
+        setTimeout(function () { d.style.transition = ''; if (d.dataset.detent === 'full') d.style.maxHeight = ''; }, 240);
+        st = null; return;
+      }
       d.style.transition = 'translate 0.2s ease';
       if (st.dy > 110 || fast) {
         d.style.translate = '0 100%';
@@ -1701,13 +1727,23 @@
     d.style.zIndex = 102 + (++sheetZ);
     // show()는 안쪽에 포커스를 주면서 페이지를 그쪽으로 스크롤해 버려서, 속성만 켜서 열어요
     if (!d.open) d.setAttribute('open', '');
+    setDetent(d);
     var a = document.activeElement;
     if (a && a !== d && !d.contains(a) && typing()) a.blur();
+  }
+  // 내용이 길어서 최대 높이(80%)를 채우는 시트는 처음엔 중간 높이로 열고,
+  // 위로 올리면 최대 높이까지 커진 다음 그때부터 안쪽이 스크롤돼요 (iOS 미리보기 앱처럼)
+  function sheetMax(d) { var m = d.style.maxHeight; d.style.maxHeight = ''; var v = parseFloat(getComputedStyle(d).maxHeight) || d.getBoundingClientRect().height; d.style.maxHeight = m; return v; }
+  function sheetMid(d) { return Math.round(sheetMax(d) * 0.7); }
+  function setDetent(d) {
+    d.style.maxHeight = ''; delete d.dataset.detent;
+    var full = sheetMax(d);
+    if (d.getBoundingClientRect().height >= full - 2) { d.dataset.detent = 'mid'; d.style.maxHeight = sheetMid(d) + 'px'; }
   }
   function closeDialog(d) { if (d.close) d.close(); else d.removeAttribute('open'); syncScrollLock(); }
   // Esc·폼 닫기 등 어떤 방식으로 닫혀도 고정 해제
   Array.prototype.forEach.call(document.querySelectorAll('dialog'), function (d) {
-    d.addEventListener('close', function () { setTimeout(syncScrollLock, 0); });
+    d.addEventListener('close', function () { d.style.maxHeight = ''; delete d.dataset.detent; setTimeout(syncScrollLock, 0); });
   });
   document.addEventListener('click', function (e) {
     var c = e.target.closest('[data-close]');
