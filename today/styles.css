@@ -986,6 +986,3 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
 .fx-link[hidden] { display: none; }
 /* 상태바 뒤 띠는 쓰지 않아요: 위쪽이 허옇게 덮여 보여서, 메인 배경이 그대로 상태바 뒤까지 보이게 */
 .status-band { display: none !important; }
-/* 상태바 뒤 단색 띠(고정): 색은 app.js가 메인 맨 위 색으로, 스크롤하면 페이지 바탕색으로 */
-.status-tint { position: fixed; left: 0; right: 0; top: 0; height: env(safe-area-inset-top, 0px); z-index: 99; pointer-events: none; background-color: var(--bg); transition: background-color 0.2s; }
-html.modal-open .status-tint { background-color: transparent; }
