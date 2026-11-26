@@ -989,3 +989,23 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
 /* 메인(날씨·시즌)은 제자리에 있고, 아래 내용이 그 위를 덮으며 올라와요 */
 .hero { position: sticky; top: 0; z-index: 0; padding-bottom: 20px; }
 .board-cover { position: relative; z-index: 1; margin-top: -20px; background: var(--bg); border-radius: 22px 22px 0 0; box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.08); }
+/* 맨 위 헤더(내비게이션 바처럼 고정): 상태바 뒤까지 단색으로 칠해서, 아이폰이 상단을 허옇게 흐리지 않게 */
+:root { --hdr-h: 52px; }
+.app-header { position: fixed; top: 0; left: 0; right: 0; z-index: 60; padding-top: env(safe-area-inset-top, 0px);
+  background-color: var(--hdr, var(--hero-a)); color: #fff; transition: background-color 0.8s ease; }
+html.hero-light .app-header { color: #1c1714; }
+html.hero-light .app-header .icon-btn.glass { background: rgba(0, 0, 0, 0.08); color: #1c1714; }
+.app-header-in { height: var(--hdr-h); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.app-header .hero-date { font-size: 13.5px; font-weight: 600; opacity: 0.92; }
+.app-header .icon-btn { width: 38px; height: 38px; }
+/* 메인 맨 위는 헤더 색에서 자연스럽게 이어지게 */
+.hero-bg::after { content: ""; position: absolute; left: 0; right: 0; top: 0; z-index: 0; pointer-events: none;
+  height: calc(env(safe-area-inset-top, 0px) + var(--hdr-h) + 48px);
+  background: linear-gradient(180deg, var(--hdr, transparent) calc(100% - 48px), transparent 100%); }
+.hero-inner { padding-top: calc(var(--hdr-h) + 14px); }
+.hero-motif { top: calc(var(--hdr-h) + 36px); }
+@media (display-mode: standalone) {
+  .hero-inner { padding-top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h) + 14px); }
+  .hero-motif { top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h) + 36px); }
+}
+.ptr { z-index: 70; top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h) + 8px); }
