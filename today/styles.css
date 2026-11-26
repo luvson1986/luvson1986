@@ -1,8 +1,6 @@
 /* 레이아웃: 계절 장면이 꽉 찬 히어로 아래로, 데스크톱 2열 / 모바일 1열 보드 */
 :root {
-  /* 페이지 뿌리는 항상 '다크'로 알려요: 아이폰이 상단 흐림을 어두운 재질로 그리게.
-     실제 화면(body)은 기기 설정(라이트/다크)을 그대로 따라요 (--cs) */
-  color-scheme: dark; --cs: light;
+  color-scheme: light;
   --bg: #ece6e1;
   --surface: #fffdfb;
   --surface-2: #f6f1ec;
@@ -40,7 +38,7 @@
     --good: #78a684; --warn: #d9a463; --bad: #ee8a6c;
     --cat-meeting: #6f9dff; --cat-focus: #b392ff; --cat-personal: #f0a050; --cat-health: #4cc48d;
     --thumb-l: 32%;
-    color-scheme: dark; --cs: dark;
+    color-scheme: dark;
   }
 }
 
@@ -58,7 +56,6 @@ html { -webkit-text-size-adjust: 100%; background: var(--top-dark, #1c1714); }
 .ptr.spin i { animation: ptr-spin 0.7s linear infinite; }
 @keyframes ptr-spin { to { transform: rotate(360deg); } }
 body {
-  color-scheme: var(--cs, light);
   margin: 0;
   background: var(--bg);
   color: var(--ink);
