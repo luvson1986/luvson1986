@@ -1020,8 +1020,21 @@
   // 상태바 뒤 띠: 시즌 배경은 CSS가 같은 색으로 그려요(메인 높이만 알려 주면 돼요).
   // 해외(국기) 배경일 때만 그 번짐 무늬를 그대로 넘겨요
   var flagBandImg = '';
+  // iOS 26 홈 화면 앱은 맨 위에 '고정된' 요소의 색으로 상태바 뒤를 칠하고, 없으면 페이지 바탕(밝은 베이지)으로 허옇게 칠해요.
+  // 그래서 상태바 높이만 한 고정 띠를 그라데이션 없이 단색(메인 맨 위 색)으로 깔고,
+  // 메인이 스크롤로 올라가면 페이지 바탕색으로 바꿔요
+  var tintTop = '';
+  function syncStatusTint() {
+    var el = $('status-tint'), hero = $('hero'); if (!el || !hero) return;
+    var past = hero.getBoundingClientRect().bottom <= (parseFloat(getComputedStyle(el).height) || 0);
+    el.style.backgroundColor = past || !tintTop ? '' : tintTop;
+  }
+  window.addEventListener('scroll', syncStatusTint, { passive: true });
   function syncStatusBand() {
     var band = $('status-band'), hero = $('hero'); if (!band || !hero) return;
+    var ha = (document.documentElement.style.getPropertyValue('--hero-a') || getComputedStyle(document.documentElement).getPropertyValue('--hero-a')).trim();
+    tintTop = /^#[0-9a-f]{6}$/i.test(ha) ? (hero.classList.contains('ink-dark') ? ha : mixHex(ha, '#1c100c', 0.3)) : '';
+    syncStatusTint();
     document.documentElement.style.setProperty('--hero-h', (hero.offsetHeight || 640) + 'px');
     document.documentElement.classList.toggle('hero-light', hero.classList.contains('ink-dark'));
     if (travelBands && flagBandImg) {

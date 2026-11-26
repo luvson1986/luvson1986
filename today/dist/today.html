@@ -1022,6 +1022,9 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
 .fx-link[hidden] { display: none; }
 /* 상태바 뒤 띠는 쓰지 않아요: 위쪽이 허옇게 덮여 보여서, 메인 배경이 그대로 상태바 뒤까지 보이게 */
 .status-band { display: none !important; }
+/* 상태바 뒤 단색 띠(고정): 색은 app.js가 메인 맨 위 색으로, 스크롤하면 페이지 바탕색으로 */
+.status-tint { position: fixed; left: 0; right: 0; top: 0; height: env(safe-area-inset-top, 0px); z-index: 99; pointer-events: none; background-color: var(--bg); transition: background-color 0.2s; }
+html.modal-open .status-tint { background-color: transparent; }
 
 </style>
 </head>
@@ -1034,6 +1037,7 @@ html.hero-light .status-band { background-image: linear-gradient(180deg, rgba(25
 <!-- 홈 -->
 <!-- 상태바 뒤 띠: 메인 맨 위 배경을 그대로 복사해 깔아요 (아이폰 17·iOS 26이 상태바 뒤를 밝게 흐리는 것 방지) -->
 <div class="status-band" id="status-band" aria-hidden="true"></div>
+<div class="status-tint" id="status-tint" aria-hidden="true"></div>
 <main id="view-home" class="view">
   <!-- 계절 이미지 + 날씨 요약. 이미지를 누르면 시즌 목록 -->
   <section class="hero" id="hero" aria-label="오늘의 날씨와 계절">
@@ -5150,8 +5154,21 @@ window.PHRASE_TOPICS = [
   // 상태바 뒤 띠: 시즌 배경은 CSS가 같은 색으로 그려요(메인 높이만 알려 주면 돼요).
   // 해외(국기) 배경일 때만 그 번짐 무늬를 그대로 넘겨요
   var flagBandImg = '';
+  // iOS 26 홈 화면 앱은 맨 위에 '고정된' 요소의 색으로 상태바 뒤를 칠하고, 없으면 페이지 바탕(밝은 베이지)으로 허옇게 칠해요.
+  // 그래서 상태바 높이만 한 고정 띠를 그라데이션 없이 단색(메인 맨 위 색)으로 깔고,
+  // 메인이 스크롤로 올라가면 페이지 바탕색으로 바꿔요
+  var tintTop = '';
+  function syncStatusTint() {
+    var el = $('status-tint'), hero = $('hero'); if (!el || !hero) return;
+    var past = hero.getBoundingClientRect().bottom <= (parseFloat(getComputedStyle(el).height) || 0);
+    el.style.backgroundColor = past || !tintTop ? '' : tintTop;
+  }
+  window.addEventListener('scroll', syncStatusTint, { passive: true });
   function syncStatusBand() {
     var band = $('status-band'), hero = $('hero'); if (!band || !hero) return;
+    var ha = (document.documentElement.style.getPropertyValue('--hero-a') || getComputedStyle(document.documentElement).getPropertyValue('--hero-a')).trim();
+    tintTop = /^#[0-9a-f]{6}$/i.test(ha) ? (hero.classList.contains('ink-dark') ? ha : mixHex(ha, '#1c100c', 0.3)) : '';
+    syncStatusTint();
     document.documentElement.style.setProperty('--hero-h', (hero.offsetHeight || 640) + 'px');
     document.documentElement.classList.toggle('hero-light', hero.classList.contains('ink-dark'));
     if (travelBands && flagBandImg) {
