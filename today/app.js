@@ -1024,9 +1024,6 @@
     var band = $('status-band'), hero = $('hero'); if (!band || !hero) return;
     document.documentElement.style.setProperty('--hero-h', (hero.offsetHeight || 640) + 'px');
     document.documentElement.classList.toggle('hero-light', hero.classList.contains('ink-dark'));
-    // 헤더 색 = 메인 맨 위 색 (메인 배경 + 위쪽을 덮는 막을 섞은 단색)
-    var ha = (document.documentElement.style.getPropertyValue('--hero-a') || getComputedStyle(document.documentElement).getPropertyValue('--hero-a')).trim();
-    if (/^#[0-9a-f]{6}$/i.test(ha)) document.documentElement.style.setProperty('--hdr', hero.classList.contains('ink-dark') ? ha : mixHex(ha, '#1c100c', 0.3));
     if (travelBands && flagBandImg) {
       var shade = hero.classList.contains('ink-dark')
         ? 'linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 45%, rgba(8,12,20,0.18) 100%)'
